@@ -11,6 +11,8 @@ from tqdm import tqdm
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
+import matplotlib.pyplot as plt
+
 
 class CustomPGD:
 	def __init__(self, model, eps, eps_iter, nb_iter):
@@ -39,11 +41,11 @@ class CustomPGD:
 
 			# Take step
 			scaled_grads = grads / (tf.norm(grads, ord='euclidean') + 1e-10)
-			adv_x = adv_x + scaled_grads * self.eps_iter
+			adv_x = adv_x - scaled_grads * self.eps_iter
 
 			# Clipping perturbation eta to L-2 norm ball
 			eta = adv_x - x
-			eta = clip_eta(eta, 2, self.eps)
+			# eta = clip_eta(eta, 2, self.eps)
 			adv_x = tf.clip_by_value(x + eta, 0, 1)
 			
 			# Get current loss
@@ -51,17 +53,16 @@ class CustomPGD:
 
 			return i + 1, adv_x, best_advx, best_loss
 
-		_, _, best_adv_x, _ = tf.while_loop(cond, body, (tf.zeros([]), adv_x, adv_x, np.inf),
+		_, _, best_adv_x, best_loss = tf.while_loop(cond, body, (tf.zeros([]), adv_x, adv_x, np.inf),
 										back_prop=True,
 										maximum_iterations=self.nb_iter)
-		return tf.identity(best_adv_x)
+		return tf.identity(best_adv_x), tf.identity(best_loss)
 
 	def find_optimal_datapoint(self, target, seed):
-		# sample initial x_adv from dataset
 		x        = tf.placeholder(tf.float32, shape=(None,) + tuple(target.shape))
 		x_r_seed = tf.placeholder(tf.float32, shape=(None,) + tuple(seed.shape))
-		adv_x = self.tf_optimize_loop(x, x_r_seed)
-		adv_x = self.sess.run(adv_x, feed_dict={x: np.expand_dims(target, 0), x_r_seed: np.expand_dims(seed, 0)})
+		adv_x, loss = self.tf_optimize_loop(x, x_r_seed)
+		adv_x, loss = self.sess.run([adv_x, loss], feed_dict={x: np.expand_dims(target, 0), x_r_seed: np.expand_dims(seed, 0)})
 		return adv_x
 
 
@@ -72,7 +73,7 @@ def sample_from_data(data):
 
 
 def construct_robust_dataset(model, data, sample_strategy):
-	pgd = CustomPGD(model, 0.1, 0.1, 1000)
+	pgd = CustomPGD(model, eps=1, eps_iter=0.1, nb_iter=1000)
 	robust_data = []
 	for x in tqdm(data):
 		x_seed = sample_strategy(data)
