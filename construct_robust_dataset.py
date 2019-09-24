@@ -93,12 +93,11 @@ def construct_robust_dataset(model, data, sample_strategy, batch_size=512):
 def fake_relu_activation(x):
 	result = tf.maximum(x, 0)
 	def custom_grad(dy):
-		grad = tf.ones_like(dy)
-		return grad
+		return dy
 	return result, custom_grad
 
 
-def cifar_to_robust(model, fake_relu=True):
+def cifar_to_robust(model, fake_relu):
 	feature_extractor = Model(model.inputs, model.layers[-3].output)
 	if fake_relu:
 		update_layer_activation(feature_extractor, fake_relu_activation, -2)
@@ -111,7 +110,7 @@ def cifar_to_robust(model, fake_relu=True):
 
 
 def create_and_save_robust_cifar(model, path):
-	(X_train, X_val) = cifar_to_robust(model, False)
+	(X_train, X_val) = cifar_to_robust(model, True)
 	np.savez(path, X_train=X_train, X_val=X_val)
 
 
@@ -124,7 +123,8 @@ def load_robust_cifar(path):
 
 def update_layer_activation(model, activation, index=-1):
     model.layers[index].activation = activation
-    return apply_modifications(model)
+    return apply_modifications(model, custom_objects={"fake_relu_activation": fake_relu_activation})
+
 
 if __name__ == "__main__":
 	config = tf.compat.v1.ConfigProto()
