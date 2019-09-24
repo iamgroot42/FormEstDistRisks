@@ -11,7 +11,7 @@ from tqdm import tqdm
 from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
-import matplotlib.pyplot as plt
+from vis.utils.utils import apply_modifications
 
 
 class CustomPGD:
@@ -45,7 +45,7 @@ class CustomPGD:
 			# Take step
 			adv_x = adv_x - scaled_grads * self.eps_iter
 
-			# Clip perturbation eta to L-2 norm ball
+			# Clip perturbation eta to L-2 norm ball (not needed)
 			eta = adv_x - x
 			# eta = clip_eta(eta, 2, self.eps)
 			adv_x = tf.clip_by_value(x + eta, 0, 1)
@@ -89,9 +89,19 @@ def construct_robust_dataset(model, data, sample_strategy, batch_size=512):
 	return robust_data
 
 
-def cifar_to_robust(model):
+@tf.custom_gradient
+def fake_relu_activation(x):
+	result = tf.maximum(x, 0)
+	def custom_grad(dy):
+		grad = tf.ones_like(dy)
+		return grad
+	return result, custom_grad
+
+
+def cifar_to_robust(model, fake_relu=True):
 	feature_extractor = Model(model.inputs, model.layers[-3].output)
-	print(feature_extractor.layers)
+	if fake_relu:
+		update_layer_activation(feature_extractor, fake_relu_activation, -2)
 	(X_train, _), (X_val, _) = cifar10.load_data()
 	X_train   = (X_train.astype('float32')) / 255
 	X_val     = (X_val.astype('float32')) / 255
@@ -101,7 +111,7 @@ def cifar_to_robust(model):
 
 
 def create_and_save_robust_cifar(model, path):
-	(X_train, X_val) = cifar_to_robust(model)
+	(X_train, X_val) = cifar_to_robust(model, False)
 	np.savez(path, X_train=X_train, X_val=X_val)
 
 
@@ -111,6 +121,10 @@ def load_robust_cifar(path):
 	(_, y_train), (_, y_val) = cifar10.load_data()
 	return (X_train, y_train), (X_val, y_val)
 
+
+def update_layer_activation(model, activation, index=-1):
+    model.layers[index].activation = activation
+    return apply_modifications(model)
 
 if __name__ == "__main__":
 	config = tf.compat.v1.ConfigProto()
