@@ -12,6 +12,7 @@ class Dataset:
 		self.classes = classes
 		self.sample_shape = shape
 		(self.X_train, self.Y_train), (self.X_val, self.Y_val) = (None, None), (None, None)
+		self.ready_data()
 
 	def load_data(self):
 		return
@@ -34,25 +35,26 @@ class Dataset:
 
 
 class CIFAR10(Dataset):
-	def __init__(self):
-		super(CIFAR10).__init__(classes=10, shape=(32, 32, 3))
+	def __init__(self, shuffle_data=True):
+		self.shuffle_data = shuffle_data
+		super().__init__(classes=10, shape=(32, 32, 3))
 
 	def load_data(self):
 		(self.X_train, self.Y_train), (self.X_val, self.Y_val) = cifar10.load_data()
 
-	def ready_data(self, shuffle=True):
-		self.ready_data()
+	def ready_data(self):
+		self.load_data()
 		self.X_train = self.normalize(self.X_train.astype('float32'))
 		self.X_val   = self.normalize(self.X_val.astype('float32'))
 		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		if shuffle:
+		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
+		if self.shuffle_data:
 			self.X_train, self.Y_train = shuffle(self.X_train, self.Y_train)
 
 	def normalize(self, X):
 		return X / 255
 
-	def un_normalize
+	def un_normalize(self, X):
 		return X * 255
 
 	def get_augmentations(self):
@@ -66,11 +68,12 @@ class CIFAR10(Dataset):
 
 	
 class RobustCIFAR10(CIFAR10):
-	def __init__(self):
-		super(RobustCIFAR10).__init__()
+	def __init__(self, path="./datasets/robust_cifar_data.npz", shuffle_data=True):
+		self.path = path
+		super().__init__(shuffle_data=shuffle_data)
 
-	def load_data(self, path):
-		data = np.load(path, allow_pickle=True)
+	def load_data(self):
+		data = np.load(self.path, allow_pickle=True)
 
 		def unroll(y):
 			return np.concatenate(y, axis=0)
@@ -78,10 +81,9 @@ class RobustCIFAR10(CIFAR10):
 		self.X_train, self.X_val = unroll(data['X_train']), unroll(data['X_val'])
 		(_, self.Y_train), (_, self.Y_val) = cifar10.load_data()
 
-	def ready_data(self, path="./datasets/robust_cifar_data.npz", shuffle=True):
-		self.path = path
-		self.ready_data()
+	def ready_data(self, ):
+		self.load_data()
 		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		if shuffle:
+		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
+		if self.shuffle_data:
 			self.X_train, self.Y_train = shuffle(self.X_train, self.Y_train)

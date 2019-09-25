@@ -26,17 +26,17 @@ def get_attack(wrap):
 	attack_params['nb_iter'] = 7
 	attack_params['eps'] = 5e-1
 	attack_params['eps_iter'] = 5e-1 / 5
-	return attack_object
+	return attack_object, attack_params
 
 
 def train_model(dataset, attack_object, batch_size, nb_epochs, augment, save_path):
-	model, cbks = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
-	wrap = KerasModelWrapper(model)
-	attack_object = get_attack(wrap)
-
 	session = keras.backend.get_session()
 	init = tf.global_variables_initializer()
 	session.run(init)
+
+	model, cbks = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
+	wrap = KerasModelWrapper(model)
+	attack_object, attack_params = get_attack(wrap, session)
 
 	(X_train, Y_train), (X_val, Y_val) = dataset.get_data()
 	batch_size //= 2 # Adversarial data accounts for half of batch
