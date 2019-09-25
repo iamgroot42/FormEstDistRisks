@@ -83,7 +83,7 @@ def construct_robust_dataset(model, data, sample_strategy, batch_size=512):
 	for i in tqdm(range(0, len(data), batch_size)):
 		x = data[i: i + batch_size]
 		x_preds = model.predict(x, batch_size=batch_size)
-		x_seed = sample_strategy(data, batch_size)
+		x_seed = sample_strategy(data, len(x))
 		x_r = pgd.find_optimal_datapoint(x, x_preds, x_seed)
 		robust_data.append(x_r)
 	return robust_data
