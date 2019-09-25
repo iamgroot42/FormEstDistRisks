@@ -13,9 +13,9 @@ def get_attack(wrap, session):
 	attack = MadryEtAl
 	attack_params = {'clip_min': 0, 'clip_max': 1}
 	attack_object = attack(wrap, sess=session)
-	attack_params['nb_iter'] = 7
+	attack_params['nb_iter'] = 1e1
 	attack_params['eps'] = 5e-1
-	attack_params['eps_iter'] = 5e-1 / 5
+	# attack_params['eps_iter'] = 5e-1 / 5
 	return attack_object, attack_params
 
 
@@ -56,7 +56,8 @@ def benchmarking(model, og_dataset, robust_dataset):
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
 	# model = keras.models.load_model("./models/normally_trained_noaug_final.h5")
-	model = keras.models.load_model("./models/normally_trained_final.h5")
+	# model = keras.models.load_model("./models/normally_trained_final.h5")
+	model = keras.models.load_model("./models/adversarialy_trained_final.h5")
 	cifar = datasets.CIFAR10()
 	robust_cifar = datasets.RobustCIFAR10()
 	benchmarking(model, cifar, robust_cifar)
