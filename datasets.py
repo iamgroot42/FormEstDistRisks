@@ -79,7 +79,7 @@ class RobustCIFAR10(CIFAR10):
 			return np.concatenate(y, axis=0)
 
 		self.X_train, self.X_val = unroll(data['X_train']), unroll(data['X_val'])
-		(_, self.Y_train), (_, self.Y_val) = cifar10.load_data()
+		self.Y_train, self.Y_val = unroll(data['Y_train']), unroll(data['Y_val'])
 
 	def ready_data(self, ):
 		self.load_data()

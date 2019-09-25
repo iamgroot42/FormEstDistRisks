@@ -55,8 +55,8 @@ def benchmarking(model, og_dataset, robust_dataset):
 
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
-	model = keras.models.load_model("./models/normally_trained_noaug_final.h5")
-	# model = keras.models.load_model("./models/normally_trained_final.h5")
+	# model = keras.models.load_model("./models/normally_trained_noaug_final.h5")
+	model = keras.models.load_model("./models/normally_trained_final.h5")
 	cifar = datasets.CIFAR10()
 	robust_cifar = datasets.RobustCIFAR10()
 	benchmarking(model, cifar, robust_cifar)

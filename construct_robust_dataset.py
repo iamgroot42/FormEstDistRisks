@@ -103,15 +103,15 @@ def cifar_to_robust(model, fake_relu):
 	if fake_relu:
 		update_layer_activation(feature_extractor, fake_relu_activation, -2)
 	dataset = datasets.CIFAR10()
-	(X_train, _), (X_val, _) = dataset.get_data()
+	(X_train, y_train), (X_val, y_val) = dataset.get_data()
 	robust_train = construct_robust_dataset(feature_extractor, X_train, sample_from_data)
 	robust_val   = construct_robust_dataset(feature_extractor, X_val, sample_from_data)
-	return (robust_train, robust_val)
+	return (robust_train, y_train, robust_val, y_val)
 
 
 def create_and_save_robust_cifar(model, path):
-	(X_train, X_val) = cifar_to_robust(model, True)
-	np.savez(path, X_train=X_train, X_val=X_val)
+	(X_train, Y_train, X_val, Y_val) = cifar_to_robust(model, True)
+	np.savez(path, X_train=X_train, Y_train=Y_train, X_val=X_val, Y_val=Y_val)
 
 
 def update_layer_activation(model, activation, index=-1):
