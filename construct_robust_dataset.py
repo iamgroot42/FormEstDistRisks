@@ -3,7 +3,6 @@ import numpy as np
 
 import keras
 import keras.backend as K
-from keras.datasets import cifar10
 from keras.models import load_model, Model
 
 from tqdm import tqdm
@@ -12,6 +11,8 @@ from cleverhans import utils_tf
 from cleverhans.utils_tf import clip_eta
 
 from vis.utils.utils import apply_modifications
+
+import common, datasets
 
 
 class CustomPGD:
@@ -101,9 +102,8 @@ def cifar_to_robust(model, fake_relu):
 	feature_extractor = Model(model.inputs, model.layers[-3].output)
 	if fake_relu:
 		update_layer_activation(feature_extractor, fake_relu_activation, -2)
-	(X_train, _), (X_val, _) = cifar10.load_data()
-	X_train   = (X_train.astype('float32')) / 255
-	X_val     = (X_val.astype('float32')) / 255
+	dataset = datasets.CIFAR10()
+	(X_train, _), (X_val, _) = dataset.get_data()
 	robust_train = construct_robust_dataset(feature_extractor, X_train, sample_from_data)
 	robust_val   = construct_robust_dataset(feature_extractor, X_val, sample_from_data)
 	return (robust_train, robust_val)
@@ -114,27 +114,12 @@ def create_and_save_robust_cifar(model, path):
 	np.savez(path, X_train=X_train, X_val=X_val)
 
 
-def load_robust_cifar(path):
-	data = np.load(path, allow_pickle=True)
-
-	def unroll(y):
-		return np.concatenate(y, axis=0)
-
-	X_train, X_val = unroll(data['X_train']), unroll(data['X_val'])
-	(_, y_train), (_, y_val) = cifar10.load_data()
-	return (X_train, y_train), (X_val, y_val)
-
-
 def update_layer_activation(model, activation, index=-1):
     model.layers[index].activation = activation
     return apply_modifications(model, custom_objects={"fake_relu_activation": fake_relu_activation})
 
 
 if __name__ == "__main__":
-	config = tf.compat.v1.ConfigProto()
-	config.gpu_options.allow_growth=True
-	session = tf.compat.v1.Session(config=config)
-	keras.backend.set_session(session)
-
+	common.conserve_gpu_memory()
 	model = load_model("./models/adversarialy_trained_final.h5")
 	create_and_save_robust_cifar(model, "./datasets/robust_cifar_data.npz")
