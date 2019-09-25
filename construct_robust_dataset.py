@@ -115,8 +115,12 @@ def create_and_save_robust_cifar(model, path):
 
 
 def load_robust_cifar(path):
-	data = np.load(path)
-	X_train, X_val = data['X_train'], data['X_val']
+	data = np.load(path, allow_pickle=True)
+
+	def unroll(y):
+		return np.concatenate(y, axis=0)
+
+	X_train, X_val = unroll(data['X_train']), unroll(data['X_val'])
 	(_, y_train), (_, y_val) = cifar10.load_data()
 	return (X_train, y_train), (X_val, y_val)
 
@@ -132,5 +136,5 @@ if __name__ == "__main__":
 	session = tf.compat.v1.Session(config=config)
 	keras.backend.set_session(session)
 
-	model = load_model("./adversarialy_trained_final.h5")
-	create_and_save_robust_cifar(model, "./robust_cifar_data.npz")
+	model = load_model("./models/adversarialy_trained_final.h5")
+	create_and_save_robust_cifar(model, "./datasets/robust_cifar_data.npz")
