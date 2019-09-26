@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 
 def train_model(batch_size, nb_epochs, augment, save_path):
-	model = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
+	model, scheduler = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
 
 	session = keras.backend.get_session()
 	init = tf.global_variables_initializer()
@@ -36,6 +36,8 @@ def train_model(batch_size, nb_epochs, augment, save_path):
 	for i in range(nb_epochs):
 		batch_no = 1
 		train_loss, train_acc = 0, 0
+		if scheduler:
+			keras.backend.set_value(model.optimizer.lr, scheduler(i))
 		for j in range(0, len(X_train), batch_size):
 			x_clean, y_clean = X_train[j:j+batch_size], Y_train[j:j+batch_size]
 			if augment:

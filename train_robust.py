@@ -13,9 +13,9 @@ import models, common, datasets
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-b','--batch_size', type=int, default=128, metavar='NUMBER', help='batch size(default: 128)')
-parser.add_argument('-e','--nb_epochs', type=int, default=200, metavar='NUMBER', help='epochs(default: 200)')
+parser.add_argument('-e','--nb_epochs', type=int, default=150, metavar='NUMBER', help='epochs(default: 200)')
 parser.add_argument('-g','--save_here', type=str, default="./models/adversarialy_trained", metavar='STRING', help='path where trained model should be saved')
-parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
+parser.add_argument('-a','--augment', type=bool, default=True, metavar='BOOLEAN', help='use augmentation while training data')
 args = parser.parse_args()
 
 
@@ -31,7 +31,7 @@ def get_attack(wrap, session):
 
 
 def train_model(dataset, batch_size, nb_epochs, augment, save_path):
-	model = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
+	model, scheduler = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
 
 	session = keras.backend.get_session()
 	init = tf.global_variables_initializer()
@@ -50,6 +50,8 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 		batch_no = 1
 		train_loss, train_acc = 0, 0
 		adv_loss, adv_acc = 0, 0
+		if scheduler:
+			keras.backend.set_value(model.optimizer.lr, scheduler(i))
 		for j in range(0, len(X_train), batch_size):
 			x_clean, y_clean = X_train[j:j+batch_size], Y_train[j:j+batch_size]
 			if augment:
