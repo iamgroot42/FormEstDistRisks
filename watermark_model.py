@@ -15,6 +15,7 @@ def get_attack(wrap, session):
 	attack_object = attack(wrap, sess=session)
 	attack_params['nb_iter'] = 1e1
 	attack_params['eps'] = 5e-1
+	attack_params['ord'] = 2
 	# attack_params['eps_iter'] = 5e-1 / 5
 	return attack_object, attack_params
 

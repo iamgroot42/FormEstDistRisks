@@ -19,22 +19,24 @@ parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN
 args = parser.parse_args()
 
 
-def get_attack(wrap):
+def get_attack(wrap, session):
 	attack = MadryEtAl
 	attack_params = {'clip_min': 0, 'clip_max': 1}
 	attack_object = attack(wrap, sess=session)
-	attack_params['nb_iter'] = 7
-	attack_params['eps'] = 5e-1
-	attack_params['eps_iter'] = 5e-1 / 5
+	attack_params['nb_iter']  = 7
+	attack_params['ord']      = 2
+	attack_params['eps']      = 5e-1
+	attack_params['eps_iter'] = attack_params['eps'] / 5
 	return attack_object, attack_params
 
 
-def train_model(dataset, attack_object, batch_size, nb_epochs, augment, save_path):
+def train_model(dataset, batch_size, nb_epochs, augment, save_path):
+	model = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
+
 	session = keras.backend.get_session()
 	init = tf.global_variables_initializer()
 	session.run(init)
 
-	model, cbks = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
 	wrap = KerasModelWrapper(model)
 	attack_object, attack_params = get_attack(wrap, session)
 
@@ -47,6 +49,7 @@ def train_model(dataset, attack_object, batch_size, nb_epochs, augment, save_pat
 	for i in range(nb_epochs):
 		batch_no = 1
 		train_loss, train_acc = 0, 0
+		adv_loss, adv_acc = 0, 0
 		for j in range(0, len(X_train), batch_size):
 			x_clean, y_clean = X_train[j:j+batch_size], Y_train[j:j+batch_size]
 			if augment:
@@ -58,15 +61,20 @@ def train_model(dataset, attack_object, batch_size, nb_epochs, augment, save_pat
 			x_adv = attack_object.generate_np(x_clean_use, **attack_params)
 			x_batch = np.concatenate([x_clean_use, x_adv], axis=0)
 			y_batch = np.concatenate([y_clean_use, y_clean_use], axis=0)
+			# Train on batch
 			train_metrics = model.train_on_batch(x_batch, y_batch)
-			train_loss += train_metrics[0]
-			train_acc += train_metrics[1]
-			sys.stdout.write("Epoch %d: %d / %d : Tr loss: %f, Tr acc: %f  \r" % (i+1, batch_no, 1 + len(X_train)//batch_size, train_loss/(batch_no), train_acc/(batch_no)))
+			train_loss   += train_metrics[0]
+			train_acc    += train_metrics[1]
+			# Evauate metrics on perturbed data
+			adv_metrics   = model.evaluate(x_adv, y_clean_use, verbose=0, batch_size=1024)
+			adv_loss     += adv_metrics[0]
+			adv_acc      += adv_metrics[1]
+			sys.stdout.write("Epoch %d: %d / %d : Tr loss: %f, Tr acc: %f, Adv loss: %f, Adv acc: %f  \r" % (i+1, batch_no, 1 + len(X_train)//batch_size, train_loss/(batch_no), train_acc/(batch_no), adv_loss/(batch_no), adv_acc/(batch_no)))
 			sys.stdout.flush()
 			batch_no += 1
 		val_metrics = model.evaluate(X_val, Y_val, batch_size=1024, verbose=0)
 		print()
-		print(">> Val loss: %f, Val acc: %f"% (val_metrics[0], val_metrics[1]))
+		print(">> Val loss: %f, Val acc: %f\n"% (val_metrics[0], val_metrics[1]))
 		if i % 10 == 9:
 			model.save(save_path + "_%d.h5" % (i + 1))
 
@@ -75,5 +83,5 @@ def train_model(dataset, attack_object, batch_size, nb_epochs, augment, save_pat
 
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
-	(X_train, Y_train), (X_val, Y_val) = datasets.CIFAR10()
+	dataset = datasets.CIFAR10()
 	train_model(dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)

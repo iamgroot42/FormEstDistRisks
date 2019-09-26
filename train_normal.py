@@ -22,7 +22,7 @@ args = parser.parse_args()
 
 
 def train_model(batch_size, nb_epochs, augment, save_path):
-	model, cbks = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
+	model = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
 
 	session = keras.backend.get_session()
 	init = tf.global_variables_initializer()
@@ -39,20 +39,20 @@ def train_model(batch_size, nb_epochs, augment, save_path):
 		for j in range(0, len(X_train), batch_size):
 			x_clean, y_clean = X_train[j:j+batch_size], Y_train[j:j+batch_size]
 			if augment:
-				x_aug = augmentor.augment_images(x_clean)
+				x_aug   = augmentor.augment_images(x_clean)
 				x_batch = np.concatenate([x_clean, x_aug], axis=0)
 				y_batch = np.concatenate([y_clean, y_clean], axis=0)
 			else:
 				x_batch, y_batch = x_clean, y_clean
 			train_metrics = model.train_on_batch(x_batch, y_batch)
-			train_loss += train_metrics[0]
-			train_acc += train_metrics[1]
+			train_loss   += train_metrics[0]
+			train_acc    += train_metrics[1]
 			sys.stdout.write("Epoch %d: %d / %d : Tr loss: %f, Tr acc: %f  \r" % (i+1, batch_no, 1 + len(X_train)//batch_size, train_loss/(batch_no), train_acc/(batch_no)))
 			sys.stdout.flush()
 			batch_no += 1
 		val_metrics = model.evaluate(X_val, Y_val, batch_size=1024, verbose=0)
 		print()
-		print(">> Val loss: %f, Val acc: %f"% (val_metrics[0], val_metrics[1]))
+		print(">> Val loss: %f, Val acc: %f\n"% (val_metrics[0], val_metrics[1]))
 		if i % 10 == 9:
 			model.save(save_path + "_%d.h5" % (i + 1))
 
