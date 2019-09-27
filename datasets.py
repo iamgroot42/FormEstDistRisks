@@ -44,8 +44,8 @@ class CIFAR10(Dataset):
 
 	def ready_data(self):
 		self.load_data()
-		self.X_train = self.normalize(self.X_train.astype('float32'))
-		self.X_val   = self.normalize(self.X_val.astype('float32'))
+		self.X_train = self.normalize(self.X_train)
+		self.X_val   = self.normalize(self.X_val)
 		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
 		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
 		if self.shuffle_data:

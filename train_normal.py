@@ -1,5 +1,3 @@
-from sklearn.utils import shuffle
-
 import keras
 from keras.datasets import cifar10
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler
