@@ -52,10 +52,10 @@ class CIFAR10(Dataset):
 			self.X_train, self.Y_train = shuffle(self.X_train, self.Y_train)
 
 	def normalize(self, X):
-		return X / 255
+		return X.astype('float32') / 255
 
 	def un_normalize(self, X):
-		return X * 255
+		return (X * 255).astype('uint8')
 
 	def get_augmentations(self):
 		seq = iaa.Sequential([
@@ -64,7 +64,8 @@ class CIFAR10(Dataset):
 			iaa.Fliplr(0.1), # horizontally flip 10% of the images
 			iaa.Affine(rotate=(-2, 2)) # Rotate by 2 degrees
 		])
-		return seq
+		seq_det = seq.to_deterministic()
+		return seq_det
 
 	
 class RobustCIFAR10(CIFAR10):
