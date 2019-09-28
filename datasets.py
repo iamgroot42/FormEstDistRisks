@@ -59,13 +59,12 @@ class CIFAR10(Dataset):
 
 	def get_augmentations(self):
 		seq = iaa.Sequential([
-		iaa.Pad(4), # Pad all sides by 4
-			iaa.CropToFixedSize(32, 32), # Crop to fixed size
-			iaa.Fliplr(0.1), # horizontally flip 10% of the images
-			iaa.Affine(rotate=(-2, 2)) # Rotate by 2 degrees
+			iaa.Pad(4, keep_size=False),
+			iaa.CropToFixedSize(32, 32),
+			iaa.Fliplr(0.1),
+			iaa.Affine(rotate=(-2, 2))
 		])
-		seq_det = seq.to_deterministic()
-		return seq_det
+		return seq
 
 	
 class RobustCIFAR10(CIFAR10):
