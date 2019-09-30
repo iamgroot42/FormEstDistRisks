@@ -1,5 +1,3 @@
-from sklearn.utils import shuffle
-
 from keras.datasets import cifar10
 import imgaug.augmenters as iaa
 import keras
@@ -33,6 +31,12 @@ class Dataset:
 	def get_augmentations(self):
 		return None
 
+	def shuffle(self, X, Y):
+		assert len(X) == len(Y)
+		indices = np.random.permutation(len(X))
+		X, Y = X[indices], Y[indices]
+		return X, Y
+
 
 class CIFAR10(Dataset):
 	def __init__(self, shuffle_data=True):
@@ -47,9 +51,9 @@ class CIFAR10(Dataset):
 		self.X_train = self.normalize(self.X_train)
 		self.X_val   = self.normalize(self.X_val)
 		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
+		self.Y_val   = keras.utils.to_categorical(self.Y_val,   self.classes)
 		if self.shuffle_data:
-			self.X_train, self.Y_train = shuffle(self.X_train, self.Y_train)
+			self.X_train, self.Y_train = self.shuffle(self.X_train, self.Y_train)
 
 	def normalize(self, X):
 		return X.astype('float32') / 255
@@ -86,4 +90,4 @@ class RobustCIFAR10(CIFAR10):
 		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
 		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
 		if self.shuffle_data:
-			self.X_train, self.Y_train = shuffle(self.X_train, self.Y_train)
+			self.X_train, self.Y_train = self.shuffle(self.X_train, self.Y_train)

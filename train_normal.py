@@ -1,6 +1,6 @@
 import keras
 from keras.datasets import cifar10
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler
+from keras.callbacks import ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau
 
 import tensorflow as tf
 import numpy as np
@@ -11,8 +11,8 @@ import models, common, datasets
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-b','--batch_size', type=int, default=128, metavar='NUMBER', help='batch size(default: 128)')
-parser.add_argument('-e','--nb_epochs', type=int, default=150, metavar='NUMBER', help='epochs(default: 200)')
+parser.add_argument('-b','--batch_size', type=int, default=32, metavar='NUMBER', help='batch size(default: 32)')
+parser.add_argument('-e','--nb_epochs', type=int, default=200, metavar='NUMBER', help='epochs(default: 200)')
 parser.add_argument('-g','--save_here', type=str, default="./models/normally_trained", metavar='STRING', help='path where trained model should be saved')
 parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
 parser.add_argument('-r','--robust_data', type=bool, default=False, metavar='BOOLEAN', help='use robust data?')
@@ -45,7 +45,7 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 	if augment:
 		print(">> Using data augmentation")
 		augmentor = dataset.get_augmentations()
-		batch_size //= 2
+
 	# Get image generator (with data augmentation, if flag enabled)
 	gen = generator(X_train, Y_train, dataset, batch_size, augmentor)
 	# Train model
@@ -53,7 +53,8 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 		steps_per_epoch=len(X_train) // batch_size,
 		epochs=nb_epochs,
 		callbacks=[ModelCheckpoint(filepath=save_path + "_{epoch:02d}-{val_loss:.2f}.hd5", period=10), 
-			LearningRateScheduler(scheduler_wrap)],
+			LearningRateScheduler(scheduler_wrap),
+			ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)],
 		validation_data=(X_val, Y_val))
 
 	model.save(save_path +  "_final.h5")
