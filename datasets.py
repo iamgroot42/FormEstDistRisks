@@ -4,6 +4,9 @@ import keras
 
 import numpy as np
 
+# Update every time you add a new dataset
+dataset_list = [CIFAR10, RobustCIFAR10]
+
 
 class Dataset:
 	def __init__(self, classes, shape):
