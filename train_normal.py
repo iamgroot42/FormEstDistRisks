@@ -63,6 +63,7 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
 	if args.robust_data:
+		print(">> Using robust version of data")
 		dataset = datasets.RobustCIFAR10()
 	else:
 		dataset = datasets.CIFAR10()

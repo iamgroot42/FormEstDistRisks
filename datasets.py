@@ -4,9 +4,6 @@ import keras
 
 import numpy as np
 
-# Update every time you add a new dataset
-dataset_list = [CIFAR10, RobustCIFAR10]
-
 
 class Dataset:
 	def __init__(self, classes, shape):
@@ -44,6 +41,7 @@ class Dataset:
 class CIFAR10(Dataset):
 	def __init__(self, shuffle_data=True):
 		self.shuffle_data = shuffle_data
+		self.name = "CIFAR10"
 		super().__init__(classes=10, shape=(32, 32, 3))
 
 	def load_data(self):
@@ -77,6 +75,7 @@ class CIFAR10(Dataset):
 class RobustCIFAR10(CIFAR10):
 	def __init__(self, path="./datasets/robust_cifar_data.npz", shuffle_data=True):
 		self.path = path
+		self.name = "RobustCIFAR10"
 		super().__init__(shuffle_data=shuffle_data)
 
 	def load_data(self):
@@ -86,11 +85,13 @@ class RobustCIFAR10(CIFAR10):
 			return np.concatenate(y, axis=0)
 
 		self.X_train, self.X_val = unroll(data['X_train']), unroll(data['X_val'])
-		self.Y_train, self.Y_val = unroll(data['Y_train']), unroll(data['Y_val'])
+		self.Y_train, self.Y_val = data['Y_train'], data['Y_val']
 
-	def ready_data(self, ):
+	def ready_data(self):
 		self.load_data()
-		self.Y_train = keras.utils.to_categorical(self.Y_train, self.classes)
-		self.Y_val   = keras.utils.to_categorical(self.Y_val, self.classes)
 		if self.shuffle_data:
 			self.X_train, self.Y_train = self.shuffle(self.X_train, self.Y_train)
+
+
+# Update every time you add a new dataset
+dataset_list = [CIFAR10, RobustCIFAR10]
