@@ -9,7 +9,7 @@ import argparse
 import sys
 
 from sklearn.utils import shuffle
-import models, common, datasets
+import models, common, datasets, attacks, helpers
 
 
 parser = argparse.ArgumentParser()
@@ -17,18 +17,8 @@ parser.add_argument('-b','--batch_size', type=int, default=32, metavar='NUMBER',
 parser.add_argument('-e','--nb_epochs', type=int, default=200, metavar='NUMBER', help='epochs(default: 200)')
 parser.add_argument('-g','--save_here', type=str, default="./models/adversarialy_trained", metavar='STRING', help='path where trained model should be saved')
 parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
+parser.add_argument('-r','--robust_data', type=bool, default=False, metavar='BOOLEAN', help='use robust data?')
 args = parser.parse_args()
-
-
-def get_attack(wrap, session):
-	attack = MadryEtAl
-	attack_params = {'clip_min': 0, 'clip_max': 1}
-	attack_object = attack(wrap, sess=session)
-	attack_params['nb_iter']  = 7
-	attack_params['ord']      = 2
-	attack_params['eps']      = 0.5
-	attack_params['eps_iter'] = attack_params['eps'] / 5
-	return attack_object, attack_params
 
 
 def train_model(dataset, batch_size, nb_epochs, augment, save_path):
@@ -39,7 +29,8 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 	session.run(init)
 
 	wrap = KerasModelWrapper(model)
-	attack_object, attack_params = get_attack(wrap, session)
+	sess = keras.backend.get_session()
+	attack = attacks.MadryEtAl(dataset, wrap, sess)
 
 	(X_train, Y_train), (X_val, Y_val) = dataset.get_data()
 	if augment:
@@ -63,9 +54,13 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 				y_clean_use = np.concatenate([y_clean, y_clean], axis=0)
 			else:
 				x_clean_use, y_clean_use = x_clean, y_clean
-			x_adv = attack_object.generate_np(x_clean_use, **attack_params)
+			x_adv   = attack.attack_data(x_clean_use)
 			x_batch = np.concatenate([x_clean_use, x_adv], axis=0)
 			y_batch = np.concatenate([y_clean_use, y_clean_use], axis=0)
+
+			# helpers.save_image(x_clean_use[0], "./clean.png")
+			# helpers.save_image(x_adv[0],         "./adv.png")
+			# exit()
 
 			# Train on batch
 			model.train_on_batch(x_batch, y_batch)
@@ -91,5 +86,9 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
-	dataset = datasets.CIFAR10()
+	if args.robust_data:
+		print(">> Using robust version of data")
+		dataset = datasets.RobustCIFAR10()
+	else:
+		dataset = datasets.CIFAR10()
 	train_model(dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)
