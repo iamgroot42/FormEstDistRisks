@@ -24,8 +24,9 @@ if __name__ == "__main__":
 	wrap = KerasModelWrapper(model)
 	attack = attacks.MadryEtAl(dataset, wrap, sess)
 
-	weak_params   = {"eps": 0.25, "eps_iter": 0.05, "nb_iter": 2500}
-	strong_params = {"eps": 0.5,  "eps_iter": 0.1,  "nb_iter": 2500}
+	#weak_params   = {"eps": 0.25, "eps_iter": 0.05, "nb_iter": 2500}
+	#strong_params = {"eps": 0.5,  "eps_iter": 0.1,  "nb_iter": 2500}
+	weak_params   = None
 	acc, adv_acc = helpers.benchmarking(model, dataset, attack, bs=args.batch_size, cp=weak_params)
 	print(">> Test accuracy on original data : %f" % acc)
 	print(">> Test accuracy on adversarial data : %f" % adv_acc)

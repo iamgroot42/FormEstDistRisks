@@ -21,6 +21,7 @@ parser.add_argument('-m','--model', type=str, metavar='STRING', help='batch size
 parser.add_argument('-b','--batch_size', type=int, default=128, metavar='NUMBER', help='batch size (default: 128)')
 parser.add_argument('-g','--save_here', type=str, default="./datasets/robust_cifar_data.npz", metavar='STRING', help='path where generated data should be saved')
 parser.add_argument('-f','--fake_relu', type=bool, default=True, metavar='BOOLEAN', help='use fake-relu for last relu activation layer?')
+parser.add_argument('-d','--dataset_path', type=str, default="", metavar='STRING', help='path to dataset (blank implies normal dataset version)')
 args = parser.parse_args()
 
 
@@ -107,19 +108,18 @@ def fake_relu_activation(x):
 	return result, custom_grad
 
 
-def cifar_to_robust(model, fake_relu, batch_size):
+def normal_to_robust(dataset, model, fake_relu, batch_size):
 	feature_extractor = Model(model.inputs, model.layers[-3].output) # Almost always true, since last 2 layers are softmax & dense(classes)
 	if fake_relu:
 		update_layer_activation(feature_extractor, fake_relu_activation, -2)
-	dataset = datasets.CIFAR10()
 	(X_train, y_train), (X_val, y_val) = dataset.get_data()
 	robust_train = construct_robust_dataset(feature_extractor, X_train, sample_from_data, batch_size)
-	robust_val   = construct_robust_dataset(feature_extractor, X_val, sample_from_data, batch_size)
+	robust_val   = construct_robust_dataset(feature_extractor, X_val,   sample_from_data, batch_size)
 	return (robust_train, y_train, robust_val, y_val)
 
 
-def create_and_save_robust_cifar(model, path, fake_relu, batch_size):
-	(X_train, Y_train, X_val, Y_val) = cifar_to_robust(model, fake_relu, batch_size)
+def create_and_save_robust_dataset(dataset, model, path, fake_relu, batch_size):
+	(X_train, Y_train, X_val, Y_val) = normal_to_robust(dataset, model, fake_relu, batch_size)
 	np.savez(path, X_train=X_train, Y_train=Y_train, X_val=X_val, Y_val=Y_val)
 
 
@@ -129,6 +129,12 @@ def update_layer_activation(model, activation, index=-1):
 
 
 if __name__ == "__main__":
+	if len(args.dataset_path) == 0:
+		print(">> Using normal CIFAR-10 dataset")
+		dataset = datasets.CIFAR10()
+	else:
+		dataset = datasets.RobustCIFAR10(args.dataset_path)
+		print(">> Using robust version of CIFAR-10, loaded from %s" % args.dataset_path)
 	common.conserve_gpu_memory()
 	model = load_model(args.model)
-	create_and_save_robust_cifar(model, args.save_here, args.fake_relu, args.batch_size)
+	create_and_save_robust_dataset(dataset, model, args.save_here, args.fake_relu, args.batch_size)
