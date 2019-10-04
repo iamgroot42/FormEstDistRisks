@@ -18,6 +18,7 @@ parser.add_argument('-e','--nb_epochs', type=int, default=200, metavar='NUMBER',
 parser.add_argument('-g','--save_here', type=str, default="./models/adversarialy_trained", metavar='STRING', help='path where trained model should be saved')
 parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
 parser.add_argument('-d','--datasets', type=str, default="", metavar='STRING', help='paths to folder containing datasets')
+parser.add_argument('-r','--ratios', type=str, default="", metavar='STRING', help='comma separated list of ratios to be used to sample data while training')
 args = parser.parse_args()
 
 
@@ -93,6 +94,12 @@ if __name__ == "__main__":
 		print(">> Loaded data from %s" % full_path)
 		ds.append(datasets.RobustCIFAR10(path=full_path))
 
-	sample_ratios = [0.2, 1.0]
+	if len(args.ratios) == 0:
+		sample_ratios = None
+		print("Using all samples from all datasets")
+	else:
+		sample_ratios = [float(x) for x in args.ratios.split(',')]
+		print("Using ratios : ", sample_ratios)
+
 	effective_dataset = datasets.CombinedDatasets(ds, sample_ratios=sample_ratios)
 	train_model(effective_dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)
