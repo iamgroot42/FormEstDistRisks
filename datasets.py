@@ -113,6 +113,10 @@ class CombinedDatasets(Dataset):
 		self.name = data_sets[0].name
 		self.data_sets = data_sets
 		super().__init__(self.data_sets[0].classes, self.data_sets[0].sample_shape, shuffle_data)
+		# Over-ride functions like normalize, augmentation
+		self.normalize         = self.data_sets[0].normalize
+		self.un_normalize      = self.data_sets[0].un_normalize
+		self.get_augmentations = self.data_sets[0].get_augmentations
 
 	def sample_data(self, X, Y, sample_ratio):
 		indices = np.random.permutation(len(X))[:int(sample_ratio * len(X))]
@@ -136,3 +140,4 @@ class CombinedDatasets(Dataset):
 
 # Update every time you add a new dataset
 dataset_list = [CIFAR10, RobustCIFAR10]
+

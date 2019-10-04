@@ -35,7 +35,7 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 	(X_train, Y_train), (X_val, Y_val) = dataset.get_data()
 	if augment:
 		print(">> Using data augmentation")
-		augmentor = dataset.get_augmentations() 
+		augmentor = dataset.get_augmentations()
 
 	for i in range(nb_epochs):
 		batch_no = 1
@@ -93,6 +93,6 @@ if __name__ == "__main__":
 		print(">> Loaded data from %s" % full_path)
 		ds.append(datasets.RobustCIFAR10(path=full_path))
 
-	sample_ratios = [1.0, 1.0]
+	sample_ratios = [0.2, 1.0]
 	effective_dataset = datasets.CombinedDatasets(ds, sample_ratios=sample_ratios)
-	train_model(datasets, args.batch_size, args.nb_epochs, args.augment, args.save_here)
+	train_model(effective_dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)
