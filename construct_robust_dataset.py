@@ -34,7 +34,6 @@ class CustomPGD:
 		self.sess = K.get_session()
 
 	def modified_loss(self, target_rep, x):
-		# Implement fake-relu (usecase???)
 		rep = self.model(x)
 		loss = tf.norm(rep - target_rep, ord='euclidean', axis=-1) / tf.norm(target_rep, ord='euclidean', axis=-1)
 		return loss
@@ -60,7 +59,7 @@ class CustomPGD:
 			eta = adv_x - x
 			# eta = clip_eta(eta, 2, self.eps)
 			adv_x = tf.clip_by_value(x + eta, 0, 1)
-			
+
 			# Keep track of best loss and perturbation
 			best_advx =  tf.where(tf.less(loss, best_loss), adv_x, best_advx)
 			best_loss =  tf.where(tf.less(loss, best_loss), loss,  best_loss)

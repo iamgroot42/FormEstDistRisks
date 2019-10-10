@@ -18,6 +18,7 @@ parser.add_argument('-e','--nb_epochs', type=int, default=200, metavar='NUMBER',
 parser.add_argument('-g','--save_here', type=str, default="./models/adversarialy_trained", metavar='STRING', help='path where trained model should be saved')
 parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
 parser.add_argument('-r','--robust_data', type=bool, default=False, metavar='BOOLEAN', help='use robust data?')
+parser.add_argument('-p','--robust_path', type=str, default="./datasets/robust_cifar_data.npz", metavar='STRING', help='path where D_r is stored')
 args = parser.parse_args()
 
 
@@ -87,8 +88,8 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 if __name__ == "__main__":
 	common.conserve_gpu_memory()
 	if args.robust_data:
-		print(">> Using robust version of data")
-		dataset = datasets.RobustCIFAR10()
+		print(">> Using robust version of data, loaded from %s" % args.robust_path)
+		dataset = datasets.RobustCIFAR10(args.robust_path)
 	else:
 		dataset = datasets.CIFAR10()
 	train_model(dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)
