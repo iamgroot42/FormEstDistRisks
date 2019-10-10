@@ -22,6 +22,7 @@ class Attack:
 
 	def read_params(self):
 		with open(self.params_path, 'r') as f:
+			print("[Attack] Loading params from %s" % self.params_path)
 			self.attack_params  = json.load(f)
 
 	def attack_data(self, data, custom_params=None):

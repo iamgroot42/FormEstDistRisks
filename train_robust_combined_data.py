@@ -19,10 +19,11 @@ parser.add_argument('-g','--save_here', type=str, default="./models/adversarialy
 parser.add_argument('-a','--augment', type=bool, default=False, metavar='BOOLEAN', help='use augmentation while training data')
 parser.add_argument('-d','--datasets', type=str, default="", metavar='STRING', help='paths to folder containing datasets')
 parser.add_argument('-r','--ratios', type=str, default="", metavar='STRING', help='comma separated list of ratios to be used to sample data while training')
+parser.add_argument('-p','--attack_params', type=str, default="./params/robust_train.params", metavar='STRING', help='path to params file for attack')
 args = parser.parse_args()
 
 
-def train_model(dataset, batch_size, nb_epochs, augment, save_path):
+def train_model(dataset, batch_size, nb_epochs, augment, save_path, attack_params):
 	model, scheduler = models.ResNet50(input_shape=dataset.sample_shape, classes=dataset.classes)
 
 	session = keras.backend.get_session()
@@ -31,7 +32,7 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 
 	wrap = KerasModelWrapper(model)
 	sess = keras.backend.get_session()
-	attack = attacks.MadryEtAl(dataset, wrap, sess)
+	attack = attacks.MadryEtAl(dataset, wrap, sess, attack_params)
 
 	(X_train, Y_train), (X_val, Y_val) = dataset.get_data()
 	if augment:
@@ -42,8 +43,10 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 		batch_no = 1
 		train_loss, train_acc = 0, 0
 		adv_loss, adv_acc = 0, 0
+
 		if scheduler:
 			keras.backend.set_value(model.optimizer.lr, scheduler(i))
+
 		# Shuffle data
 		X_train, Y_train = dataset.shuffle(X_train, Y_train)
 		for j in range(0, len(X_train), batch_size):
@@ -59,12 +62,6 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 			x_batch = np.concatenate([x_clean_use, x_adv], axis=0)
 			y_batch = np.concatenate([y_clean_use, y_clean_use], axis=0)
 
-			# helpers.save_image(x_clean_use[0], "./clean.png")
-			# helpers.save_image(x_adv[0],         "./adv.png")
-			# exit()
-
-			# Train on batch
-			model.train_on_batch(x_batch, y_batch)
 			# Evauate metrics on perturbed data
 			adv_metrics   = model.evaluate(x_adv, y_clean_use, verbose=0, batch_size=batch_size)
 			adv_loss     += adv_metrics[0]
@@ -73,13 +70,25 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 			train_metrics   = model.evaluate(x_clean_use, y_clean_use, verbose=0, batch_size=batch_size)
 			train_loss     += train_metrics[0]
 			train_acc      += train_metrics[1]
-			sys.stdout.write("Epoch %d: %d / %d : Clean loss: %f, Clean acc: %f, Adv loss: %f, Adv acc: %f  \r" % (i+1, batch_no, 1 + len(X_train)//batch_size, train_loss/(batch_no), train_acc/(batch_no), adv_loss/(batch_no), adv_acc/(batch_no)))
+
+			# Train on batch
+			model.train_on_batch(x_batch, y_batch)
+
+			sys.stdout.write("Epoch %d: %d / %d : Clean loss: %f, Clean acc: %f, Adv loss: %f, Adv acc: %f \r" % (i+1,
+				batch_no, 1 + len(X_train)//batch_size,
+				train_loss/batch_no, train_acc/batch_no,
+				adv_loss/batch_no, adv_acc/batch_no))
 			sys.stdout.flush()
 			batch_no += 1
+
+			# helpers.save_image(x_clean_use[0], "./clean.png")
+			# helpers.save_image(x_adv[0],         "./adv.png")
+			# exit()
+
 		val_metrics = model.evaluate(X_val, Y_val, batch_size=batch_size, verbose=0)
 		print()
 		print(">> Val loss: %f, Val acc: %f\n"% (val_metrics[0], val_metrics[1]))
-		if i % 10 == 9:
+		if i % 20 == 19:
 			model.save(save_path + "_%d.h5" % (i + 1))
 
 	model.save(save_path +  "_final.h5")
@@ -102,4 +111,4 @@ if __name__ == "__main__":
 		print("Using ratios : ", sample_ratios)
 
 	effective_dataset = datasets.CombinedDatasets(ds, sample_ratios=sample_ratios)
-	train_model(effective_dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here)
+	train_model(effective_dataset, args.batch_size, args.nb_epochs, args.augment, args.save_here, args.attack_params)

@@ -102,13 +102,13 @@ class RobustCIFAR10(CIFAR10):
 class CombinedDatasets(Dataset):
 	def __init__(self, data_sets, shuffle_data=True, sample_ratios=None):
 		if len(data_sets) < 2:
-			raise ValueError("Only one dataset passed. Use this wrapper class for >=2 datasets")
+			raise ValueError("[Dataset] Only one dataset passed. Use this wrapper class for >=2 datasets")
 		if self.greatest_common_class(data_sets) != type(data_sets[0]):
-			raise TypeError("All datasets should be children/copies of the first dataset (variations)")
+			raise TypeError("[Dataset] All datasets should be children/copies of the first dataset (variations)")
 		if sample_ratios:
 			assert len(sample_ratios) == len(data_sets), "Sample ratios should be given for all datasets, if default not used"
 			if max(sample_ratios) > 1 or min(sample_ratios) < 0:
-				raise ValueError("Sample ratios must be valid.")
+				raise ValueError("[Dataset] Sample ratios must be valid.")
 		self.sample_ratios = sample_ratios
 		self.name = data_sets[0].name
 		self.data_sets = data_sets
@@ -135,6 +135,11 @@ class CombinedDatasets(Dataset):
 
 		self.X_train = np.concatenate(self.X_train, axis=0)
 		self.Y_train = np.concatenate(self.Y_train, axis=0)
+
+		if self.shuffle_data:
+			self.X_train, self.Y_train = self.shuffle(self.X_train, self.Y_train)
+
+		print("[Dataset] Training data has %d total samples" % len(self.Y_train))
 		_, (self.X_val, self.Y_val) = self.data_sets[0].get_data()
 
 
