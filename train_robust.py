@@ -31,7 +31,8 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 
 	wrap = KerasModelWrapper(model)
 	sess = keras.backend.get_session()
-	attack = attacks.MadryEtAl(dataset, wrap, sess)
+	# attack = attacks.MadryEtAl(dataset, wrap, sess)
+	attack = attacks.MadryEtAl_Inf(dataset, wrap, sess)
 
 	(X_train, Y_train), (X_val, Y_val) = dataset.get_data()
 	if augment:
@@ -58,10 +59,6 @@ def train_model(dataset, batch_size, nb_epochs, augment, save_path):
 			x_adv   = attack.attack_data(x_clean_use)
 			x_batch = np.concatenate([x_clean_use, x_adv], axis=0)
 			y_batch = np.concatenate([y_clean_use, y_clean_use], axis=0)
-
-			# helpers.save_image(x_clean_use[0], "./clean.png")
-			# helpers.save_image(x_adv[0],         "./adv.png")
-			# exit()
 
 			# Train on batch
 			model.train_on_batch(x_batch, y_batch)

@@ -20,7 +20,7 @@
 		"MadryEtAl_Inf": {
 			"clip_min": 0,
 			"clip_max": 1,
-			"nb_iter": 5,
+			"nb_iter": 10,
 			"eps": 0.1
 		},
 		"SpatialTransformation": {
