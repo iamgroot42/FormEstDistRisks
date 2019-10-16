@@ -11,6 +11,20 @@
 		"FGSM": {
 			"clip_min": 0,
 			"clip_max": 1
+		},
+		"SparseL1Descent": {
+			"clip_min": 0,
+			"clip_max": 1,
+			"grad_sparsity": 95
+		},
+		"MadryEtAl_Inf": {
+			"clip_min": 0,
+			"clip_max": 1,
+			"nb_iter": 5,
+			"eps": 0.1
+		},
+		"SpatialTransformation": {
+			"black_border_size": 0
 		}
 	} 
 }

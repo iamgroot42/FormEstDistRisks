@@ -40,6 +40,7 @@ class Attack:
 			if mini_batch.shape[0] == 0:
 				break
 			adv_x_mini = self.attack_data(mini_batch, custom_params)
+
 			if perturbed_X.shape[0] != 0:
 				perturbed_X = np.append(perturbed_X, adv_x_mini, axis=0)
 			else:
@@ -53,11 +54,35 @@ class MadryEtAl(Attack):
 		super().__init__(attack=attacks.MadryEtAl, dataset=dataset, wrap=wrap, session=session, params_path=params_path)
 
 
+class MadryEtAl_Inf(Attack):
+	def __init__(self, dataset, wrap, session, params_path="./params/robust_train.params"):
+		self.name = "MadryEtAl_Inf"
+		super().__init__(attack=attacks.MadryEtAl, dataset=dataset, wrap=wrap, session=session, params_path=params_path)
+
+
 class FGSM(Attack):
 	def __init__(self, dataset, wrap, session, params_path="./params/robust_train.params"):
 		self.name = "FGSM"
 		super().__init__(attack=attacks.FGSM, dataset=dataset, wrap=wrap, session=session, params_path=params_path)
 
 
+class SparseL1Descent(Attack):
+	def __init__(self, dataset, wrap, session, params_path="./params/robust_train.params"):
+		self.name = "SparseL1Descent"
+		super().__init__(attack=attacks.SparseL1Descent, dataset=dataset, wrap=wrap, session=session, params_path=params_path)
+
+
+class SpatialTransformation(Attack):
+	def __init__(self, dataset, wrap, session, params_path="./params/robust_train.params"):
+		self.name = "SpatialTransformation"
+		super().__init__(attack=attacks.SpatialTransformationMethod, dataset=dataset, wrap=wrap, session=session, params_path=params_path)
+
+	# Data needs to be cast into uint before performing attack
+	def attack_data(self, data, custom_params=None):
+		int_data = self.dataset.un_normalize(data)
+		attacked_data = super().attack_data(int_data, custom_params)
+		return self.dataset.normalize(attacked_data)
+
+
 # Update every time you add a new attack
-attack_list = [MadryEtAl, FGSM]
+attack_list = [MadryEtAl, FGSM, SparseL1Descent, MadryEtAl_Inf, SpatialTransformation]
