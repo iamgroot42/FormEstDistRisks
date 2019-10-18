@@ -4,3 +4,4 @@ models/*
 *.png
 *.npz
 datasets/*
+new_models/*
