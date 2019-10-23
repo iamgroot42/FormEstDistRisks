@@ -5,3 +5,4 @@ models/*
 *.npz
 datasets/*
 new_models/*
+.ipynb_checkpoints/*
