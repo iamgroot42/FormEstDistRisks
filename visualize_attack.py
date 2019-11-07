@@ -1,20 +1,28 @@
 import torch as ch
-from robustness.datasets import CIFAR
+from robustness.datasets import CIFAR, RobustCIFAR
+import sys
 
-ds = CIFAR()
+
+model_path = sys.argv[2]
+data_path = sys.argv[1]
+
+#ds = CIFAR()
+ds = RobustCIFAR(data_path)
 
 from robustness.model_utils import make_and_restore_model
 model, _ = make_and_restore_model(arch='resnet50', dataset=ds,
-             resume_path="./models/cifar_nat.pt")
+             resume_path=model_path)
 model.eval()
 
-_, test_loader = ds.make_loaders(workers=10, batch_size=8)
-_, (im, label) = next(enumerate(test_loader))
+train_loader, _ = ds.make_loaders(workers=10, batch_size=8)
+_, (im, label) = next(enumerate(train_loader))
+
+eps = 16/255 #1 #0.5
 
 kwargs = {
-    'constraint':'1',
-    'eps': 10,
-    'step_size': 1.0,
+    'constraint':'inf',
+    'eps': eps,
+    'step_size': 2.5 * eps / 20,
     'iterations': 20,
     'do_tqdm': True,
 }
@@ -34,3 +42,5 @@ show_image_row([im.cpu(), im_adv.cpu()],
          tlist=[[CLASS_DICT['CIFAR'][int(t)] for t in l] for l in [label, label_pred]],
          fontsize=18,
          filename='./adversarial_example_CIFAR.png')
+
+
