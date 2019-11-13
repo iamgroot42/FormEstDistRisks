@@ -13,6 +13,7 @@ model_kwargs = {
 }
 
 model, _ = make_and_restore_model(**model_kwargs)
+model.eval()
 
 attack_args = []
 # L-1 (SLIDE) attack
@@ -52,6 +53,7 @@ def make_labels_binary(labels, target_class, reps):
 classwise_p_useful = {}
 classwise_gamma_useful = {i:{} for i in range(len(attack_args))}
 num_samples = 0
+n_times = 10
 
 precompute_bs = 128
 _, test_loader = ds.make_loaders(batch_size=precompute_bs, workers=8, only_val=True)
@@ -81,6 +83,9 @@ all_std  = np.sqrt(all_var)
 ch_mean = ch.from_numpy(all_mean).cuda()
 ch_std  = ch.from_numpy(all_std).cuda()
 
+print("Mean: ", all_mean)
+print("Std: ", all_std)
+
 for (im, label) in test_loader:
 	num_samples += im.shape[0]
 	target_label = (label + ch.randint_like(label, high=ds.num_classes - 1)) % ds.num_classes
@@ -89,7 +94,7 @@ for (im, label) in test_loader:
 	with ch.no_grad():
 		(_, rep), _ = model(im.cuda(), with_latent=True)
 		# Normalize to zero mean, unit variance
-		rep = (rep - ch_mean) / ch_std
+		# rep = (rep - ch_mean) / ch_std
 
 	# Consider N binary classification tasks (1-vs-all scenarios)
 	for i in range(ds.num_classes):
@@ -99,16 +104,21 @@ for (im, label) in test_loader:
 		# Get perturbed images
 		adv_out, adv_im = model(im, target_label, make_adv=True, **attack_arg)
 		with ch.no_grad():
-			# Get representation for these images
-			# Use these to identify gamma-robustly useful features
-			(_, rep), _ = model(adv_im, with_latent=True)
-			# Normalize to zero mean, unit variance
-			rep = (rep - ch_mean) / ch_std
+			reps = []
+			for _ in range(n_times):
+				# Get representation for these images
+				# Use these to identify gamma-robustly useful features
+				(_, rep), _ = model(adv_im, with_latent=True)
+				# Normalize to zero mean, unit variance
+				# rep = (rep - ch_mean) / ch_std
+				reps.append(rep)
 
+			reps = ch.stack(reps).cuda()
 			# Consider N binary classification tasks (1-vs-all scenarios)
 			for i in range(ds.num_classes):
 				binary_target_label = make_labels_binary(target_label, i, rep.shape[1])
-				classwise_gamma_useful[j][i] = ch.sum(rep * binary_target_label.cuda(), axis=0) + classwise_gamma_useful[j].get(i, ch.zeros_like(rep[0]).cuda())
+				min_correlation, _ = ch.min(reps * binary_target_label.cuda().unsqueeze_(0).repeat(n_times, 1, 1), axis=0)
+				classwise_gamma_useful[j][i] = ch.sum(min_correlation, axis=0) + classwise_gamma_useful[j].get(i, ch.zeros_like(rep[0]).cuda())
 
 for i in range(ds.num_classes):
 	classwise_p_useful[i]     /= num_samples
