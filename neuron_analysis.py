@@ -30,7 +30,7 @@ attack_args.append({
 attack_args.append({
 	'constraint':'2',
 	'eps':0.5,
-	'step_size': 0.5 * 2.5 / 20,
+	'step_size': (0.5 * 2.5) / 20,
 	'iterations': 20, 
 	'do_tqdm': False,
 	'targeted': True,
@@ -40,7 +40,7 @@ attack_args.append({
 attack_args.append({
 	'constraint':'inf',
 	'eps':8/255,
-	'step_size': 8/255 * 2.5 / 20,
+	'step_size': ((8/255) * 2.5) / 20,
 	'iterations': 20, 
 	'do_tqdm': False,
 	'targeted': True,
@@ -55,36 +55,30 @@ classwise_gamma_useful = {i:{} for i in range(len(attack_args))}
 num_samples = 0
 n_times = 10
 
-precompute_bs = 128
-_, test_loader = ds.make_loaders(batch_size=precompute_bs, workers=8, only_val=True)
-all_means, all_vars = [], []
-num_batches = 0
-# Calculate emperical mean, variance to normalize representations (before calculating correlations)
-for (im, label) in test_loader:
+batch_size = 32
+all_reps = []
+train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
+# Calculate emperical mean, variance to normalize representations
+# Sample from train set
+for (im, label) in train_loader:
 	with ch.no_grad():
 		(_, rep), _ = model(im.cuda(), with_latent=True)
-	rep_cpu = rep.cpu().numpy()
-	all_means.append(np.mean(rep_cpu, axis=0))
-	all_vars.append(np.var(rep_cpu, axis=0))
-	num_batches += 1
+	all_reps.append(rep)
+# Sample from test set
+for (im, label) in val_loader:
+	with ch.no_grad():
+		(_, rep), _ = model(im.cuda(), with_latent=True)
+	all_reps.append(rep)
 
+all_reps = ch.cat(all_reps)
+ch_mean = ch.mean(all_reps, dim=0)
+ch_std = ch.std(all_reps, dim=0)
 
 # Re-define test loader
-_, test_loader = ds.make_loaders(batch_size=128, workers=8, only_val=True)
+_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)
 
-# Combine their variations together using this formula : https://stats.stackexchange.com/questions/10441/how-to-calculate-the-variance-of-a-partition-of-variables
-all_var  = np.sum(all_means, axis=0)
-all_var *= ((num_batches - 1) * precompute_bs)/(precompute_bs - 1)
-all_var += np.sum(all_vars, axis=0)
-all_var *= (precompute_bs - 1) / (precompute_bs * num_batches - 1)
-all_mean = np.mean(all_means, axis=0)
-all_std  = np.sqrt(all_var)
-# Convert to Pytorch tensors
-ch_mean = ch.from_numpy(all_mean).cuda()
-ch_std  = ch.from_numpy(all_std).cuda()
-
-print("Mean: ", all_mean)
-print("Std: ", all_std)
+print("Mean:", ch_mean)
+print("Std: ",   ch_std)
 
 for (im, label) in test_loader:
 	num_samples += im.shape[0]
@@ -94,7 +88,7 @@ for (im, label) in test_loader:
 	with ch.no_grad():
 		(_, rep), _ = model(im.cuda(), with_latent=True)
 		# Normalize to zero mean, unit variance
-		# rep = (rep - ch_mean) / ch_std
+		rep = (rep - ch_mean) / ch_std
 
 	# Consider N binary classification tasks (1-vs-all scenarios)
 	for i in range(ds.num_classes):
@@ -110,7 +104,7 @@ for (im, label) in test_loader:
 				# Use these to identify gamma-robustly useful features
 				(_, rep), _ = model(adv_im, with_latent=True)
 				# Normalize to zero mean, unit variance
-				# rep = (rep - ch_mean) / ch_std
+				rep = (rep - ch_mean) / ch_std
 				reps.append(rep)
 
 			reps = ch.stack(reps).cuda()
