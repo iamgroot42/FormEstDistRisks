@@ -21,7 +21,7 @@ model, _ = make_and_restore_model(**model_kwargs)
 model.eval()
 
 batch_size = 1024
-_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)
+_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 # Extract final weights matrix from model
 weights = None

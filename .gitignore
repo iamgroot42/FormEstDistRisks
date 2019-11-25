@@ -8,3 +8,4 @@ new_models/*
 .ipynb_checkpoints/*
 neurons_*/
 *.txt
+GHM*

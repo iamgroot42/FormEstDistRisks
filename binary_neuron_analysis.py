@@ -84,6 +84,12 @@ _, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True
 print("Mean:", ch_mean)
 print("Std: ",   ch_std)
 
+# Dump mean, std vectors for later use:
+np_mean = ch_mean.cpu().numpy()
+np_std  = ch_std.cpu().numpy()
+np.save("feature_mean", np_mean)
+np.save("feature_std",   np_std)
+
 for (im, label) in test_loader:
 	num_samples += im.shape[0]
 	target_label = (label + ch.randint_like(label, high=ds.num_classes - 1)) % ds.num_classes
