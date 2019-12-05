@@ -56,7 +56,7 @@ def make_labels_pos_neg(labels, reps):
 num_samples = 0
 n_times = 20
 
-batch_size = 128
+batch_size = 64
 all_reps = []
 train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
 # Calculate emperical mean, variance to normalize representations
@@ -79,7 +79,7 @@ p_useful = ch.zeros_like(ch_mean).cuda()
 gamma_useful = {i:ch.zeros_like(ch_mean).cuda() for i in range(len(attack_args))}
 
 # Re-define test loader
-_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)
+_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 print("Mean:", ch_mean)
 print("Std: ",   ch_std)
