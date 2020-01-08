@@ -1,18 +1,15 @@
 import torch as ch
-from robustness.datasets import GenericBinary
+from robustness.datasets import CIFAR
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
 
-ds_path    = "./datasets/cifar_binary/animal_vehicle/"
-model_path = sys.argv[1]
-
-ds = GenericBinary(ds_path)
+ds = CIFAR()
 
 model_kwargs = {
 	'arch': 'resnet50',
 	'dataset': ds,
-	'resume_path': model_path
+	'resume_path': sys.argv[1]
 }
 
 model, _ = make_and_restore_model(**model_kwargs)
@@ -50,13 +47,15 @@ attack_args.append({
 	'use_best': False
 })
 
-def make_labels_pos_neg(labels, reps):
-	return (2 * (labels == 0) - 1).unsqueeze_(-1).repeat([1, reps])
+def make_labels_binary(labels, target_class, reps):
+	return (2 * (labels == target_class) - 1).unsqueeze_(-1).repeat([1, reps])
 
+classwise_p_useful = {}
+classwise_gamma_useful = {i:{} for i in range(len(attack_args))}
 num_samples = 0
-n_times = 20
+n_times = 10
 
-batch_size = 64
+batch_size = 32
 all_reps = []
 train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
 # Calculate emperical mean, variance to normalize representations
@@ -72,23 +71,14 @@ for (im, label) in val_loader:
 	all_reps.append(rep)
 
 all_reps = ch.cat(all_reps)
-ch_mean  = ch.mean(all_reps, dim=0)
-ch_std   = ch.std(all_reps, dim=0)
-
-p_useful = ch.zeros_like(ch_mean).cuda()
-gamma_useful = {i:ch.zeros_like(ch_mean).cuda() for i in range(len(attack_args))}
+ch_mean = ch.mean(all_reps, dim=0)
+ch_std = ch.std(all_reps, dim=0)
 
 # Re-define test loader
-_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
+_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)
 
 print("Mean:", ch_mean)
 print("Std: ",   ch_std)
-
-# Dump mean, std vectors for later use:
-np_mean = ch_mean.cpu().numpy()
-np_std  = ch_std.cpu().numpy()
-np.save("feature_mean", np_mean)
-np.save("feature_std",   np_std)
 
 for (im, label) in test_loader:
 	num_samples += im.shape[0]
@@ -101,8 +91,9 @@ for (im, label) in test_loader:
 		rep = (rep - ch_mean) / ch_std
 
 	# Consider N binary classification tasks (1-vs-all scenarios)
-	binary_label = make_labels_pos_neg(label, rep.shape[1])
-	p_useful += ch.sum(rep * binary_label.cuda(), axis=0)
+	for i in range(ds.num_classes):
+		binary_label = make_labels_binary(label, i, rep.shape[1])
+		classwise_p_useful[i] = ch.sum(rep * binary_label.cuda(), axis=0) + classwise_p_useful.get(i, ch.zeros_like(rep[0]).cuda())
 	for j, attack_arg in enumerate(attack_args):
 		# Get perturbed images
 		adv_out, adv_im = model(im, target_label, make_adv=True, **attack_arg)
@@ -117,24 +108,28 @@ for (im, label) in test_loader:
 				reps.append(rep)
 
 			reps = ch.stack(reps).cuda()
-			
-			binary_target_label = make_labels_pos_neg(target_label, rep.shape[1])
-			min_correlation, _  = ch.min(reps * binary_target_label.cuda().unsqueeze_(0).repeat(n_times, 1, 1), axis=0)
-			gamma_useful[j]     = ch.sum(min_correlation, axis=0)
+			# Consider N binary classification tasks (1-vs-all scenarios)
+			for i in range(ds.num_classes):
+				binary_target_label = make_labels_binary(target_label, i, rep.shape[1])
+				min_correlation, _ = ch.min(reps * binary_target_label.cuda().unsqueeze_(0).repeat(n_times, 1, 1), axis=0)
+				classwise_gamma_useful[j][i] = ch.sum(min_correlation, axis=0) + classwise_gamma_useful[j].get(i, ch.zeros_like(rep[0]).cuda())
 
-p_useful /= num_samples
-for i in range(len(attack_args)):
-	gamma_useful[i] /= num_samples
+for i in range(ds.num_classes):
+	classwise_p_useful[i]     /= num_samples
+	for j in range(len(attack_args)):
+		classwise_gamma_useful[j][i] /= num_samples
 
 array_to_line = lambda x: " ".join(str(y) for y in x)
 
 # Dump correlation values for clean examples
 with open("clean.txt", 'w') as f:
-	write_this = p_useful.cpu().numpy()
-	f.write(array_to_line(write_this) + "\n")
+	for i in range(ds.num_classes):
+		write_this = classwise_p_useful[i].cpu().numpy()
+		f.write(array_to_line(write_this) + "\n")
 
 # Dump correlation values per attack
 for i, a in enumerate(attack_args):
 	with open("l_%s.txt" % (a['constraint']), 'w') as f:
-		write_this = gamma_useful[i].cpu().numpy()
-		f.write(array_to_line(write_this) + "\n")
+		for j in range(ds.num_classes):
+			write_this = classwise_gamma_useful[i][j].cpu().numpy()
+			f.write(array_to_line(write_this) + "\n")

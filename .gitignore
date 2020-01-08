@@ -9,3 +9,4 @@ new_models/*
 neurons_*/
 *.txt
 GHM*
+binary_stats/*

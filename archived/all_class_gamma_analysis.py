@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 300
 
-
 def read_values(path):
 	values = []
 	with open(path, 'r') as f:
@@ -21,21 +20,25 @@ def threshold_crossed(x, y):
 	return 1 * (x >= y)
 
 
-def gamma_decay(files_path, granularity=1000, x_cap=0.025):
+def gamma_decay(files_path, granularity=1000, x_cap=0.025, include_clean=False):
+	if include_clean:
+		plt.title("Combined across all classes")
+	else:
+		plt.title("Combined across all classes [including clean]")
 	all_attacks = []
 	for file in os.listdir(files_path):
-		if "clean" in file:
+		if (not include_clean) and "clean" in file:
 			continue
 		v = read_values(os.path.join(files_path, file))
-		all_attacks.append(v[0])
-
 		test_gamma_values = list(range(granularity))[: int(granularity * x_cap)]
 		gamma_values = [x / granularity for x in test_gamma_values]
 
-		y = [np.sum(threshold_crossed(v[0], x)) for x in gamma_values]
+		reduced_v = np.min(v, axis=0)
+		all_attacks.append(reduced_v)
+
+		y = [np.sum(threshold_crossed(reduced_v, x)) for x in gamma_values]
 		plt.plot(gamma_values, y, label=file.split(".")[0])
 
-	
 	return np.array(all_attacks)
 
 
@@ -56,7 +59,7 @@ if __name__ == "__main__":
 	import sys
 	files_path = sys.argv[1]
 	plot_save_path = sys.argv[2]
-	x_cap = 0.0125
+	x_cap = 0.4
 	# Plot decay in number of gamma-robust features with the value of gamma (per 1 v/s all class case)
 	all_attacks = gamma_decay(files_path, granularity=1000, x_cap=x_cap)
 	# Plot jointly gamma-robust features with varying values of gamma (per 1 v/s all class case)

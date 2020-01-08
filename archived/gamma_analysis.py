@@ -21,18 +21,19 @@ def threshold_crossed(x, y):
 	return 1 * (x >= y)
 
 
-def gamma_decay(files_path, granularity=1000, x_cap=0.025):
+def gamma_decay(files_path, focus_class, granularity=1000, x_cap=0.025):
+	plt.title("%d class v/s all" % focus_class)
 	all_attacks = []
 	for file in os.listdir(files_path):
 		if "clean" in file:
 			continue
 		v = read_values(os.path.join(files_path, file))
-		all_attacks.append(v[0])
+		all_attacks.append(v[focus_class])
 
 		test_gamma_values = list(range(granularity))[: int(granularity * x_cap)]
 		gamma_values = [x / granularity for x in test_gamma_values]
 
-		y = [np.sum(threshold_crossed(v[0], x)) for x in gamma_values]
+		y = [np.sum(threshold_crossed(v[focus_class], x)) for x in gamma_values]
 		plt.plot(gamma_values, y, label=file.split(".")[0])
 
 	
@@ -56,9 +57,10 @@ if __name__ == "__main__":
 	import sys
 	files_path = sys.argv[1]
 	plot_save_path = sys.argv[2]
-	x_cap = 0.0125
+	focus_class = int(sys.argv[3])
+	x_cap = 0.4
 	# Plot decay in number of gamma-robust features with the value of gamma (per 1 v/s all class case)
-	all_attacks = gamma_decay(files_path, granularity=1000, x_cap=x_cap)
+	all_attacks = gamma_decay(files_path, focus_class, granularity=1000, x_cap=x_cap)
 	# Plot jointly gamma-robust features with varying values of gamma (per 1 v/s all class case)
 	joint_gamma_decay(all_attacks, plot_save_path, x_cap=x_cap)
 	# Plot p-robust features for varying values of p (per 1 v/s all class case)
