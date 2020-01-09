@@ -34,9 +34,9 @@ def add_batch_to_dataset(ds, data, suffix, class_names, already_image=False):
 		add_to_dataset(ds, (data[0][i], data[1][i].item()), suffix, class_names, already_image=already_image)
 
 ds = CIFAR()
-ds_binary = GenericBinary("./datasets/cifar_binary/animal_vehicle")
+ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct")
 
-class_names = ["vehicle", "vehicle", "animal", "vehicle", "animal", "animal", "animal", "animal", "vehicle", "vehicle"]
+class_names = ['vehicle', 'vehicle', 'animal', 'animal', 'animal', 'animal', 'animal', 'animal', 'vehicle', 'vehicle']
 
 train_loader, test_loader = ds.make_loaders(workers=10, batch_size=64, data_aug=False)
 train_data_iterator       = enumerate(train_loader)
