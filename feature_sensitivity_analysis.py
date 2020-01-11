@@ -5,7 +5,7 @@ import numpy as np
 import sys
 from tqdm import tqdm
 
-ds_path    = "./datasets/cifar_binary/animal_vehicle/"
+ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
 ds = GenericBinary(ds_path)
 
 model_path = sys.argv[1]

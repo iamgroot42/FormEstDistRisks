@@ -1,3 +1,4 @@
+
 import torch as ch
 from robustness.datasets import GenericBinary
 from robustness.model_utils import make_and_restore_model
@@ -37,45 +38,17 @@ def load_all_data(ds):
 	return (images, labels)
 
 
-def batched_impostor(model, target_deltas, im, neuron_index, labels, batch_size):
-	attacks = []
-	for i in range(0, len(im), batch_size):
-		impostors = parallel_impostor(model, target_deltas[i:i+batch_size], im[i:i+batch_size], neuron_index)
-		pred, _ = model(impostors)
-		label_pred = ch.argmax(pred, dim=1).cpu()
-		attacks.append(1*(label_pred != labels[i:i+batch_size]))
-	return np.concatenate(attacks)
-
-
-def comprehensive_matrix(model, delta_values, ds):
-	(images, labels) = load_all_data(ds)
-
-	attack_matrix = np.ones(delta_values.shape)
-
-	for i in range(delta_values.shape[0]):
-		# Find cases where delta values are not infinity
-		these_deltas = np.argwhere(delta_values[i] != np.inf).squeeze(1)
-		
-		delta_these  = delta_values[i][these_deltas]
-		these_images = images[these_deltas]
-		these_labels = labels[these_deltas]
-
-		# Get impostors
-		matches = batched_impostor(model, delta_these, these_images, i, these_labels, 64)
-
-		# Set values in matrix
-		attack_matrix[these_deltas] = matches
-
-	return attack_matrix
-
-
-def find_impostors(model, delta_values, ds, neuron_index, n=16):
+def find_impostors(model, delta_values, ds, image_index, n=16):
 	(image, label) = load_all_data(ds)
+
+	# Get target image
+	targ_img = image[picked_image].unsqueeze(0)
+	real = targ_img.repeat(n, 1, 1, 1)
 	
+	# Pick easiest-to-attack neurons for this image
 	easiest = np.argsort(delta_values)
 
-	impostors = parallel_impostor(model, delta_values[easiest[:n]], image[easiest[:n]], neuron_index)
-	real = image[easiest[:n]]
+	impostors = parallel_impostor(model, delta_values[easiest[:n]], real, easiest[:n])
 
 	diff = (real.cpu() - impostors.cpu()).view(n, -1)
 	l1_norms   = ch.sum(ch.abs(diff), dim=1)
@@ -96,22 +69,30 @@ def find_impostors(model, delta_values, ds, neuron_index, n=16):
 	clean_preds = [mapping[x] for x in clean_pred.cpu().numpy()]
 	preds       = [mapping[x] for x in label_pred.cpu().numpy()]
 
+	success = 0
+	for i in range(len(preds)):
+		success += (clean_preds[i] != preds[i])
+
+	print("Label flipped for %d/%d examples" % (success, len(preds)))
 	image_labels = [clean_preds, preds]
 
 	return (real, impostors, image_labels)
 
 
-def parallel_impostor(model, target_deltas, im, neuron_index):
+def parallel_impostor(model, target_deltas, im, neuron_indices):
 	# Get feature representation of current image
 	(_, image_rep), _  = model(im.cuda(), with_latent=True)
 
 	# Construct delta vector
 	delta_vec = ch.zeros_like(image_rep)
-	for i in range(target_deltas.shape[0]):
-		delta_vec[i, neuron_index] = target_deltas[i]
+	for i, x in enumerate(neuron_indices):
+		delta_vec[i, x] = target_deltas[i]
 
 	# Get target feature rep
 	target_rep = image_rep + delta_vec
+	indices_mask = ch.zeros_like(image_rep)
+	for i in range(indices_mask.shape[0]):
+		indices_mask[i][neuron_indices[i]] = 1
 
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(model, inp, targ):
@@ -120,13 +101,8 @@ def parallel_impostor(model, target_deltas, im, neuron_index):
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
 		# Extra loss term
 		reg_weight = 1e0
-		mask = ch.ones_like(targ)
-		mask[:, neuron_index] = 0
-		loss_2 = ch.div(ch.norm(mask * (rep - targ), dim=1), ch.norm(targ * mask, dim=1))
-		loss_3 = ch.abs((rep - targ)[:, neuron_index])
-		# return loss, None
-		return loss + reg_weight * loss_3, None
-		return loss + reg_weight * loss_2, None
+		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
+		return loss + reg_weight * aux_loss, None
 
 	# For now, consider [0,1] constrained images to see if any can be found
 	kwargs = {
@@ -135,7 +111,7 @@ def parallel_impostor(model, target_deltas, im, neuron_index):
 		'constraint':'unconstrained',
 		'eps': 1000,
 		'step_size': 0.01,
-		'iterations': 1000,
+		'iterations': 2000,
 		'targeted': True,
 		'do_tqdm': True
 	}
@@ -147,11 +123,11 @@ def parallel_impostor(model, target_deltas, im, neuron_index):
 	return im_matched
 
 
-def best_target_neuron(mat, which=0):
+def best_target_image(mat, which=0):
 	sum_m = []
-	for i in range(mat.shape[0]):
-		inf_counts = np.sum(mat[i] == np.inf)
-		mat_interest = mat[i][mat[i] != np.inf]
+	for i in range(mat.shape[1]):
+		# print(mat[mat[:, i] != np.inf].shape)
+		mat_interest = mat[mat[:, i] != np.inf, i]
 		sum_m.append(np.average(np.abs(mat_interest)))
 	best = np.argsort(sum_m)
 	return best[which]
@@ -164,11 +140,11 @@ if __name__ == "__main__":
 	image_save_name = sys.argv[3]
 
 	senses = get_sensitivities(deltas_filepath)
-	# Pick feature with lowest average delta-requirement
-	picked_feature = best_target_neuron(senses, 1)
+	# Pick image with lowest average delta-requirement
+	picked_image = best_target_image(senses, 4)
 
 	# Load model
-	ds_path    = "./datasets/cifar_binary/animal_vehicle/"
+	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
 	ds = GenericBinary(ds_path)
 
 	model_kwargs = {
@@ -179,10 +155,8 @@ if __name__ == "__main__":
 	model, _ = make_and_restore_model(**model_kwargs)
 	model.eval()
 
-	# comprehensive_matrix(model, senses, ds)
-
 	# Visualize attack images
-	(real, impostors, image_labels) = find_impostors(model, senses[picked_feature], ds, picked_feature)
+	(real, impostors, image_labels) = find_impostors(model, senses[:, picked_image], ds, picked_image)
 
 	show_image_row([real.cpu(), impostors.cpu()], 
 				["Real Images", "Attack Images"],

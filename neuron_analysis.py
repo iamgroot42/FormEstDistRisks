@@ -4,7 +4,7 @@ from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
 
-ds_path    = "./datasets/cifar_binary/animal_vehicle/"
+ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
 model_path = sys.argv[1]
 
 ds = GenericBinary(ds_path)
@@ -89,6 +89,8 @@ np_mean = ch_mean.cpu().numpy()
 np_std  = ch_std.cpu().numpy()
 np.save("feature_mean", np_mean)
 np.save("feature_std",   np_std)
+
+exit()
 
 for (im, label) in test_loader:
 	num_samples += im.shape[0]
