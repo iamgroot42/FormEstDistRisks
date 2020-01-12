@@ -42,13 +42,13 @@ def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
 	impostors = parallel_impostor(model, delta_values[easiest[:n]], real, easiest[:n])
 
 	diff = (real.cpu() - impostors.cpu()).view(n, -1)
-
 	l1_norms   = ch.sum(ch.abs(diff), dim=1)
 	l2_norms   = ch.norm(diff, dim=1)
 	linf_norms = ch.max(ch.abs(diff), dim=1)[0]
 	print("L-1   norms: ", ch.mean(l1_norms), "+-", ch.std(l1_norms))
 	print("L-2   norms: ", ch.mean(l2_norms), "+-", ch.std(l2_norms))
 	print("L-inf norms: ", ch.mean(linf_norms), "+-", ch.std(linf_norms))
+	print()
 
 	pred, _ = model(impostors)
 	label_pred = ch.argmax(pred, dim=1)
@@ -103,8 +103,8 @@ def parallel_impostor(model, target_deltas, im, neuron_indices):
 		'constraint':'unconstrained',
 		'eps': 1000,
 		# 'step_size': 0.01,
-		# 'step_size': 0.05,
-		'step_size': 0.02,
+		# 'iterations': 200,
+		'step_size': 0.05,
 		'iterations': 100,
 		'targeted': True,
 		'do_tqdm': True
@@ -122,31 +122,18 @@ def attack_all_images(model, senses, ds, all_data):
 	for i in range(senses.shape[1]):
 		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, i], ds, i, all_data)
 		image_successes.append(num_flips)
-		# Only first 5
-		if i == 5:
+		# Only first 200
+		if i == 200:
 			break
 	return np.array(image_successes)
-
-
-def best_target_image(mat, which=0):
-	sum_m = []
-	for i in range(mat.shape[1]):
-		# print(mat[mat[:, i] != np.inf].shape)
-		mat_interest = mat[mat[:, i] != np.inf, i]
-		sum_m.append(np.average(np.abs(mat_interest)))
-	best = np.argsort(sum_m)
-	return best[which]
 
 
 if __name__ == "__main__":
 	import sys
 	deltas_filepath = sys.argv[1]
 	model_path = sys.argv[2]
-	image_save_name = sys.argv[3]
 
 	senses = get_sensitivities(deltas_filepath)
-	# Pick image with lowest average delta-requirement
-	picked_image = best_target_image(senses, 1902)
 
 	# Load model
 	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
@@ -164,18 +151,8 @@ if __name__ == "__main__":
 	model, _ = make_and_restore_model(**model_kwargs)
 	model.eval()
 
-	# Visualize attack images
-	# picked_image= 8249
-	(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_image], ds, picked_image, all_data)
-
-	show_image_row([real.cpu(), impostors.cpu()], 
-				["Real Images", "Attack Images"],
-				tlist=image_labels,
-				fontsize=22,
-				filename="%s.png" % image_save_name)
-
 	# Long-running alternative:
-	# successes = attack_all_images(model, senses, ds, all_data)
-	# print(successes)
-	# print("Average success percentage per image : %f" % np.mean(successes))
-	# print("Number of images with at least one adversarial example : %d/%d" % (np.sum(successes > 0), len(successes)))
+	successes = attack_all_images(model, senses, ds, all_data)
+	print(successes)
+	print("Average success percentage per image : %f" % np.mean(successes))
+	print("Number of images with at least one adversarial example : %d/%d" % (np.sum(successes > 0), len(successes)))
