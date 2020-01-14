@@ -30,7 +30,7 @@ def load_all_data(ds):
 	return (images, labels)
 
 
-def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
+def find_impostors(model, delta_values, ds, image_index, all_data, eps, iters, n=16):
 	(image, label) = all_data
 	# Get target image
 	targ_img = image[image_index].unsqueeze(0)
@@ -39,7 +39,7 @@ def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
 	# Pick easiest-to-attack neurons for this image
 	easiest = np.argsort(delta_values)
 
-	impostors = parallel_impostor(model, delta_values[easiest[:n]], real, easiest[:n])
+	impostors = parallel_impostor(model, delta_values[easiest[:n]], real, easiest[:n], eps, iters)
 
 	diff = (real.cpu() - impostors.cpu()).view(n, -1)
 	l1_norms   = ch.sum(ch.abs(diff), dim=1)
@@ -72,7 +72,7 @@ def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
 	return (real, impostors, image_labels, relative_num_flips)
 
 
-def parallel_impostor(model, target_deltas, im, neuron_indices):
+def parallel_impostor(model, target_deltas, im, neuron_indices, eps, iters):
 	# Get feature representation of current image
 	(_, image_rep), _  = model(im.cuda(), with_latent=True)
 
@@ -101,11 +101,11 @@ def parallel_impostor(model, target_deltas, im, neuron_indices):
 	kwargs = {
 		'custom_loss': custom_inversion_loss,
 		'constraint':'unconstrained',
-		'eps': 1000,
-		# 'step_size': 0.01,
+		'eps': 2000,
+		# 'step_size': 0.5,
 		# 'iterations': 200,
-		'step_size': 0.05,
-		'iterations': 100,
+		'step_size': eps,
+		'iterations': iters,
 		'targeted': True,
 		'do_tqdm': True
 	}
@@ -117,10 +117,10 @@ def parallel_impostor(model, target_deltas, im, neuron_indices):
 	return im_matched
 
 
-def attack_all_images(model, senses, ds, all_data):
+def attack_all_images(model, senses, ds, all_data, eps, iters, n_par):
 	image_successes = []
 	for i in range(senses.shape[1]):
-		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, i], ds, i, all_data)
+		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, i], ds, i, all_data, eps, iters, n=n_par)
 		image_successes.append(num_flips)
 		# Only first 200
 		if i == 200:
@@ -132,6 +132,9 @@ if __name__ == "__main__":
 	import sys
 	deltas_filepath = sys.argv[1]
 	model_path = sys.argv[2]
+	eps = float(sys.argv[3])
+	iters = int(sys.argv[4])
+	n_par = int(sys.argv[5])
 
 	senses = get_sensitivities(deltas_filepath)
 
@@ -152,7 +155,7 @@ if __name__ == "__main__":
 	model.eval()
 
 	# Long-running alternative:
-	successes = attack_all_images(model, senses, ds, all_data)
+	successes = attack_all_images(model, senses, ds, all_data, eps, iters, n_par)
 	print(successes)
 	print("Average success percentage per image : %f" % np.mean(successes))
 	print("Number of images with at least one adversarial example : %d/%d" % (np.sum(successes > 0), len(successes)))

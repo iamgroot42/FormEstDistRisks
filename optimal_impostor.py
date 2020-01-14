@@ -1,4 +1,4 @@
-
+import os
 import torch as ch
 from robustness.datasets import GenericBinary
 from robustness.model_utils import make_and_restore_model
@@ -30,25 +30,21 @@ def load_all_data(ds):
 	return (images, labels)
 
 
-def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
+def find_impostors(model, delta_values, ds, image_index, all_data, mean, std, n=4):
 	(image, label) = all_data
 	# Get target image
 	targ_img = image[image_index].unsqueeze(0)
 	real = targ_img.repeat(n, 1, 1, 1)
 	
+	# Get scaled senses
+	scaled_delta_values = (delta_values - mean) / (std + 1e-10)
+
 	# Pick easiest-to-attack neurons for this image
-	easiest = np.argsort(delta_values)
+	easiest = np.argsort(scaled_delta_values)
 
 	impostors = parallel_impostor(model, delta_values[easiest[:n]], real, easiest[:n])
 
 	diff = (real.cpu() - impostors.cpu()).view(n, -1)
-
-	l1_norms   = ch.sum(ch.abs(diff), dim=1)
-	l2_norms   = ch.norm(diff, dim=1)
-	linf_norms = ch.max(ch.abs(diff), dim=1)[0]
-	print("L-1   norms: ", ch.mean(l1_norms), "+-", ch.std(l1_norms))
-	print("L-2   norms: ", ch.mean(l2_norms), "+-", ch.std(l2_norms))
-	print("L-inf norms: ", ch.mean(linf_norms), "+-", ch.std(linf_norms))
 
 	pred, _ = model(impostors)
 	label_pred = ch.argmax(pred, dim=1)
@@ -62,11 +58,28 @@ def find_impostors(model, delta_values, ds, image_index, all_data, n=16):
 	preds       = [mapping[x] for x in label_pred.cpu().numpy()]
 
 	success = 0
+	succeeded = []
 	for i in range(len(preds)):
 		success += (clean_preds[i] != preds[i])
+		if clean_preds[i] == preds[i]:
+			succeeded.append(False)
+		else:
+			succeeded.append(True)
+
+	# Calculate metrics (for cases where attack succeeded)
+	diff_care = diff[succeeded]
+	if len(diff_care) > 0:
+		l1_norms   = ch.sum(ch.abs(diff_care), dim=1)
+		l2_norms   = ch.norm(diff_care, dim=1)
+		linf_norms = ch.max(ch.abs(diff_care), dim=1)[0]
+		print("L-1   norms: [", ch.min(l1_norms), ",", ch.max(l1_norms), "]")
+		print("L-2   norms: [", ch.min(l2_norms), ",", ch.max(l2_norms), "]")
+		print("L-inf norms: [", ch.min(linf_norms), ",", ch.max(linf_norms), "]")
+		print("Label flipped for %d/%d examples" % (success, len(preds)))
+	else:
+		print("Attack did not succeed")
 
 	relative_num_flips = float(success) / len(preds)
-	print("Label flipped for %d/%d examples" % (success, len(preds)))
 	image_labels = [clean_preds, preds]
 
 	return (real, impostors, image_labels, relative_num_flips)
@@ -95,6 +108,7 @@ def parallel_impostor(model, target_deltas, im, neuron_indices):
 		# Extra loss term
 		reg_weight = 1e0
 		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
+		# return aux_loss, None
 		return loss + reg_weight * aux_loss, None
 
 	# For now, consider [0,1] constrained images to see if any can be found
@@ -102,10 +116,13 @@ def parallel_impostor(model, target_deltas, im, neuron_indices):
 		'custom_loss': custom_inversion_loss,
 		'constraint':'unconstrained',
 		'eps': 1000,
-		# 'step_size': 0.01,
+		# 'step_size': 1,
+		# 'step_size': 0.5,
+		# 'step_size': 0.2,
+		# 'step_size': 0.1,
 		# 'step_size': 0.05,
-		'step_size': 0.02,
-		'iterations': 100,
+		'step_size': 0.01,
+		'iterations': 20,
 		'targeted': True,
 		'do_tqdm': True
 	}
@@ -138,15 +155,22 @@ def best_target_image(mat, which=0):
 	return best[which]
 
 
+def get_stats(base_path):
+	mean = np.load(os.path.join(base_path, "feature_mean.npy"))
+	std  = np.load(os.path.join(base_path, "feature_std.npy"))
+	return mean, std
+
+
 if __name__ == "__main__":
 	import sys
 	deltas_filepath = sys.argv[1]
-	model_path = sys.argv[2]
+	model_path      = sys.argv[2]
 	image_save_name = sys.argv[3]
+	stats_path      = sys.argv[4]
 
 	senses = get_sensitivities(deltas_filepath)
 	# Pick image with lowest average delta-requirement
-	picked_image = best_target_image(senses, 1902)
+	picked_image = best_target_image(senses, 8223)
 
 	# Load model
 	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
@@ -164,9 +188,12 @@ if __name__ == "__main__":
 	model, _ = make_and_restore_model(**model_kwargs)
 	model.eval()
 
+	# Get stats for neuron activations
+	(mean, std) = get_stats(stats_path)
+
 	# Visualize attack images
-	# picked_image= 8249
-	(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_image], ds, picked_image, all_data)
+	picked_image = 9996
+	(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_image], ds, picked_image, all_data, mean, std)
 
 	show_image_row([real.cpu(), impostors.cpu()], 
 				["Real Images", "Attack Images"],

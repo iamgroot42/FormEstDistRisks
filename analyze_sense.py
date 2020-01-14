@@ -32,7 +32,7 @@ def plot_specific(values, plot_save_path, labels, dump=True):
 				break
 
 	# Observe specific neurons for better visualization
-	# valid_indices = np.all(values <= 500, axis=1)
+	# valid_indices = np.all(values <= 1e2, axis=1)
 	# values = values[valid_indices]
 
 	# Check how many neurons follow same image sorted ordering
