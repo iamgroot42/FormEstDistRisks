@@ -1,7 +1,7 @@
 import torch as ch
 from torch.autograd import Variable
 import sys
-
+from tqdm import tqdm
 
 def l2_project(orig_input, x, eps):
 	diff = x - orig_input
@@ -39,7 +39,10 @@ def project_pertb(p):
 def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', iters=200, reg_weight=1e0, verbose=True):
 	inp = Variable(inp_og.clone(), requires_grad=True)
 	optimizer = ch.optim.Adam([inp], lr=0.001)
-	for i in range(iters):
+	iterator = range(iters)
+	if verbose:
+		iterator = tqdm(iterator)
+	for i in iterator:
 		optimizer.zero_grad()
 		# Get image rep
 		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
@@ -50,15 +53,12 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 		opt_loss = loss + reg_weight * aux_loss
 		if verbose:
 			# Print loss
-			sys.stdout.write("Loss : %f  \r" % (opt_loss.sum().item()))
-			sys.stdout.flush()
+			iterator.set_description('Loss : %f' % opt_loss.mean().item())
 		# Back-prop loss
 		opt_loss.backward(ch.ones_like(opt_loss), retain_graph=True)
 		optimizer.step()
 		# Project data : constain ro eps p-norm ball
 		inp.data = project_pertb(p)(inp_og, inp.data, eps)
-	if verbose:
-		print()
 	return inp.data
 	
 
