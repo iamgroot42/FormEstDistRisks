@@ -8,6 +8,8 @@ import sys
 from torch.autograd import Variable
 from tqdm import tqdm
 
+import optimize
+
 
 def get_sensitivities(path):
 	features = []
@@ -31,7 +33,7 @@ def load_all_data(ds):
 	return (images, labels)
 
 
-def find_impostors(model, delta_values, ds, image_index, all_data, mean, std, n=4):
+def find_impostors(model, delta_values, ds, image_index, all_data, mean, std, n=8):
 	(image, label) = all_data
 	# Get target image
 	targ_img = image[image_index].unsqueeze(0)
@@ -90,73 +92,6 @@ def find_impostors(model, delta_values, ds, image_index, all_data, mean, std, n=
 	return (real, impostors, image_labels, relative_num_flips)
 
 
-def n_grad(model, X, target):    
-	# Calculate Fischer Information Matrix (expected)
-	target_rep = model.predict(X)
-	(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
-	cov = np.zeros((X.T.shape))
-	for i in range(X.shape[0]):
-		cov[:, i] = X[i].T * (Y[i] - Y_[i])
-	cov = np.cov(cov)
-	f_inv = np.linalg.pinv(cov)
-
-	nat_grad =  np.matmul(f_inv, s_grad(model, X, Y))
-	return nat_grad
-
-
-def natural_gradient(model, inp_og, target_rep, iters=5):
-	inp = Variable(inp_og.clone(), requires_grad=True)
-	for i in range(iters):
-		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
-		# Get loss
-		loss = ch.div(ch.norm(rep - target_rep, dim=1), ch.norm(target_rep, dim=1))
-		# Calculate gradients
-		loss.backward(ch.ones_like(loss), retain_graph=True)
-		# Calculate covariance of loss gradient (flatten out to n * features shape)
-		inp_grad_flat = inp.grad.view(inp.shape[0], -1)
-		loss_cov = ch.t(inp_grad_flat)
-		loss_cov = ch.mm(loss_cov, inp_grad_flat) / loss_cov.shape[0]
-		F = loss_cov.pinverse()
-		# Compute modified gradient (flattened version)
-		grad_inp = inp.grad.view(inp.shape[0], -1) @ F
-		# Back-prop loss
-		inp.data -= 1e-7 * grad_inp.view(inp.grad.shape)
-		# Print loss
-		# sys.stdout.write("Loss : %f  \r" % (loss.sum().item()))
-		# sys.stdout.flush()
-		print(loss.sum().item())
-		# Clip image to [0,1] range
-		inp.data = ch.clamp(inp.data, 0, 1)
-		# Zero gradient
-		inp.grad.data.zero_()
-	inp = ch.clamp(inp, 0, 1)
-	# print("\n")
-	return inp.data
-
-
-def custom_optimization(model, inp_og, target_rep, iters=20):
-	inp = Variable(inp_og.clone(), requires_grad=True)
-	# optimizer = ch.optim.SGD([inp], lr=1, momentum=0.9)
-	# optimizer = ch.optim.Adadelta([inp], lr=0.1)
-	optimizer = ch.optim.Adagrad([inp], lr=0.01)
-	for i in range(iters):
-		optimizer.zero_grad()
-		# Get image rep
-		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
-		# Get loss
-		loss = ch.div(ch.norm(rep - target_rep, dim=1), ch.norm(target_rep, dim=1))
-		# Print loss
-		sys.stdout.write("Loss : %f  \r" % (loss.sum().item()))
-		sys.stdout.flush()
-		# Back-prop loss
-		loss.backward(ch.ones_like(loss), retain_graph=True)
-		optimizer.step()
-		# Clip image to [0,1] range
-	inp = ch.clamp(inp, 0, 1)
-	print("\n")
-	return inp.data
-
-
 def parallel_impostor(model, target_deltas, im, neuron_indices, l_c):
 	# Get feature representation of current image
 	(_, image_rep), _  = model(im.cuda(), with_latent=True)
@@ -176,57 +111,21 @@ def parallel_impostor(model, target_deltas, im, neuron_indices, l_c):
 	loss_coeffs = np.tile(l_c, (im.shape[0], 1))
 	loss_coeffs = ch.from_numpy(loss_coeffs).float().cuda()
 
-	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
-	def custom_inversion_loss(model, inp, targ):
-		_, rep = model(inp, with_latent=True, fake_relu=True)
-		# Normalized L2 error w.r.t. the target representation
-		# loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
-		loss = ch.norm((rep - targ) * loss_coeffs, dim=1)
-		# Extra loss term
-		reg_weight = 1e0
-		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
-		# return aux_loss, None
-		return loss + reg_weight * aux_loss, None
-
-	# For now, consider [0,1] constrained images to see if any can be found
-	kwargs = {
-		'custom_loss': custom_inversion_loss,
-		'constraint':'unconstrained',
-		'eps': 1000,
-		# 'constraint':'2',
-		# 'eps': 1.1,
-		# 'step_size': 1,
-		# 'step_size': 0.5,
-		# 'step_size': 0.2,
-		'step_size': 0.1,
-		# 'step_size': 0.05,
-		# 'step_size': 0.01,
-		'iterations': 200,
-		'targeted': True,
-		'do_tqdm': True
-	}
-
-	# Find image that minimizes this loss
-	# _, im_matched = model(im, target_rep, make_adv=True, **kwargs)
+	# Use Madry's optimization
+	# im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask,
+	# 	eps=0.5, verbose=True)
 
 	# Use custom optimization loop
-	# im_matched = custom_optimization(model, im, target_rep)
+	im_matched = optimize.custom_optimization(model, im, target_rep, indices_mask,
+		eps=2.5, p='2', iters=200,
+		reg_weight=1e0, verbose=True)
+
 	# Use natural gradient descent
-	im_matched = natural_gradient(model, im, target_rep)
+	# im_matched = optimize.natural_gradient_optimization(model, im, target_rep, indices_mask,
+	# 	eps=1e-2, iters=100,
+	# 	reg_weight=1e0, verbose=True)
 
-	# Return this image
 	return im_matched
-
-
-def attack_all_images(model, senses, ds, all_data):
-	image_successes = []
-	for i in range(senses.shape[1]):
-		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, i], ds, i, all_data)
-		image_successes.append(num_flips)
-		# Only first 5
-		if i == 5:
-			break
-	return np.array(image_successes)
 
 
 def best_target_image(mat, which=0):
@@ -254,7 +153,7 @@ if __name__ == "__main__":
 
 	senses = get_sensitivities(deltas_filepath)
 	# Pick image with lowest average delta-requirement
-	picked_image = best_target_image(senses, 8222)
+	picked_image = best_target_image(senses, 8223)
 
 	# Load model
 	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
@@ -276,7 +175,7 @@ if __name__ == "__main__":
 	(mean, std) = get_stats(stats_path)
 
 	# Visualize attack images
-	picked_image = 19
+	picked_image = 7233
 	(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_image], ds, picked_image, all_data, mean, std)
 
 	show_image_row([real.cpu(), impostors.cpu()], 
@@ -284,9 +183,3 @@ if __name__ == "__main__":
 				tlist=image_labels,
 				fontsize=22,
 				filename="%s.png" % image_save_name)
-
-	# Long-running alternative:
-	# successes = attack_all_images(model, senses, ds, all_data)
-	# print(successes)
-	# print("Average success percentage per image : %f" % np.mean(successes))
-	# print("Number of images with at least one adversarial example : %d/%d" % (np.sum(successes > 0), len(successes)))
