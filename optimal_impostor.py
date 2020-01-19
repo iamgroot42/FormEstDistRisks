@@ -95,18 +95,15 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	return im_matched
 
 
-def get_stats(base_path):
-	mean = np.load(os.path.join(base_path, "feature_mean.npy"))
-	std  = np.load(os.path.join(base_path, "feature_std.npy"))
-	return mean, std
-
-
-
 if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--deltas', type=str, help='path to file storing delta values')
 	parser.add_argument('--model', type=str, help='path to model checkpoint')
+	parser.add_argument('--eps', type=float, help='epsilon-iter')
+	parser.add_argument('--iters', type=int, help='number of iterations')
+	parser.add_argument('--n', type=int, default=8, help='number of neurons per image')
+	parser.add_argument('--bs', type=int, default=8, help='batch size while performing attack')
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
 	parser.add_argument('--stats', type=str, help='path to directory containing mean and std of features')
@@ -117,6 +114,10 @@ if __name__ == "__main__":
 	model_path      = args.model
 	image_save_name = args.image
 	stats_path      = args.stats
+	batch_size      = args.bs
+	iters           = args.iters
+	eps             = args.eps
+	n               = args.n
 
 	senses = utils.get_sensitivities(deltas_filepath)
 	# Pick image with lowest average delta-requirement
@@ -125,9 +126,6 @@ if __name__ == "__main__":
 	# Load model
 	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
 	ds = GenericBinary(ds_path)
-
-	# Load all data
-	all_data = utils.load_all_data(ds)
 
 	# Load model
 	model_kwargs = {
@@ -139,14 +137,34 @@ if __name__ == "__main__":
 	model.eval()
 
 	# Get stats for neuron activations
-	(mean, std) = get_stats(stats_path)
+	(mean, std) = utils.get_stats(stats_path)
 
-	if not args.longrun:
+	if args.longrun:
+		_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
+
+		index_base = 0
+		attack_rate, avg_successes = 0, 0
+		for (image, _) in test_loader:
+			picked_indices = list(range(index_base, index_base + len(image)))
+			(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds,
+																image.cpu(), mean, std, n=n,
+																verbose=True, eps=eps, iters=iters)
+			index_base += len(image)
+			attack_rate += np.sum(num_flips > 0)
+			avg_successes += np.sum(num_flips)
+			print(num_flips, attack_rate, avg_successes)
+
+		print("Attack success rate : %f 	%%" % (100 * attack_rate/index_base))
+		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
+	else:
+		# Load all data
+		all_data = utils.load_all_data(ds)
+
 		# Visualize attack images
 		picked_indices = [2, 123]
 		picked_images = [all_data[0][i] for i in picked_indices]
 		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																verbose=True, eps=2.0, iters=200)
+																verbose=False, eps=2.0, iters=200)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

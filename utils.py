@@ -61,3 +61,9 @@ def get_statistics(diff):
 	l2_norms   = ch.norm(diff, dim=1)
 	linf_norms = ch.max(ch.abs(diff), dim=1)[0]
 	return (l1_norms, l2_norms, linf_norms)
+
+
+def get_stats(base_path):
+	mean = np.load(os.path.join(base_path, "feature_mean.npy"))
+	std  = np.load(os.path.join(base_path, "feature_std.npy"))
+	return mean, std
