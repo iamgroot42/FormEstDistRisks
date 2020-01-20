@@ -75,11 +75,11 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 
 	kwargs = {
 		'custom_loss': custom_inversion_loss,
-		'constraint':'unconstrained',
-		'eps': 1000,
-		# 'constraint':'2',
-		# 'eps': 1.2,
-		'step_size': eps,
+		# 'constraint':'unconstrained',
+		# 'eps': 1000,
+		'constraint':'2',
+		'eps': eps,
+		'step_size': eps / 10,
 		'iterations': iters,
 		'targeted': True,
 		'do_tqdm': verbose
@@ -130,3 +130,54 @@ def natural_gradient_optimization(model, inp_og, target_rep, indices_mask, eps, 
 		# Zero gradient
 		inp.grad.data.zero_()
 	return inp.data
+
+
+def n_free_optimization(model, inp_og, target_rep, eps, p='2', iters=200, verbose=True):
+	inp = Variable(inp_og.clone(), requires_grad=True)
+	optimizer = ch.optim.Adam([inp], lr=0.001)
+	iterator = range(iters)
+	if verbose:
+		iterator = tqdm(iterator)
+	for i in iterator:
+		optimizer.zero_grad()
+		# Get image rep
+		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
+		# Get loss
+		opt_loss = ch.div(ch.norm(rep - target_rep, dim=1), ch.norm(target_rep, dim=1))
+		if verbose:
+			# Print loss
+			iterator.set_description('Loss : %f' % opt_loss.mean().item())
+		# Back-prop loss
+		opt_loss.backward(ch.ones_like(opt_loss), retain_graph=True)
+		optimizer.step()
+		# Project data : constain ro eps p-norm ball
+		inp.data = project_pertb(p)(inp_og, inp.data, eps)
+	return inp.data
+
+
+def n_free_madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, verbose=True):
+	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
+	def custom_inversion_loss(m, inp, targ):
+		_, rep = m(inp, with_latent=True, fake_relu=True)
+		# Normalized L2 error w.r.t. the target representation
+		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
+		n = 8
+		extra_loss = ch.div(ch.norm((rep - targ)[:, :n], dim=1), ch.norm(targ, dim=1))
+		# Extra loss term (normalized)
+		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
+		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
+		return loss +  aux_loss, None
+
+	kwargs = {
+		'custom_loss': custom_inversion_loss,
+		# 'constraint':'unconstrained',
+		# 'eps': 1000,
+		'constraint':'2',
+		'eps': eps,
+		'step_size': eps / 10,
+		'iterations': iters,
+		'targeted': True,
+		'do_tqdm': verbose
+	}
+	_, im_matched = model(inp_og, target_rep, make_adv=True, **kwargs)
+	return im_matched

@@ -10,7 +10,7 @@ from torch.autograd import Variable
 import optimize, utils
 
 
-def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=8, eps=2.0, iters=200):
+def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -161,10 +161,10 @@ if __name__ == "__main__":
 		all_data = utils.load_all_data(ds)
 
 		# Visualize attack images
-		picked_indices = [2, 123]
+		picked_indices = list(range(8))
 		picked_images = [all_data[0][i] for i in picked_indices]
 		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																verbose=False, eps=2.0, iters=200)
+																verbose=True, eps=eps, iters=iters)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],
