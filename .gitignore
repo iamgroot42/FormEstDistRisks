@@ -10,3 +10,4 @@ neurons_*/
 *.txt
 GHM*
 binary_stats/*
+*.npy
