@@ -1,5 +1,5 @@
 import torch as ch
-from robustness.datasets import GenericBinary
+from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
@@ -10,7 +10,8 @@ model_path   = sys.argv[1]
 prefix       = sys.argv[2]
 which_attack = int(sys.argv[3])
 
-ds = GenericBinary(ds_path)
+# ds = GenericBinary(ds_path)
+ds = CIFAR()
 
 model_kwargs = {
 	'arch': 'resnet50',
@@ -90,4 +91,4 @@ np_std  = ch_std.cpu().numpy()
 np.save(prefix + "feature_mean", np_mean)
 np.save(prefix + "feature_std",   np_std)
 
-# CUDA_VISIBLE_DEVICES=0 python neuron_stats_adv.py /p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest linf_for_normal_
+# CUDA_VISIBLE_DEVICES=0 python neuron_stats_adv.py /p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest linf_for_normal_ 0

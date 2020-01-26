@@ -1,6 +1,6 @@
 import os
 import torch as ch
-from robustness.datasets import GenericBinary
+from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 from robustness.tools.vis_tools import show_image_row
 import numpy as np
@@ -10,7 +10,7 @@ from torch.autograd import Variable
 import optimize, utils
 
 
-def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200):
+def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200, binary=True):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -48,7 +48,10 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 	clean_pred, _ = model(real)
 	clean_pred = ch.argmax(clean_pred, dim=1)
 
-	mapping = ["animal", "vehicle"]
+	if binary:
+		mapping = ["animal", "vehicle"]
+	else:
+		mapping = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
 	clean_preds = [mapping[x] for x in clean_pred.cpu().numpy()]
 	preds       = [mapping[x] for x in label_pred.cpu().numpy()]
@@ -107,6 +110,7 @@ if __name__ == "__main__":
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
 	parser.add_argument('--stats', type=str, help='path to directory containing mean and std of features')
+	parser.add_argument('--dataset', type=str, default='binary_c', help='dataset: one of [binary_c, normal_c]')
 	
 	args = parser.parse_args()
 	
@@ -118,14 +122,18 @@ if __name__ == "__main__":
 	iters           = args.iters
 	eps             = args.eps
 	n               = args.n
+	binary          = args.dataset == 'binary_c'
 
 	senses = utils.get_sensitivities(deltas_filepath)
 	# Pick image with lowest average delta-requirement
 	# picked_image = utils.best_target_image(senses, 8223)
 
 	# Load model
-	ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-	ds = GenericBinary(ds_path)
+	if binary:
+		ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
+		ds = GenericBinary(ds_path)
+	else:
+		ds = CIFAR()
 
 	# Load model
 	model_kwargs = {
@@ -147,8 +155,8 @@ if __name__ == "__main__":
 		for (image, _) in test_loader:
 			picked_indices = list(range(index_base, index_base + len(image)))
 			(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds,
-																image.cpu(), mean, std, n=n,
-																verbose=True, eps=eps, iters=iters)
+																image.cpu(), mean, std, n=n, binary=binary,
+																verbose=False, eps=eps, iters=iters)
 			index_base += len(image)
 			attack_rate += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
@@ -161,10 +169,11 @@ if __name__ == "__main__":
 		all_data = utils.load_all_data(ds)
 
 		# Visualize attack images
-		picked_indices = list(range(8))
+		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
 		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																verbose=True, eps=eps, iters=iters)
+																n=n, verbose=True,
+																eps=eps, iters=iters, binary=binary)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

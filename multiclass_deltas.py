@@ -1,12 +1,11 @@
 import torch as ch
-from robustness.datasets import GenericBinary
+from robustness.datasets import CIFAR
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
 from tqdm import tqdm
 
-ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-ds = GenericBinary(ds_path)
+ds = CIFAR()
 
 model_path = sys.argv[1]
 filename = sys.argv[2]
@@ -29,6 +28,7 @@ for name, param in model.state_dict().items():
 	if name == "module.model.linear.weight":
 		weights = param
 		break
+
 # Extract bias (just because)
 bias = None
 for name, param in model.state_dict().items():
@@ -36,14 +36,13 @@ for name, param in model.state_dict().items():
 		bias = param
 		break
 
-
-def binary_closed_form_solution(logits, weights):
-	# If same weights, class can never be changed
-	if weights[0] == weights[1]:
-		return np.inf
-
-	delta = (logits[0] - logits[1]) / (weights[1] - weights[0])
-	return delta
+def classwise_closed_form_solutions(logits, weights):
+	# Iterate through all possible classes, calculate flip probabilities
+	actual_label = ch.argmax(logits)
+	delta_values = logits[actual_label] - logits
+	delta_values /= weights - weights[actual_label]
+	delta_values[actual_label] = np.inf
+	return delta_values
 
 
 n_features = weights.shape[1]
@@ -57,25 +56,26 @@ for (im, label) in test_loader:
 		# For each feature
 		for i in range(n_features):
 			specific_weights = weights[:, i]
-			sensitivity = binary_closed_form_solution(logit, specific_weights)
+			# Get sensitivity values across classes
+			sensitivity = classwise_closed_form_solutions(logit, specific_weights)
 			# print()
 			# Check wx+b before and after delta noise
 			# unsqueezed_features = features[j].unsqueeze(1)
 			# before = ch.mm(weights, unsqueezed_features).squeeze(1) + bias
 			# print(before)
 			# feature_modified = unsqueezed_features.clone()
-			# feature_modified[i] += sensitivity
+			# feature_modified[i] += sensitivity[7]
 			# after = ch.mm(weights, feature_modified).squeeze(1) + bias
 			# print(after)
 			# print(sensitivity)
 			# print()
 
-			# If new value after perturbed violates ReLU range, register as 'inf'
-			if features[j][i] + sensitivity < 0:
-				sensitivity = np.inf
-			elif sensitivity != np.inf:
-				sensitivity = sensitivity.cpu().numpy()
-			sensitivities[i] = sensitivities.get(i, []) + [sensitivity]
+			# Only consider delta values that correspond to valud ReLU range, register others as 'inf'
+			valid_sensitivity = sensitivity[features[j][i] + sensitivity >= 0]
+			best_delta = ch.argmin(ch.abs(valid_sensitivity))
+			best_sensitivity = valid_sensitivity[best_delta]
+			best_sensitivity = best_sensitivity.cpu().numpy()
+			sensitivities[i] = sensitivities.get(i, []) + [best_sensitivity]
 
 with open("%s.txt" % filename, 'w') as f:
 	for i in range(n_features):
