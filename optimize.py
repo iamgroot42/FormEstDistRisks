@@ -40,6 +40,8 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 	inp = Variable(inp_og.clone(), requires_grad=True)
 	optimizer = ch.optim.Adam([inp], lr=0.001)
 	iterator = range(iters)
+	# use_best behavior
+	best_loss, best_x = float('inf'), None
 	if verbose:
 		iterator = tqdm(iterator)
 	for i in iterator:
@@ -48,21 +50,26 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)
 		# Get loss
 		loss = ch.div(ch.norm(rep - target_rep, dim=1), ch.norm(target_rep, dim=1))
-		aux_loss = ch.sum(ch.abs((rep - target_rep) * indices_mask), dim=1)
-		aux_loss = ch.div(aux_loss, ch.norm(target_rep * indices_mask, dim=1))
-		opt_loss = loss + reg_weight * aux_loss
+		aux_loss  = ch.sum(ch.abs((rep - target_rep) * indices_mask), dim=1)
+		aux_loss  = ch.div(aux_loss, ch.norm(target_rep * indices_mask, dim=1))
+		opt_loss  = loss + reg_weight * aux_loss
+		this_loss = opt_loss.mean().item()
+		# Store best loss and x so far
+		if best_loss > this_loss:
+			best_loss = this_loss
+			best_x    = inp.data.clone()
 		if verbose:
 			# Print loss
-			iterator.set_description('Loss : %f' % opt_loss.mean().item())
+			iterator.set_description('Loss : %f' % this_loss)
 		# Back-prop loss
 		opt_loss.backward(ch.ones_like(opt_loss), retain_graph=True)
 		optimizer.step()
 		# Project data : constain ro eps p-norm ball
 		inp.data = project_pertb(p)(inp_og, inp.data, eps)
-	return inp.data
+	return best_x
 	
 
-def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, verbose=True):
+def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, p='2', verbose=True):
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(m, inp, targ):
 		_, rep = m(inp, with_latent=True, fake_relu=True)
@@ -77,7 +84,7 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		'custom_loss': custom_inversion_loss,
 		# 'constraint':'unconstrained',
 		# 'eps': 1000,
-		'constraint':'2',
+		'constraint': p,
 		'eps': eps,
 		'step_size': eps / 10,
 		'iterations': iters,
@@ -102,7 +109,8 @@ def n_grad(model, X, target):
 	return nat_grad
 
 
-def natural_gradient_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, verbose=True):
+def natural_gradient_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, p=None, verbose=True):
+	# This technique ignores 'p'
 	inp = Variable(inp_og.clone(), requires_grad=True)
 	for i in range(iters):
 		(_, rep), _ = model(inp, with_latent=True, fake_relu=True)

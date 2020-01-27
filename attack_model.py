@@ -1,14 +1,16 @@
 import torch as ch
-from robustness.datasets import GenericBinary
+from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 from tqdm import tqdm
 
 
 ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-model_path = "/p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest"
+# model_path = "/p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest"
+model_path = "/p/adversarialml/as9rw/models_cifar10/cifar_l2_0_5.pt"
 
-ds = GenericBinary(ds_path)
+# ds = GenericBinary(ds_path)
+ds = CIFAR()
 
 # Load model to attack
 model_kwargs = {
@@ -40,8 +42,6 @@ for (im, label) in tqdm(test_loader):
 
 attack_x = ch.cat(attack_x, 0).numpy()
 attack_y = ch.cat(attack_y, 0).numpy()
-print(attack_x.shape)
-print(attack_y.shape)
 
 np.save("attack_images", attack_x)
 np.save("attack_labels", attack_y)

@@ -1,6 +1,6 @@
 import torch as ch
 import numpy as np
-from robustness.datasets import GenericBinary
+from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 import dill
 
@@ -9,12 +9,16 @@ import utils
 
 if __name__ == "__main__":
 
-	model_path   = "/p/adversarialml/as9rw/models_correct/edit_this.pt"
-	dataset_path = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-	sense_path   = "/p/adversarialml/as9rw/binary_stats/nat/deltas_nat.txt"
-	scale_path   = "/p/adversarialml/as9rw/binary_stats/nat/stats/"
+	# model_path   = "/p/adversarialml/as9rw/models_correct/edit_this.pt"
+	model_path   = "/p/adversarialml/as9rw/models_cifar10/delta_model.pt"
+	# dataset_path = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
+	# sense_path   = "/p/adversarialml/as9rw/binary_stats/nat/deltas_nat.txt"
+	# scale_path   = "/p/adversarialml/as9rw/binary_stats/nat/stats/"
+	sense_path   = "/p/adversarialml/as9rw/cifar10_stats/nat/deltas.txt"
+	scale_path   = "/p/adversarialml/as9rw/cifar10_stats/nat/stats/"
 
-	ds = GenericBinary(dataset_path)
+	# ds = GenericBinary(dataset_path)
+	ds = CIFAR()
 	model_kwargs = {
 		'arch': 'resnet50',
 		'dataset': ds,
@@ -35,7 +39,7 @@ if __name__ == "__main__":
 	# factor = 4
 	# factor = 1 / factor
 	factor = 0
-	N = 256
+	N = 2000
 	worst_n = np.argsort(np.abs(senses))[:N]
 
 	# Random weight drop-out

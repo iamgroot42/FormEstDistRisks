@@ -10,7 +10,7 @@ from torch.autograd import Variable
 import optimize, utils
 
 
-def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200, binary=True):
+def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200, binary=True, norm='2'):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -40,7 +40,7 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 			delta_vec[i + j * n, x] = delta_values[x, j]
 			indices_mask[i + j * n, x] = 1		
 
-	impostors = parallel_impostor(model, delta_vec, real, indices_mask, loss_coeffs, optim_type, verbose, eps, iters)
+	impostors = parallel_impostor(model, delta_vec, real, indices_mask, loss_coeffs, optim_type, verbose, eps, iters, norm)
 
 	pred, _ = model(impostors)
 	label_pred = ch.argmax(pred, dim=1)
@@ -66,7 +66,7 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 	return (real, impostors, image_labels, np.sum(succeeded, axis=1))
 
 
-def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters):
+def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm):
 	# Get feature representation of current image
 	(_, image_rep), _  = model(im.cuda(), with_latent=True)
 
@@ -76,21 +76,21 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	# Construct loss coefficients
 	loss_coeffs = np.tile(l_c, (im.shape[0], 1))
 	loss_coeffs = ch.from_numpy(loss_coeffs).float().cuda()
-
+	# optim_type = 'madry'
 	if optim_type == 'madry':
 		# Use Madry's optimization
-		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask,
-			eps=eps, iters=iters, verbose=verbose) #1.0, 200
+		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask, 
+			eps=eps, iters=iters, verbose=verbose, p=norm) #1.0, 200
 	elif optim_type == 'natural':
 		# Use natural gradient descent
 		im_matched = optimize.natural_gradient_optimization(model, im, target_rep, indices_mask,
 			eps=eps, iters=iters, #1e-2, 100
-			reg_weight=1e0, verbose=verbose)
+			reg_weight=1e0, verbose=verbose, p=norm)
 	elif optim_type == 'custom':
 		# Use custom optimization loop
 		im_matched = optimize.custom_optimization(model, im, target_rep, indices_mask,
-			eps=eps, p='2', iters=iters, #2.0, 200
-			reg_weight=1e0, verbose=verbose)
+			eps=eps, iters=iters, #2.0, 200
+			reg_weight=1e0, verbose=verbose, p=norm)
 	else:
 		print("Invalid optimization strategy. Exiting")
 		exit(0)
@@ -111,6 +111,8 @@ if __name__ == "__main__":
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
 	parser.add_argument('--stats', type=str, help='path to directory containing mean and std of features')
 	parser.add_argument('--dataset', type=str, default='binary_c', help='dataset: one of [binary_c, normal_c]')
+	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
+	parser.add_argument('--technique', type=str, default='custom', help='optimization strategy while searching for examples')
 	
 	args = parser.parse_args()
 	
@@ -123,7 +125,10 @@ if __name__ == "__main__":
 	eps             = args.eps
 	n               = args.n
 	binary          = args.dataset == 'binary_c'
+	norm            = args.norm
+	opt_type        = args.technique
 
+	# 0.031372549
 	senses = utils.get_sensitivities(deltas_filepath)
 	# Pick image with lowest average delta-requirement
 	# picked_image = utils.best_target_image(senses, 8223)
@@ -156,7 +161,8 @@ if __name__ == "__main__":
 			picked_indices = list(range(index_base, index_base + len(image)))
 			(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
-																verbose=False, eps=eps, iters=iters)
+																verbose=False, eps=eps, iters=iters,
+																optim_type=opt_type, norm=norm)
 			index_base += len(image)
 			attack_rate += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
@@ -172,11 +178,11 @@ if __name__ == "__main__":
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
 		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																n=n, verbose=True,
-																eps=eps, iters=iters, binary=binary)
+																n=n, verbose=True, optim_type=opt_type,
+																eps=eps, iters=iters, binary=binary, norm=norm)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],
 					tlist=image_labels,
 					fontsize=22,
-					filename="%s.png" % image_save_name)
+					filename="./visualize/%s.png" % image_save_name)
