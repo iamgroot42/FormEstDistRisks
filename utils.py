@@ -1,10 +1,33 @@
 import torch as ch
 import numpy as np
 from torchvision import transforms
+from robustness.datasets import GenericBinary, CIFAR
 from robustness.tools import folder
 from tqdm import tqdm
 import sys
 import os
+
+
+class DataPaths:
+	def __init__(self, name, data_path):
+		self.name      = name
+		self.data_path = data_path
+		self.dataset   = self.dataset_type(data_path)
+
+	def get_dataset(self):
+		return self.dataset
+
+class BinaryCIFAR(DataPaths):
+	def __init__(self):
+		self.dataset_type = GenericBinary
+		super(BinaryCIFAR, self).__init__('binary cifar10', "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct")
+
+
+class CIFAR10(DataPaths):
+	def __init__(self):
+		self.dataset_type = CIFAR
+		super(CIFAR10, self).__init__('cifar10', "/p/adversarialml/as9rw/datasets/cifar10")
+
 
 
 def read_given_dataset(data_path):

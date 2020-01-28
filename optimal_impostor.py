@@ -5,12 +5,15 @@ from robustness.model_utils import make_and_restore_model
 from robustness.tools.vis_tools import show_image_row
 import numpy as np
 import sys
+from tqdm import tqdm
 from torch.autograd import Variable
 
 import optimize, utils
 
 
-def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custom', verbose=True, n=4, eps=2.0, iters=200, binary=True, norm='2'):
+def find_impostors(model, delta_values, ds, images, mean, std,
+	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
+	binary=True, norm='2', save_attack=False):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -30,7 +33,8 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 	loss_coeffs /= np.sum(loss_coeffs, axis=0)
 
 	# Get feature representation of current image
-	(_, image_rep), _  = model(real.cuda(), with_latent=True)
+	with ch.no_grad():
+		(_, image_rep), _  = model(real.cuda(), with_latent=True)
 
 	# Construct delta vector and indices mask
 	delta_vec = ch.zeros_like(image_rep)
@@ -42,7 +46,12 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 
 	impostors = parallel_impostor(model, delta_vec, real, indices_mask, loss_coeffs, optim_type, verbose, eps, iters, norm)
 
-	pred, _ = model(impostors)
+	with ch.no_grad():
+		if save_attack:
+			(pred, latent), _ = model(impostors, with_latent=True)
+		else:
+			pred, _ = model(impostors)
+			latent = None
 	label_pred = ch.argmax(pred, dim=1)
 
 	clean_pred, _ = model(real)
@@ -63,12 +72,13 @@ def find_impostors(model, delta_values, ds, images, mean, std, optim_type='custo
 	succeeded = np.array(succeeded)
 	image_labels = [clean_preds, preds]
 
-	return (real, impostors, image_labels, np.sum(succeeded, axis=1))
+	return (real, impostors, image_labels, np.sum(succeeded, axis=1), latent.cpu().numpy())
 
 
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm):
 	# Get feature representation of current image
-	(_, image_rep), _  = model(im.cuda(), with_latent=True)
+	with ch.no_grad():
+		(_, image_rep), _  = model(im.cuda(), with_latent=True)
 
 	# Get target feature rep
 	target_rep = image_rep + delta_vec
@@ -113,6 +123,7 @@ if __name__ == "__main__":
 	parser.add_argument('--dataset', type=str, default='binary_c', help='dataset: one of [binary_c, normal_c]')
 	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
 	parser.add_argument('--technique', type=str, default='custom', help='optimization strategy while searching for examples')
+	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	
 	args = parser.parse_args()
 	
@@ -127,18 +138,16 @@ if __name__ == "__main__":
 	binary          = args.dataset == 'binary_c'
 	norm            = args.norm
 	opt_type        = args.technique
+	save_attack     = args.save_attack
 
-	# 0.031372549
 	senses = utils.get_sensitivities(deltas_filepath)
-	# Pick image with lowest average delta-requirement
-	# picked_image = utils.best_target_image(senses, 8223)
 
 	# Load model
 	if binary:
-		ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-		ds = GenericBinary(ds_path)
+		constants = utils.BinaryCIFAR()
 	else:
-		ds = CIFAR()
+		constants = utils.CIFAR10()
+	ds = constants.get_dataset()
 
 	# Load model
 	model_kwargs = {
@@ -157,19 +166,29 @@ if __name__ == "__main__":
 
 		index_base = 0
 		attack_rate, avg_successes = 0, 0
-		for (image, _) in test_loader:
+		impostors_latents = []
+		for (image, _) in tqdm(test_loader):
 			picked_indices = list(range(index_base, index_base + len(image)))
-			(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds,
+			(real, impostors, image_labels, num_flips, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
 																verbose=False, eps=eps, iters=iters,
-																optim_type=opt_type, norm=norm)
+																optim_type=opt_type, norm=norm,
+																save_attack=(save_attack != None))
 			index_base += len(image)
 			attack_rate += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
-			print(num_flips, attack_rate, avg_successes)
+			if save_attack:
+				impostors_latents.append(impostors_latent)
 
 		print("Attack success rate : %f 	%%" % (100 * attack_rate/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
+		impostors_latents = np.concatenate(impostors_latents, 0)
+		if save_attack:
+			impostors_latents_mean, impostors_latents_std = np.mean(impostors_latents, 0), np.std(impostors_latents, 0)
+			np.save(save_attack + "_mean", impostors_latents_mean)
+			np.save(save_attack + "_std", impostors_latents_std)
+		print("Saved activation statistics for adversarial inputs at %s" % save_attack)
+
 	else:
 		# Load all data
 		all_data = utils.load_all_data(ds)
@@ -177,8 +196,8 @@ if __name__ == "__main__":
 		# Visualize attack images
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
-		(real, impostors, image_labels, num_flips) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																n=n, verbose=True, optim_type=opt_type,
+		(real, impostors, image_labels, num_flips, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
+																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm)
 
 		show_image_row([real.cpu(), impostors.cpu()],

@@ -6,43 +6,52 @@ import matplotlib.pyplot as plt
 mpl.rcParams['figure.dpi'] = 200
 plt.style.use('seaborn-whitegrid')
 
-prefix        = "/p/adversarialml/as9rw/binary_stats/nat/"
-normal_stats  = prefix + "stats"
-l2_stats      = prefix + "l2_stats"
-l1_stats      = prefix + "l1_stats"
-linf_stats    = prefix + "linf_stats"
+# prefix        = "/p/adversarialml/as9rw/binary_stats/nat/"
+prefix               = "/p/adversarialml/as9rw/cifar10_stats/linf/"
+normal_stats         = prefix + "stats"
+l2_stats             = prefix + "l2_stats"
+linf_stats           = prefix + "linf_stats"
+custom_l2_stats      = prefix + "custom_l2_stats"
+custom_linf_stats    = prefix + "custom_linf_stats"
 
-deltas_path   = prefix + "deltas_nat.txt"
-
-# Set threshold
-threshold = 1e5
+deltas_path   = prefix + "deltas.txt"
 
 (mean, std) = utils.get_stats(normal_stats)
 
 # Plot only first which_n (for better visualization)
-# start, end  = 0, 100
-# picked = list(range(start, end))
-picked = np.nonzero(mean >= 0)[0]
+start, end  = 1400, 1440
+picked = list(range(start, end))
+# picked = np.nonzero(mean >= 0)[0]
 x = list(range(len(picked)))
 
+# (mean_adv, std_adv) = utils.get_stats(l1_stats)
+# mean_adv = mean_adv[picked]
+# std_adv  = std_adv[picked]
+# plt.errorbar(x, mean_adv, yerr=std_adv, fmt='*', color='red', ecolor='coral', elinewidth=2, capsize=0, label='L1')
 mean = mean[picked]
 std  = std[picked]
 plt.errorbar(x, mean, yerr=std, fmt='o', color='black', ecolor='lightgray', elinewidth=2, capsize=0, label='natural')
+
+(mean_adv, std_adv) = utils.get_stats(custom_l2_stats)
+mean_adv = mean_adv[picked]
+std_adv  = std_adv[picked]
+plt.errorbar(x, mean_adv, yerr=std_adv, fmt='X', color='red', ecolor='lightcoral', elinewidth=2, capsize=0, label='custom L2')
 
 (mean_adv, std_adv) = utils.get_stats(l2_stats)
 mean_adv = mean_adv[picked]
 std_adv  = std_adv[picked]
 plt.errorbar(x, mean_adv, yerr=std_adv, fmt='x', color='blue', ecolor='lightblue', elinewidth=2, capsize=0, label='L2')
 
-# (mean_adv, std_adv) = utils.get_stats(l1_stats)
+# (mean_adv, std_adv) = utils.get_stats(custom_linf_stats)
 # mean_adv = mean_adv[picked]
 # std_adv  = std_adv[picked]
-# plt.errorbar(x, mean_adv, yerr=std_adv, fmt='*', color='red', ecolor='coral', elinewidth=2, capsize=0, label='L1')
+# plt.errorbar(x, mean_adv, yerr=std_adv, fmt='*', color='sienna', ecolor='peachpuff', elinewidth=2, capsize=0, label='custom Linf')
 
 # (mean_adv, std_adv) = utils.get_stats(linf_stats)
 # mean_adv = mean_adv[picked]
 # std_adv  = std_adv[picked]
 # plt.errorbar(x, mean_adv, yerr=std_adv, fmt='+', color='gold', ecolor='beige', elinewidth=2, capsize=0, label='Linf')
+
 
 plt.legend(loc="upper left")
 plt.xlabel("Neurons (ordered)")
