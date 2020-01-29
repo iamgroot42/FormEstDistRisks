@@ -7,7 +7,9 @@ from tqdm import tqdm
 
 ds_path    = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
 # model_path = "/p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest"
-model_path = "/p/adversarialml/as9rw/models_cifar10/cifar_l2_0_5.pt"
+# model_path = "/p/adversarialml/as9rw/models_cifar10/cifar_linf_8.pt"
+# model_path = "/p/adversarialml/as9rw/models_cifar10/cifar_l2_0_5.pt"
+model_path = "/p/adversarialml/as9rw/models_cifar10/cifar_nat.pt"
 
 # ds = GenericBinary(ds_path)
 ds = CIFAR()
@@ -30,9 +32,18 @@ attack_arg = {
 	'use_best': True,
 	'targeted': False
 }
+# attack_arg = {
+# 	'constraint':'inf',
+# 	'eps': 8/255,
+# 	'step_size': ((8 /255) * 2.5) / 20,
+# 	'iterations': 20, 
+# 	'do_tqdm': False,
+# 	'use_best': True,
+# 	'targeted': False
+# }
 
-batch_size = 128
-_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)
+batch_size = 64
+_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 attack_x, attack_y = [], []
 for (im, label) in tqdm(test_loader):

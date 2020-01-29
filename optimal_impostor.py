@@ -1,6 +1,5 @@
 import os
 import torch as ch
-from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 from robustness.tools.vis_tools import show_image_row
 import numpy as np
@@ -72,7 +71,9 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	succeeded = np.array(succeeded)
 	image_labels = [clean_preds, preds]
 
-	return (real, impostors, image_labels, np.sum(succeeded, axis=1), latent.cpu().numpy())
+	if save_attack:
+		return (real, impostors, image_labels, np.sum(succeeded, axis=1), latent.cpu().numpy())
+	return (real, impostors, image_labels, np.sum(succeeded, axis=1), None)
 
 
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm):
@@ -90,7 +91,7 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	if optim_type == 'madry':
 		# Use Madry's optimization
 		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask, 
-			eps=eps, iters=iters, verbose=verbose, p=norm) #1.0, 200
+			eps=eps, iters=iters, verbose=verbose, p=norm, reg_weight=1e0) #1.0, 200
 	elif optim_type == 'natural':
 		# Use natural gradient descent
 		im_matched = optimize.natural_gradient_optimization(model, im, target_rep, indices_mask,
@@ -100,7 +101,7 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 		# Use custom optimization loop
 		im_matched = optimize.custom_optimization(model, im, target_rep, indices_mask,
 			eps=eps, iters=iters, #2.0, 200
-			reg_weight=1e0, verbose=verbose, p=norm)
+			reg_weight=1e1, verbose=verbose, p=norm)
 	else:
 		print("Invalid optimization strategy. Exiting")
 		exit(0)
@@ -167,6 +168,7 @@ if __name__ == "__main__":
 		index_base = 0
 		attack_rate, avg_successes = 0, 0
 		impostors_latents = []
+		all_impostors = []
 		for (image, _) in tqdm(test_loader):
 			picked_indices = list(range(index_base, index_base + len(image)))
 			(real, impostors, image_labels, num_flips, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
@@ -178,15 +180,18 @@ if __name__ == "__main__":
 			attack_rate += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
 			if save_attack:
+				all_impostors.append(impostors.cpu().numpy())
 				impostors_latents.append(impostors_latent)
 
 		print("Attack success rate : %f 	%%" % (100 * attack_rate/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
-		impostors_latents = np.concatenate(impostors_latents, 0)
 		if save_attack:
+			all_impostors     = np.concatenate(all_impostors, 0)
+			impostors_latents = np.concatenate(impostors_latents, 0)
 			impostors_latents_mean, impostors_latents_std = np.mean(impostors_latents, 0), np.std(impostors_latents, 0)
 			np.save(save_attack + "_mean", impostors_latents_mean)
 			np.save(save_attack + "_std", impostors_latents_std)
+			np.save(save_attack + "_images", all_impostors)
 		print("Saved activation statistics for adversarial inputs at %s" % save_attack)
 
 	else:

@@ -86,7 +86,7 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		# 'eps': 1000,
 		'constraint': p,
 		'eps': eps,
-		'step_size': eps / 10,
+		'step_size': 2.5 * eps / iters, #eps / 10,
 		'iterations': iters,
 		'targeted': True,
 		'do_tqdm': verbose
@@ -130,9 +130,11 @@ def natural_gradient_optimization(model, inp_og, target_rep, indices_mask, eps, 
 		# Compute modified gradient (flattened version)
 		grad_inp = inp.grad.view(inp.shape[0], -1) @ F
 		# Back-prop loss
-		inp.data -= 1e-6 * grad_inp.view(inp.grad.shape)
+		inp.data -= 1e-5 * grad_inp.view(inp.grad.shape)
 		if verbose:
-			print(loss.sum().item())
+			print(loss.mean().item())
+		# Project difference back to Lp norm ball
+		inp.data = project_pertb(p)(inp_og, inp.data, eps)
 		# Clip image to [0,1] range
 		inp.data = ch.clamp(inp.data, 0, 1)
 		# Zero gradient

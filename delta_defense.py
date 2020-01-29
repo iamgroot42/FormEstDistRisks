@@ -3,27 +3,32 @@ import numpy as np
 from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
 import dill
+import sys
 
 import utils
 
 
 if __name__ == "__main__":
 
-	# model_path   = "/p/adversarialml/as9rw/models_correct/edit_this.pt"
 	model_path   = "/p/adversarialml/as9rw/models_cifar10/delta_model.pt"
-	# dataset_path = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-	# sense_path   = "/p/adversarialml/as9rw/binary_stats/nat/deltas_nat.txt"
-	# scale_path   = "/p/adversarialml/as9rw/binary_stats/nat/stats/"
 	sense_path   = "/p/adversarialml/as9rw/cifar10_stats/nat/deltas.txt"
 	scale_path   = "/p/adversarialml/as9rw/cifar10_stats/nat/stats/"
 
-	# ds = GenericBinary(dataset_path)
-	ds = CIFAR()
+	constants = utils.CIFAR10()
+	ds = constants.get_dataset()
 	model_kwargs = {
 		'arch': 'resnet50',
 		'dataset': ds,
 		'resume_path': model_path
 	}
+
+	# Scale down worst N delta values by 1/factor
+	factor = sys.argv[1]
+	if factor == 'inf':
+		factor = 0
+	else:
+		factor = 1 / float(factor)
+	N = int(sys.argv[2])
 
 	# Load model
 	model, _ = make_and_restore_model(**model_kwargs)
@@ -32,14 +37,17 @@ if __name__ == "__main__":
 	# Get scaled delta values
 	senses   = utils.get_sensitivities(sense_path)
 	(mean, std) = utils.get_stats(scale_path)
+
+	# 99.7% interval
+	threshold = mean + 3 * std
+
+	# Only consider neurons with any hopes of attackking (delta within some sensible range)
+	chuck_these = np.min(np.abs(senses), 1) < threshold
+	print("%d candidates identified" % (int(np.sum(chuck_these))))
+	senses[np.logical_not(chuck_these)] = np.inf
+
 	senses = utils.scaled_values(senses, mean, std)
 	senses = np.mean(senses, axis=1)
-
-	# Scale down worst N delta values by 1/2
-	# factor = 4
-	# factor = 1 / factor
-	factor = 0
-	N = 2000
 	worst_n = np.argsort(np.abs(senses))[:N]
 
 	# Random weight drop-out
@@ -59,11 +67,4 @@ if __name__ == "__main__":
 
 	# Obtain feature representations, if needed
 	# (_, image_rep), _  = model(im, with_latent=1)
-	# print(image_rep.shape)
-	# z = model(image_rep, with_latent=-=)
-	# (_, image_rep), _  = model(im, with_latent=1)
-	# print(image_rep.shape)
-	# (_, image_rep), _  = model(im, with_latent=2)
-	# print(image_rep.shape)
-	# (_, image_rep), _  = model(im, with_latent=True)
 	# print(image_rep.shape)
