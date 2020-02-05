@@ -2,7 +2,6 @@ import torch as ch
 import numpy as np
 from robustness.datasets import GenericBinary, CIFAR
 from robustness.model_utils import make_and_restore_model
-import dill
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl

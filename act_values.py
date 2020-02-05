@@ -1,25 +1,18 @@
 import torch as ch
-from robustness.datasets import GenericBinary, CIFAR
+import utils
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
 from tqdm import tqdm
 
-ds_path      = "/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct"
-model_path   = sys.argv[1]
-prefix       = sys.argv[2]
+model_arch   = sys.argv[1]
+model_type   = sys.argv[2]
+prefix       = sys.argv[3]
 
-# ds = GenericBinary(ds_path)
-ds = CIFAR()
+dx = utils.CIFAR10()
+ds = dx.get_dataset()
 
-model_kwargs = {
-	'arch': 'resnet50',
-	'dataset': ds,
-	'resume_path': model_path
-}
-
-model, _ = make_and_restore_model(**model_kwargs)
-model.eval()
+model = dx.get_model(model_type, model_arch)
 
 batch_size = 128
 all_reps = []
@@ -50,5 +43,3 @@ np_mean = ch_mean.cpu().numpy()
 np_std  = ch_std.cpu().numpy()
 np.save(prefix + "feature_mean", np_mean)
 np.save(prefix + "feature_std",   np_std)
-
-# CUDA_VISIBLE_DEVICES=0 python neuron_stats_adv.py /p/adversarialml/as9rw/models_correct/normal/checkpoint.pt.latest linf_for_normal_

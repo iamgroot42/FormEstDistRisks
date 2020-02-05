@@ -69,16 +69,26 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 	return best_x
 	
 
-def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, p='2', verbose=True):
+def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True):
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(m, inp, targ):
-		_, rep = m(inp, with_latent=True, fake_relu=True)
+		_, rep = m(inp, with_latent=True, fake_relu=fake_relu)
 		# Normalized L2 error w.r.t. the target representation
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
 		# Extra loss term (normalized)
 		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
 		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
 		return loss + reg_weight * aux_loss, None
+
+	if custom_best:
+		def custom_loss_fn(loss, x):
+			# Check how much beyond minimum delta the  perturbation on i^th index is
+			# Negative sign, since we want higher delta-diff to score better
+			(_, rep), _ = model(x, with_latent=True, fake_relu=fake_relu)
+			return - ch.sum((rep - target_rep) * indices_mask, dim=1)
+		custom_best = custom_loss_fn
+	else:
+		custom_best = None
 
 	kwargs = {
 		'custom_loss': custom_inversion_loss,
@@ -89,7 +99,8 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		'step_size': 2.5 * eps / iters, #eps / 10,
 		'iterations': iters,
 		'targeted': True,
-		'do_tqdm': verbose
+		'do_tqdm': verbose,
+		'custom_best': custom_best
 	}
 	_, im_matched = model(inp_og, target_rep, make_adv=True, **kwargs)
 	return im_matched

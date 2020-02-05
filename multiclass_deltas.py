@@ -1,23 +1,18 @@
 import torch as ch
-from robustness.datasets import CIFAR
+import utils
 from robustness.model_utils import make_and_restore_model
 import numpy as np
 import sys
 from tqdm import tqdm
 
-ds = CIFAR()
+dx = utils.CIFAR10()
+ds = dx.get_dataset()
 
-model_path = sys.argv[1]
-filename = sys.argv[2]
+filename   = sys.argv[1]
+model_arch = sys.argv[2]
+model_type = sys.argv[3]
 
-model_kwargs = {
-	'arch': 'resnet50',
-	'dataset': ds,
-	'resume_path': model_path
-}
-
-model, _ = make_and_restore_model(**model_kwargs)
-model.eval()
+model = dx.get_model(model_type, model_arch)
 
 batch_size = 1024
 _, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
@@ -25,14 +20,14 @@ _, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True
 # Extract final weights matrix from model
 weights = None
 for name, param in model.state_dict().items():
-	if name == "module.model.linear.weight":
+	if name == "module.model.classifier.weight":
 		weights = param
 		break
 
 # Extract bias (just because)
 bias = None
 for name, param in model.state_dict().items():
-	if name == "module.model.linear.bias":
+	if name == "module.model.classifier.bias":
 		bias = param
 		break
 
@@ -59,16 +54,17 @@ for (im, label) in test_loader:
 			# Get sensitivity values across classes
 			sensitivity = classwise_closed_form_solutions(logit, specific_weights)
 			# print()
-			# Check wx+b before and after delta noise
+			# # Check wx+b before and after delta noise
 			# unsqueezed_features = features[j].unsqueeze(1)
 			# before = ch.mm(weights, unsqueezed_features).squeeze(1) + bias
 			# print(before)
 			# feature_modified = unsqueezed_features.clone()
-			# feature_modified[i] += sensitivity[7]
+			# feature_modified[i] += sensitivity[8]
 			# after = ch.mm(weights, feature_modified).squeeze(1) + bias
 			# print(after)
 			# print(sensitivity)
 			# print()
+			# exit()
 
 			# Only consider delta values that correspond to valud ReLU range, register others as 'inf'
 			valid_sensitivity = sensitivity[features[j][i] + sensitivity >= 0]
