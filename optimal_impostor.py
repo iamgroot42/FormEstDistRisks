@@ -23,7 +23,8 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	real = ch.cat(image_, 0)
 
 	# Get scaled senses
-	scaled_delta_values = utils.scaled_values(delta_values, mean, std)
+	scaled_delta_values = delta_values
+	# scaled_delta_values = utils.scaled_values(delta_values, mean, std)
 
 	# Pick easiest-to-attack neurons per image
 	easiest = np.argsort(scaled_delta_values, axis=0)
@@ -81,7 +82,8 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm, custom_best, fake_relu):
 	# Get feature representation of current image
 	with ch.no_grad():
-		(_, image_rep), _  = model(im.cuda(), with_latent=True)
+		(target_logits, image_rep), _  = model(im.cuda(), with_latent=True, fake_relu=fake_relu)
+		target_logits = ch.argmax(target_logits, dim=1)
 
 	# Get target feature rep
 	target_rep = image_rep + delta_vec
@@ -89,12 +91,21 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	# Construct loss coefficients
 	loss_coeffs = np.tile(l_c, (im.shape[0], 1))
 	loss_coeffs = ch.from_numpy(loss_coeffs).float().cuda()
-	# optim_type = 'madry'
+
+	# Override custom_best, use cross-entropy on model instead
+	criterion = ch.nn.CrossEntropyLoss(reduction='none').cuda()
+	def ce_loss(loss, x):
+		output, _ = model(x, fake_relu=fake_relu)
+		# We want CE loss b/w new and old to be as high as possible
+		return -criterion(output, target_logits)
+	# Use CE loss
+	if custom_best: custom_best = ce_loss
+
 	if optim_type == 'madry':
 		# Use Madry's optimization
 		# Custom-Best (if True, look at i^th perturbation, not care about overall loss)
 		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask, 
-			eps=eps, iters=iters, verbose=verbose, p=norm, reg_weight=1e0,
+			eps=eps, iters=iters, verbose=verbose, p=norm, reg_weight=1e1, #reg_weight=1e0,
 			custom_best=custom_best, fake_relu=fake_relu) #1.0, 200
 	elif optim_type == 'natural':
 		# Use natural gradient descent
@@ -120,7 +131,7 @@ if __name__ == "__main__":
 	parser.add_argument('--model_type', type=str, help='type of model (nat/l2/linf)')
 	parser.add_argument('--eps', type=float, help='epsilon-iter')
 	parser.add_argument('--iters', type=int, help='number of iterations')
-	parser.add_argument('--n', type=int, default=8, help='number of neurons per image')
+	parser.add_argument('--n', type=int, default=4, help='number of neurons per image')
 	parser.add_argument('--bs', type=int, default=8, help='batch size while performing attack')
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--custom_best', type=bool, default=False, help='look at absoltue loss or perturbation for best-loss criteria')
@@ -131,7 +142,9 @@ if __name__ == "__main__":
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	
 	args = parser.parse_args()
-	print(args)
+	for arg in vars(args):
+		print(arg, " : ", getattr(args, arg))
+	# print(args)
 	
 	model_arch      = args.model_arch
 	model_type      = args.model_type

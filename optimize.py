@@ -75,19 +75,25 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		_, rep = m(inp, with_latent=True, fake_relu=fake_relu)
 		# Normalized L2 error w.r.t. the target representation
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
+		# loss = ch.norm(rep - targ, dim=1)
 		# Extra loss term (normalized)
+		# print(inp.shape, rep.shape, targ.shape, indices_mask.shape, "custom_inversion_loss")
 		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
 		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
 		return loss + reg_weight * aux_loss, None
 
 	if custom_best:
-		def custom_loss_fn(loss, x):
-			# Check how much beyond minimum delta the  perturbation on i^th index is
-			# Negative sign, since we want higher delta-diff to score better
-			(_, rep), _ = model(x, with_latent=True, fake_relu=fake_relu)
-			return - ch.sum((rep - target_rep) * indices_mask, dim=1)
-		custom_best = custom_loss_fn
+		# If True, use the 'only neuron i' based 'best' evaluation
+		if custom_best is True:
+			def custom_loss_fn(loss, x):
+				# Check how much beyond minimum delta the  perturbation on i^th index is
+				# Negative sign, since we want higher delta-diff to score better
+				(_, rep), _ = model(x, with_latent=True, fake_relu=fake_relu)
+				return - ch.sum((rep - target_rep) * indices_mask, dim=1)
+			custom_best = custom_loss_fn
+		# Else, expect custom_best function to be passed along
 	else:
+		# If nothing passed along, use simple comparison
 		custom_best = None
 
 	kwargs = {
