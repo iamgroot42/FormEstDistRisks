@@ -59,13 +59,16 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	clean_pred, _ = model(real)
 	clean_pred = ch.argmax(clean_pred, dim=1)
 
-	if binary:
-		mapping = ["animal", "vehicle"]
-	else:
-		mapping = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+	# Skip below steps if Imagenet
+	# if binary:
+	# 	mapping = ["animal", "vehicle"]
+	# else:
+	# 	mapping = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
-	clean_preds = [mapping[x] for x in clean_pred.cpu().numpy()]
-	preds       = [mapping[x] for x in label_pred.cpu().numpy()]
+	# clean_preds = [mapping[x] for x in clean_pred.cpu().numpy()]
+	# preds       = [mapping[x] for x in label_pred.cpu().numpy()]
+	clean_preds = clean_pred.cpu().numpy()
+	preds       = label_pred.cpu().numpy()
 
 	succeeded = [[] for _ in range(len(images))]
 	for i in range(len(images)):
@@ -136,7 +139,7 @@ if __name__ == "__main__":
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--custom_best', type=bool, default=False, help='look at absoltue loss or perturbation for best-loss criteria')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
-	parser.add_argument('--dataset', type=str, default='normal_c', help='dataset: one of [binary_c, normal_c]')
+	parser.add_argument('--dataset', type=str, default='normal_c', help='dataset: one of [binarycifar10, cifar10, imagenet]')
 	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
@@ -153,7 +156,7 @@ if __name__ == "__main__":
 	iters           = args.iters
 	eps             = args.eps
 	n               = args.n
-	binary          = args.dataset == 'binary_c'
+	binary          = args.dataset == 'binarycifar10'
 	norm            = args.norm
 	opt_type        = args.technique
 	save_attack     = args.save_attack
@@ -161,17 +164,25 @@ if __name__ == "__main__":
 	fake_relu       = (model_arch != 'vgg19')
 
 	# Load model
-	if binary:
+	if args.dataset == 'cifar10':
+		constants = utils.CIFAR10()
+	elif args.dataset == 'imagenet':
+		constants = utils.ImageNet1000()
+	elif args.dataset == 'binarycifar10':
 		constants = utils.BinaryCIFAR()
 	else:
-		constants = utils.CIFAR10()
+		error("Invalid Dataset Specified")
 	ds = constants.get_dataset()
 
 	# Load model
-	model = constants.get_model(model_type ,model_arch)
-	senses = constants.get_deltas(model_type ,model_arch)
+	model = constants.get_model(model_type , model_arch)
 	# Get stats for neuron activations
+	senses = constants.get_deltas(model_type, model_arch)
 	(mean, std) = constants.get_stats(model_type, model_arch)
+	# prefix = "1e1_1e4_1e-2_16_1"
+	# print(prefix)
+	# senses = utils.get_sensitivities(prefix + ".txt")
+	# (mean, std) = utils.get_stats(prefix)
 
 	if args.longrun:
 		_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
@@ -180,7 +191,8 @@ if __name__ == "__main__":
 		attack_rate, avg_successes = 0, 0
 		impostors_latents = []
 		all_impostors = []
-		for (image, _) in tqdm(test_loader):
+		iterator = tqdm(test_loader)
+		for (image, _) in iterator:
 			picked_indices = list(range(index_base, index_base + len(image)))
 			(real, impostors, image_labels, num_flips, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
@@ -194,6 +206,8 @@ if __name__ == "__main__":
 			if save_attack:
 				all_impostors.append(impostors.cpu().numpy())
 				impostors_latents.append(impostors_latent)
+			# Keep track of attack success rate
+			iterator.set_description('Success rate : %.4f | Flips/Image : %.4f/%d' % (100 * attack_rate/index_base, avg_successes / index_base, n))
 
 		print("Attack success rate : %f 	%%" % (100 * attack_rate/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))

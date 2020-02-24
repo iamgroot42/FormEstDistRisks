@@ -28,7 +28,7 @@ class DataPaths:
 		model_kwargs = {
 			'arch': arch,
 			'dataset': self.dataset,
-			'resume_path': self.model_prefix[arch] + model_path
+			'resume_path': model_path
 		}
 		model, _ = make_and_restore_model(**model_kwargs)
 		model.eval()

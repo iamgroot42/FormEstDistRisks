@@ -62,6 +62,7 @@ def custom_train_loss_better(model, inp, targets, top_k, delta_1, delta_2):
 	with ch.no_grad():
 		(logits, features), _ = model(inp, with_latent=True)
 	w = model.module.model.classifier.weight
+	# w = model.module.model.linear.weight
 	
 	# First term : minimize weight values for same feature across any two different classes (nC2)
 	diffs = []
@@ -91,9 +92,65 @@ def custom_train_loss_better(model, inp, targets, top_k, delta_1, delta_2):
 	return delta_1 * first_term + delta_2 * second_term
 
 
+def custom_train_loss_better_faster(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	# with ch.no_grad():
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	# w = model.module.model.classifier.weight
+	w = model.module.model.linear.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+	
+	# First term : minimize weight values for same feature across any two different classes (nC2)
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		diffs.append(ch.max(ch.abs(diff[0] - diff[1])))
+	# Consider this across all class pairs (pick maximum possible)
+	first_term = ch.max(ch.stack(diffs, dim=0))
+
+	diffs_2 = []
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2)) / features_norm
+		# use_these, _ = ch.max(normalized_drop_term, dim=1)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs_2.append(use_these)
+	# second_term, _ = ch.max(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(second_term)
+
+	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term)
+
+
+def crazy_loss(model, inp, targets, top_k, delta_1, delta_2):
+	(logits, features), _ = model(inp, with_latent=True)
+	w = model.module.model.classifier.weight
+	eps = 1e-10
+	indices = ch.arange(logits.shape[0])
+	total_term = ch.zeros_like(features)
+	# print(w.shape)
+	# exit()
+	for i in range(logits.shape[1]):
+		term = ch.div((logits[indices, targets] - logits[indices, i]).unsqueeze(1), w[i, :] - w[targets, :])
+		term -= ch.mean(features, dim=0).detach()
+		term /= ch.std(features, dim=0).detach() + eps
+		term = ch.abs(term)
+		total_term += term
+	total_term /= logits.shape[0] - 1
+	total_term, _ = ch.topk(total_term, top_k, dim=1)
+	total_term = ch.mean(total_term)
+	return delta_1 * total_term
+
+
 def custom_train_loss_best(model, inp, targets, top_k, delta_1, delta_2):
-	with ch.no_grad():
-		(logits, features), _ = model(inp, with_latent=True)
+	(logits, features), _ = model(inp, with_latent=True)
 	w = model.module.model.classifier.weight
 	b = model.module.model.classifier.bias
 	
@@ -136,7 +193,8 @@ if __name__ == "__main__":
 	parser.add_argument('--start_lr', type=float, default=0.1, help='starting LR for optimizer')
 	parser.add_argument('--delta_1', type=float, default=1e0, help='loss coefficient for first term')
 	parser.add_argument('--delta_2', type=float, default=1e0, help='loss coefficient for second term')
-	parser.add_argument('--reg_type', type=int, default=1, help='Regularization type [0, 1, 2]')
+	parser.add_argument('--reg_type', type=int, default=1, help='Regularization type [0, 1, 2, 3]')
+	parser.add_argument('--fast', type=bool, default=False, help='Use optimized method (single forward pass) with reg_type=1')
 
 	parsed_args = parser.parse_args()
 	for arg in vars(parsed_args):
@@ -151,14 +209,22 @@ if __name__ == "__main__":
 	elif parsed_args.reg_type == 2:
 		def regularizer(model, inp, targets):
 			return custom_train_loss_best(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
+	elif parsed_args.reg_type == 3:
+		def regularizer(model, inp, targets):
+			return crazy_loss(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
 	else:
 		print("Invalid regularization requested. Exiting")
 		exit(0)
 
+	if parsed_args.fast:
+		def regularizer(model, inp, targets, train_criterion, adv, attack_kwargs):
+			return custom_train_loss_better_faster(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+				parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+
 	train_kwargs = {
 	    'out_dir': "/p/adversarialml/as9rw/models_cifar10_%s/" % (parsed_args.model_arch),
 	    'adv_train': 0,
-	    'exp_name': 'custom_adv_train_try_%f_%f_%d_%f_%s' % (parsed_args.delta_1, parsed_args.delta_2, parsed_args.top_k, parsed_args.start_lr, parsed_args.reg_type),
+	    'exp_name': 'custom_adv_train_try_%f_%f_%d_%f_%s_fast_%d' % (parsed_args.delta_1, parsed_args.delta_2, parsed_args.top_k, parsed_args.start_lr, parsed_args.reg_type, parsed_args.fast),
 	    'dataset': 'cifar',
     	'arch': parsed_args.model_arch,
     	'adv_eval': True,
@@ -171,7 +237,8 @@ if __name__ == "__main__":
     	'random_restarts': 0,
     	'lr': parsed_args.start_lr,
     	'use_adv_eval_criteria': 1,
-    	'regularizer': regularizer
+    	'regularizer': regularizer,
+    	'let_reg_handle_loss': parsed_args.fast
 	}
 
 	ds_class = DATASETS[train_kwargs['dataset']]
