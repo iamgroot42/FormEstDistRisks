@@ -61,8 +61,8 @@ def custom_train_loss(model, inp, targets, delta):
 def custom_train_loss_better(model, inp, targets, top_k, delta_1, delta_2):
 	with ch.no_grad():
 		(logits, features), _ = model(inp, with_latent=True)
-	w = model.module.model.classifier.weight
-	# w = model.module.model.linear.weight
+	# w = model.module.model.classifier.weight
+	w = model.module.model.linear.weight
 	
 	# First term : minimize weight values for same feature across any two different classes (nC2)
 	diffs = []
@@ -95,8 +95,8 @@ def custom_train_loss_better(model, inp, targets, top_k, delta_1, delta_2):
 def custom_train_loss_better_faster(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
 	# with ch.no_grad():
 	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
-	# w = model.module.model.classifier.weight
-	w = model.module.model.linear.weight
+	w = model.module.model.classifier.weight
+	# w = model.module.model.linear.weight
 
 	# Calculate normal loss
 	loss = train_criterion(logits, targets)

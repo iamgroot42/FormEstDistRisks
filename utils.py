@@ -25,6 +25,8 @@ class DataPaths:
 		model_path = self.models.get(m_type, None)
 		if not model_path:
 			model_path = m_type
+		else:
+			model_path = self.model_prefix[arch] + self.models[m_type]
 		model_kwargs = {
 			'arch': arch,
 			'dataset': self.dataset,

@@ -13,7 +13,7 @@ import optimize, utils
 def find_impostors(model, delta_values, ds, images, mean, std,
 	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
 	binary=True, norm='2', save_attack=False, custom_best=False,
-	fake_relu=True):
+	fake_relu=True, analysis_start=0):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -41,7 +41,7 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	delta_vec = ch.zeros_like(image_rep)
 	indices_mask = ch.zeros_like(image_rep)
 	for j in range(len(images)):
-		for i, x in enumerate(easiest[:n, j]):
+		for i, x in enumerate(easiest[analysis_start : analysis_start + n, j]):
 			delta_vec[i + j * n, x] = delta_values[x, j]
 			indices_mask[i + j * n, x] = 1		
 
@@ -78,8 +78,8 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	image_labels = [clean_preds, preds]
 
 	if save_attack:
-		return (real, impostors, image_labels, np.sum(succeeded, axis=1), latent.cpu().numpy())
-	return (real, impostors, image_labels, np.sum(succeeded, axis=1), None)
+		return (real, impostors, image_labels, succeeded, latent.cpu().numpy())
+	return (real, impostors, image_labels, succeeded, None)
 
 
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm, custom_best, fake_relu):
@@ -143,11 +143,12 @@ if __name__ == "__main__":
 	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
+	parser.add_argument('--analysis', type=bool, default=False, help='report neuron-wise attack success rates?')
+	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n). used only when analysis flag is set')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
 		print(arg, " : ", getattr(args, arg))
-	# print(args)
 	
 	model_arch      = args.model_arch
 	model_type      = args.model_type
@@ -162,6 +163,8 @@ if __name__ == "__main__":
 	save_attack     = args.save_attack
 	custom_best     = args.custom_best
 	fake_relu       = (model_arch != 'vgg19')
+	analysis        = args.analysis
+	analysis_start  = args.analysis_start
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -191,15 +194,18 @@ if __name__ == "__main__":
 		attack_rate, avg_successes = 0, 0
 		impostors_latents = []
 		all_impostors = []
+		neuron_wise_success = []
 		iterator = tqdm(test_loader)
 		for (image, _) in iterator:
 			picked_indices = list(range(index_base, index_base + len(image)))
-			(real, impostors, image_labels, num_flips, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
+			(real, impostors, image_labels, succeeded, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
 																verbose=False, eps=eps, iters=iters,
 																optim_type=opt_type, norm=norm,
 																save_attack=(save_attack != None),
-																custom_best=custom_best, fake_relu=fake_relu)
+																custom_best=custom_best, fake_relu=fake_relu,
+																analysis_start=analysis_start)
+			num_flips = np.sum(succeeded, axis=1)
 			index_base += len(image)
 			attack_rate += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
@@ -208,8 +214,18 @@ if __name__ == "__main__":
 				impostors_latents.append(impostors_latent)
 			# Keep track of attack success rate
 			iterator.set_description('Success rate : %.4f | Flips/Image : %.4f/%d' % (100 * attack_rate/index_base, avg_successes / index_base, n))
+			# Keep track of neuron-wise attack success rate
+			if analysis:
+				neuron_wise_success.append(succeeded)
 
-		print("Attack success rate : %f 	%%" % (100 * attack_rate/index_base))
+		if analysis:
+			neuron_wise_success = np.concatenate(neuron_wise_success, 0)
+			neuron_wise_success = np.mean(neuron_wise_success, 0)
+			for i in range(neuron_wise_success.shape[0]):
+				print("Neuron %d attack success rate : %f %%" % (i + analysis_start, 100 * neuron_wise_success[i]))
+			print()
+
+		print("Attack success rate : %f %%" % (100 * attack_rate/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
 		if save_attack:
 			all_impostors     = np.concatenate(all_impostors, 0)
@@ -218,7 +234,7 @@ if __name__ == "__main__":
 			np.save(save_attack + "_mean", impostors_latents_mean)
 			np.save(save_attack + "_std", impostors_latents_std)
 			np.save(save_attack + "_images", all_impostors)
-		print("Saved activation statistics for adversarial inputs at %s" % save_attack)
+			print("Saved activation statistics for adversarial inputs at %s" % save_attack)
 
 	else:
 		# Load all data
@@ -227,10 +243,10 @@ if __name__ == "__main__":
 		# Visualize attack images
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
-		(real, impostors, image_labels, num_flips, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
+		(real, impostors, image_labels, succeeded, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
 																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
-																fake_relu=fake_relu)
+																fake_relu=fake_relu, analysis_start=analysis_start)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],
