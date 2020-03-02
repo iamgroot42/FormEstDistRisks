@@ -13,7 +13,7 @@ import optimize, utils
 def find_impostors(model, delta_values, ds, images, mean, std,
 	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
 	binary=True, norm='2', save_attack=False, custom_best=False,
-	fake_relu=True, analysis_start=0):
+	fake_relu=True, analysis_start=0, random_restarts=0):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -23,8 +23,10 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	real = ch.cat(image_, 0)
 
 	# Get scaled senses
-	scaled_delta_values = delta_values
-	# scaled_delta_values = utils.scaled_values(delta_values, mean, std)
+	# scaled_delta_values = delta_values
+	scaled_delta_values = utils.scaled_values(delta_values, mean, std)
+	# Replace inf values with largest non-inf values
+	delta_values[delta_values == np.inf] = delta_values[delta_values != np.inf].max()
 
 	# Pick easiest-to-attack neurons per image
 	easiest = np.argsort(scaled_delta_values, axis=0)
@@ -46,7 +48,7 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 			indices_mask[i + j * n, x] = 1		
 
 	impostors = parallel_impostor(model, delta_vec, real, indices_mask, loss_coeffs, optim_type,
-		verbose, eps, iters, norm, custom_best, fake_relu)
+		verbose, eps, iters, norm, custom_best, fake_relu, random_restarts)
 
 	with ch.no_grad():
 		if save_attack:
@@ -82,7 +84,8 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	return (real, impostors, image_labels, succeeded, None)
 
 
-def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps, iters, norm, custom_best, fake_relu):
+def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps,
+	iters, norm, custom_best, fake_relu, random_restarts):
 	# Get feature representation of current image
 	with ch.no_grad():
 		(target_logits, image_rep), _  = model(im.cuda(), with_latent=True, fake_relu=fake_relu)
@@ -109,7 +112,7 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 		# Custom-Best (if True, look at i^th perturbation, not care about overall loss)
 		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask, 
 			eps=eps, iters=iters, verbose=verbose, p=norm, reg_weight=1e1, #reg_weight=1e0,
-			custom_best=custom_best, fake_relu=fake_relu) #1.0, 200
+			custom_best=custom_best, fake_relu=fake_relu, random_restarts=random_restarts) #1.0, 200
 	elif optim_type == 'natural':
 		# Use natural gradient descent
 		im_matched = optimize.natural_gradient_optimization(model, im, target_rep, indices_mask,
@@ -144,6 +147,7 @@ if __name__ == "__main__":
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	parser.add_argument('--analysis', type=bool, default=False, help='report neuron-wise attack success rates?')
+	parser.add_argument('--random_restarts', type=int, default=0, help='how many random restarts? (0 -> False)')
 	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n). used only when analysis flag is set')
 	
 	args = parser.parse_args()
@@ -165,6 +169,7 @@ if __name__ == "__main__":
 	fake_relu       = (model_arch != 'vgg19')
 	analysis        = args.analysis
 	analysis_start  = args.analysis_start
+	random_restarts = args.random_restarts
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -204,7 +209,7 @@ if __name__ == "__main__":
 																optim_type=opt_type, norm=norm,
 																save_attack=(save_attack != None),
 																custom_best=custom_best, fake_relu=fake_relu,
-																analysis_start=analysis_start)
+																analysis_start=analysis_start, random_restarts=random_restarts)
 			num_flips = np.sum(succeeded, axis=1)
 			index_base += len(image)
 			attack_rate += np.sum(num_flips > 0)
@@ -246,7 +251,7 @@ if __name__ == "__main__":
 		(real, impostors, image_labels, succeeded, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
 																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
-																fake_relu=fake_relu, analysis_start=analysis_start)
+																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

@@ -74,6 +74,45 @@ def custom_train_loss_better(model, inp, targets, top_k, delta_1, delta_2):
 	# Consider this across all class pairs (pick maximum possible)
 	first_term = ch.max(ch.stack(diffs, dim=0))
 
+	# TODO : consider only topk (much like second_term)
+
+	diffs_2 = []
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2)) / features_norm
+		# use_these, _ = ch.max(normalized_drop_term, dim=1)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs_2.append(use_these)
+	# second_term, _ = ch.max(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(second_term)
+
+	return delta_1 * first_term + delta_2 * second_term
+
+
+def custom_train_loss_better_modified(model, inp, targets, top_k, delta_1, delta_2):
+	with ch.no_grad():
+		(logits, features), _ = model(inp, with_latent=True)
+	w = model.module.model.classifier.weight
+	# w = model.module.model.linear.weight
+	
+	# First term : minimize weight values for same feature across any two different classes (nC2)
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		topk_diff, _ = ch.topk(ch.abs(diff[0] - diff[1]), top_k)
+		diffs.append(ch.mean(topk_diff))
+	# Consider this across all class pairs (pick maximum possible)
+	first_term = ch.max(ch.stack(diffs, dim=0))
+
+	# TODO : consider only topk (much like second_term)
+
 	diffs_2 = []
 	features_norm = ch.sum(features, dim=1).unsqueeze(1)
 	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
@@ -129,24 +168,83 @@ def custom_train_loss_better_faster(model, inp, targets, top_k, delta_1, delta_2
 	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term)
 
 
-def crazy_loss(model, inp, targets, top_k, delta_1, delta_2):
-	(logits, features), _ = model(inp, with_latent=True)
+def as_it_is_loss(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
 	w = model.module.model.classifier.weight
-	eps = 1e-10
-	indices = ch.arange(logits.shape[0])
-	total_term = ch.zeros_like(features)
-	# print(w.shape)
-	# exit()
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+	
+	# First term : minimize weight values for same feature across any two different classes (nC2)
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		topk_diff, _ = ch.topk(ch.abs(diff[0] - diff[1]), top_k)
+		diffs.append(ch.mean(topk_diff))
+	first_term = ch.max(ch.stack(diffs, dim=0))
+
+	diffs_2 = []
+	# Consider detaching this term for possibly less orthogonal gradients?
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
 	for i in range(logits.shape[1]):
-		term = ch.div((logits[indices, targets] - logits[indices, i]).unsqueeze(1), w[i, :] - w[targets, :])
-		term -= ch.mean(features, dim=0).detach()
-		term /= ch.std(features, dim=0).detach() + eps
-		term = ch.abs(term)
-		total_term += term
-	total_term /= logits.shape[0] - 1
-	total_term, _ = ch.topk(total_term, top_k, dim=1)
-	total_term = ch.mean(total_term)
-	return delta_1 * total_term
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2) / features_norm)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs_2.append(use_these)
+	second_term = ch.mean(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(second_term)
+
+	# delta_3 = 1e3
+	# third_term, _ =  ch.topk(ch.std(features, dim=0), top_k)
+	# third_term = ch.mean(third_term)
+
+	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term)
+	# return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term + delta_3 * third_term)
+
+
+def as_it_is_loss_simpler(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+	
+	# First term : minimize weight values for same feature across any two different classes (nC2)
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		topk_diff, _ = ch.topk(ch.abs(diff[0] - diff[1]), top_k)
+		diffs.append(ch.mean(topk_diff))
+	first_term = ch.stack(diffs, dim=0)
+	first_term, _ = ch.topk(first_term, 9) # n_classes - 1
+	first_term = ch.mean(first_term)
+
+	diffs_2 = []
+	# Consider detaching this term for possibly less orthogonal gradients?
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2) / features_norm)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs_2.append(use_these)
+	second_term = ch.mean(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(second_term)
+	
+	delta_3 = 5e-1
+	third_term, _ =  ch.topk(ch.std(features, dim=0), top_k)
+	third_term = ch.mean(third_term)
+
+	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term + delta_3 * third_term)
 
 
 def custom_train_loss_best(model, inp, targets, top_k, delta_1, delta_2):
@@ -210,16 +308,27 @@ if __name__ == "__main__":
 		def regularizer(model, inp, targets):
 			return custom_train_loss_best(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
 	elif parsed_args.reg_type == 3:
+		pass
+	elif parsed_args.reg_type == 4:
 		def regularizer(model, inp, targets):
-			return crazy_loss(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
+			return custom_train_loss_better_modified(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
+	elif parsed_args.reg_type == 5:
+		pass
 	else:
 		print("Invalid regularization requested. Exiting")
 		exit(0)
 
 	if parsed_args.fast:
 		def regularizer(model, inp, targets, train_criterion, adv, attack_kwargs):
-			return custom_train_loss_better_faster(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
-				parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			if parsed_args.reg_type == 1:
+				return custom_train_loss_better_faster(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 3:
+				return as_it_is_loss(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 5:
+				return as_it_is_loss_simpler(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
 
 	train_kwargs = {
 	    'out_dir': "/p/adversarialml/as9rw/models_cifar10_%s/" % (parsed_args.model_arch),
