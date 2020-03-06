@@ -110,9 +110,10 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	if optim_type == 'madry':
 		# Use Madry's optimization
 		# Custom-Best (if True, look at i^th perturbation, not care about overall loss)
-		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask, 
-			eps=eps, iters=iters, verbose=verbose, p=norm, reg_weight=1e1, #reg_weight=1e0,
-			custom_best=custom_best, fake_relu=fake_relu, random_restarts=random_restarts) #1.0, 200
+		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask,
+			random_restart_targets=target_logits, eps=eps, iters=iters, verbose=verbose,
+			p=norm, reg_weight=1e1, custom_best=custom_best, fake_relu=fake_relu,
+			random_restarts=random_restarts)
 	elif optim_type == 'natural':
 		# Use natural gradient descent
 		im_matched = optimize.natural_gradient_optimization(model, im, target_rep, indices_mask,
@@ -142,7 +143,7 @@ if __name__ == "__main__":
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--custom_best', type=bool, default=False, help='look at absoltue loss or perturbation for best-loss criteria')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
-	parser.add_argument('--dataset', type=str, default='normal_c', help='dataset: one of [binarycifar10, cifar10, imagenet]')
+	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binarycifar10, cifar10, imagenet]')
 	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
@@ -195,8 +196,8 @@ if __name__ == "__main__":
 	if args.longrun:
 		_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
-		index_base = 0
-		attack_rate, avg_successes = 0, 0
+		index_base, avg_successes = 0, 0
+		attack_rates = [0, 0, 0, 0]
 		impostors_latents = []
 		all_impostors = []
 		neuron_wise_success = []
@@ -210,15 +211,24 @@ if __name__ == "__main__":
 																save_attack=(save_attack != None),
 																custom_best=custom_best, fake_relu=fake_relu,
 																analysis_start=analysis_start, random_restarts=random_restarts)
+
+			attack_rates[0] += np.sum(np.sum(succeeded[:, :1], axis=1) > 0)
+			attack_rates[1] += np.sum(np.sum(succeeded[:, :4], axis=1) > 0)
+			attack_rates[2] += np.sum(np.sum(succeeded[:, :8], axis=1) > 0)
 			num_flips = np.sum(succeeded, axis=1)
-			index_base += len(image)
-			attack_rate += np.sum(num_flips > 0)
+			attack_rates[3] += np.sum(num_flips > 0)
 			avg_successes += np.sum(num_flips)
+			index_base += len(image)
 			if save_attack:
 				all_impostors.append(impostors.cpu().numpy())
 				impostors_latents.append(impostors_latent)
 			# Keep track of attack success rate
-			iterator.set_description('Success rate : %.4f | Flips/Image : %.4f/%d' % (100 * attack_rate/index_base, avg_successes / index_base, n))
+			iterator.set_description('(n=1,4,8,%d) Success rates : (%.2f, %.2f, %.2f, %.2f) | | Flips/Image : %.2f/%d' \
+				% (n, 100 * attack_rates[0]/index_base,
+					100 * attack_rates[1]/index_base,
+					100 * attack_rates[2]/index_base,
+					100 * attack_rates[3]/index_base,
+					avg_successes / index_base, n))
 			# Keep track of neuron-wise attack success rate
 			if analysis:
 				neuron_wise_success.append(succeeded)

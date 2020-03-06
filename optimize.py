@@ -69,11 +69,11 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 	return best_x
 	
 
-def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, reg_weight=1e0, p='2',
-	verbose=True, custom_best=False, fake_relu=True, random_restarts=0):
+def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_restart_targets, iters=100,
+	reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True, random_restarts=0):
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(m, inp, targ):
-		_, rep = m(inp, with_latent=True, fake_relu=fake_relu)
+		output, rep = m(inp, with_latent=True, fake_relu=fake_relu)
 		# Normalized L2 error w.r.t. the target representation
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
 		# loss = ch.norm(rep - targ, dim=1)
@@ -81,7 +81,7 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		# print(inp.shape, rep.shape, targ.shape, indices_mask.shape, "custom_inversion_loss")
 		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
 		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
-		return loss + reg_weight * aux_loss, None
+		return loss + reg_weight * aux_loss, output
 
 	if custom_best:
 		# If True, use the 'only neuron i' based 'best' evaluation
@@ -109,7 +109,8 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, 
 		'targeted': True,
 		'do_tqdm': verbose,
 		'custom_best': custom_best,
-		'random_restarts': random_restarts
+		'random_restarts': random_restarts,
+		'random_restart_targets': random_restart_targets
 	}
 	_, im_matched = model(inp_og, target_rep, make_adv=True, **kwargs)
 	return im_matched
