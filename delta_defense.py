@@ -17,10 +17,10 @@ def chuck_inf_means(senses):
 
 if __name__ == "__main__":
 
-	model_path   = "/p/adversarialml/as9rw/models_cifar10/delta_model.pt"
+	model_path   = "/p/adversarialml/as9rw/models_cifar10_vgg/delta_model.pt"
 	
 	m_type    = "linf"
-	arch_type = "resnet50"
+	arch_type = "vgg19"
 
 	constants = utils.CIFAR10()
 	ds = constants.get_dataset()
@@ -71,13 +71,13 @@ if __name__ == "__main__":
 
 		# senses[np.logical_not(chuck_these)] = np.inf
 		# 1/30 experiments use this:
-		# worst_n = np.argsort(np.abs(senses))[:N]
+		worst_n = np.argsort(np.abs(senses))[:N]
 		# 2/6 experiments use this (reverse of above order):
 		# worst_n = np.argsort(-np.abs(senses))[:N]
 		# Neurons seemingly easiest to fool : drop them first
 		# worst_n = np.argsort(inf_counts)[:N]
 		# Neurons seemingly easiest to fool : drop them last
-		worst_n = np.argsort(-inf_counts)[:N]
+		# worst_n = np.argsort(-inf_counts)[:N]
 		# Sliding window (on top of 2/6)
 		# left = 0
 		# print("Window : [%d,%d)" % (left, left + N))
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	# Extract final weights matrix from model
 	with ch.no_grad():
 		# model.state_dict().get("module.model.classifier.weight")[:, worst_n] *= factor
-		model.state_dict().get("module.model.linear.weight")[:, worst_n] *= factor
+		model.state_dict().get("module.model.classifier.weight")[:, worst_n] *= factor
 		# No need for following call : weights are shared b/w model and classifier
 		# model.state_dict().get("module.attacker.model.linear.weight")[:, worst_n] *= factor
 

@@ -13,7 +13,8 @@ import optimize, utils
 def find_impostors(model, delta_values, ds, images, mean, std,
 	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
 	binary=True, norm='2', save_attack=False, custom_best=False,
-	fake_relu=True, analysis_start=0, random_restarts=0):
+	fake_relu=True, analysis_start=0, random_restarts=0, 
+	delta_analysis=False):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -24,7 +25,7 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 
 	# Get scaled senses
 	# scaled_delta_values = delta_values
-	scaled_delta_values = utils.scaled_values(delta_values, mean, std)
+	scaled_delta_values = utils.scaled_values(delta_values, mean, std, eps=0)
 	# Replace inf values with largest non-inf values
 	delta_values[delta_values == np.inf] = delta_values[delta_values != np.inf].max()
 
@@ -51,7 +52,7 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 		verbose, eps, iters, norm, custom_best, fake_relu, random_restarts)
 
 	with ch.no_grad():
-		if save_attack:
+		if save_attack or delta_analysis:
 			(pred, latent), _ = model(impostors, with_latent=True)
 		else:
 			pred, _ = model(impostors)
@@ -73,15 +74,26 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	preds       = label_pred.cpu().numpy()
 
 	succeeded = [[] for _ in range(len(images))]
+	if delta_analysis:
+		delta_succeeded = [[] for _ in range(len(images))]
 	for i in range(len(images)):
 		for j in range(n):
 			succeeded[i].append(preds[i * n + j] != clean_preds[i * n + j])
+			if delta_analysis:
+				analysis_index = easiest[analysis_start : analysis_start + n, i][j]
+				success_criterion = (latent[i * n + j] >= (image_rep[i * n + j] + delta_vec[i * n + j]))
+				delta_succeeded[i].append(success_criterion[analysis_index].cpu().item())
 	succeeded = np.array(succeeded)
+	if delta_analysis:
+		delta_succeeded = np.array(delta_succeeded, 'float')
 	image_labels = [clean_preds, preds]
 
+	if not delta_analysis:
+		delta_succeeded = None
+
 	if save_attack:
-		return (real, impostors, image_labels, succeeded, latent.cpu().numpy())
-	return (real, impostors, image_labels, succeeded, None)
+		return (real, impostors, image_labels, succeeded, latent.cpu().numpy(), delta_succeeded)
+	return (real, impostors, image_labels, succeeded, None, delta_succeeded)
 
 
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps,
@@ -148,6 +160,7 @@ if __name__ == "__main__":
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	parser.add_argument('--analysis', type=bool, default=False, help='report neuron-wise attack success rates?')
+	parser.add_argument('--delta_analysis', type=bool, default=False, help='report neuron-wise delta-achieve rates?')
 	parser.add_argument('--random_restarts', type=int, default=0, help='how many random restarts? (0 -> False)')
 	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n). used only when analysis flag is set')
 	
@@ -169,6 +182,7 @@ if __name__ == "__main__":
 	custom_best     = args.custom_best
 	fake_relu       = (model_arch != 'vgg19')
 	analysis        = args.analysis
+	delta_analysis  = args.delta_analysis
 	analysis_start  = args.analysis_start
 	random_restarts = args.random_restarts
 
@@ -180,18 +194,19 @@ if __name__ == "__main__":
 	elif args.dataset == 'binarycifar10':
 		constants = utils.BinaryCIFAR()
 	else:
-		error("Invalid Dataset Specified")
+		print("Invalid Dataset Specified")
 	ds = constants.get_dataset()
 
 	# Load model
 	model = constants.get_model(model_type , model_arch)
 	# Get stats for neuron activations
-	senses = constants.get_deltas(model_type, model_arch)
-	(mean, std) = constants.get_stats(model_type, model_arch)
-	# prefix = "1e1_1e4_1e-2_16_1"
-	# print(prefix)
-	# senses = utils.get_sensitivities(prefix + ".txt")
-	# (mean, std) = utils.get_stats(prefix)
+	# senses = constants.get_deltas(model_type, model_arch)
+	# (mean, std) = constants.get_stats(model_type, model_arch)
+	prefix = "/u/as9rw/work/fnb/1e1_1e2_1e-2_16_3"
+	# prefix = "/u/as9rw/work/fnb/1e1_1e4_1e-2_16_1"
+	print(prefix)
+	senses = utils.get_sensitivities(prefix + ".txt")
+	(mean, std) = utils.get_stats(prefix)
 
 	if args.longrun:
 		_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
@@ -201,16 +216,18 @@ if __name__ == "__main__":
 		impostors_latents = []
 		all_impostors = []
 		neuron_wise_success = []
+		delta_wise_success  = []
 		iterator = tqdm(test_loader)
 		for (image, _) in iterator:
 			picked_indices = list(range(index_base, index_base + len(image)))
-			(real, impostors, image_labels, succeeded, impostors_latent) = find_impostors(model, senses[:, picked_indices], ds,
+			(real, impostors, image_labels, succeeded, impostors_latent, delta_succeeded) = find_impostors(model, senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
 																verbose=False, eps=eps, iters=iters,
 																optim_type=opt_type, norm=norm,
 																save_attack=(save_attack != None),
 																custom_best=custom_best, fake_relu=fake_relu,
-																analysis_start=analysis_start, random_restarts=random_restarts)
+																analysis_start=analysis_start, random_restarts=random_restarts,
+																delta_analysis=delta_analysis)
 
 			attack_rates[0] += np.sum(np.sum(succeeded[:, :1], axis=1) > 0)
 			attack_rates[1] += np.sum(np.sum(succeeded[:, :4], axis=1) > 0)
@@ -232,6 +249,8 @@ if __name__ == "__main__":
 			# Keep track of neuron-wise attack success rate
 			if analysis:
 				neuron_wise_success.append(succeeded)
+			if delta_analysis:
+				delta_wise_success.append(delta_succeeded)
 
 		if analysis:
 			neuron_wise_success = np.concatenate(neuron_wise_success, 0)
@@ -240,7 +259,14 @@ if __name__ == "__main__":
 				print("Neuron %d attack success rate : %f %%" % (i + analysis_start, 100 * neuron_wise_success[i]))
 			print()
 
-		print("Attack success rate : %f %%" % (100 * attack_rate/index_base))
+		if delta_analysis:
+			delta_wise_success = np.concatenate(delta_wise_success, 0)
+			delta_wise_success = np.mean(delta_wise_success, 0)
+			for i in range(delta_wise_success.shape[0]):
+				print("Neuron %d acheiving-delta success rate : %f %%" % (i + analysis_start, 100 * delta_wise_success[i]))
+			print()
+
+		print("Attack success rate : %f %%" % (100 * attack_rates[-1]/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
 		if save_attack:
 			all_impostors     = np.concatenate(all_impostors, 0)
@@ -258,10 +284,11 @@ if __name__ == "__main__":
 		# Visualize attack images
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
-		(real, impostors, image_labels, succeeded, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
+		(real, impostors, image_labels, succeeded, _, delta_succeeded) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
 																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
-																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts)
+																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts,
+																delta_analysis=delta_analysis)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

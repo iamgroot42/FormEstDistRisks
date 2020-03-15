@@ -13,8 +13,10 @@ paths = [
 "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_nat.pt",
 "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_l2_0_5.pt",
 "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_linf_8.pt",
-"/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best",
-"/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1_fast_1/checkpoint.pt.best"
+# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best",
+# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1_fast_1/checkpoint.pt.best"
+# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_1000.000000_16_0.010000_3_fast_1/checkpoint.pt.best"
+"/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_100.000000_16_0.010000_3_fast_1/checkpoint.pt.best"
 ]
 
 constants = utils.CIFAR10()

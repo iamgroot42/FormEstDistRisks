@@ -1,4 +1,5 @@
 import torch as ch
+import numpy as np
 from robustness.train import train_model
 from robustness.tools import helpers
 from robustness import defaults
@@ -16,7 +17,7 @@ import argparse
 def custom_train_loss(model, inp, targets, delta):
 	with ch.no_grad():
 		(logits, features), _ = model(inp, with_latent=True)
-	w = model.module.model.classifier.weight #.detach()
+	w = model.module.model.classifier.weight
 	
 	# Define highest delta achievable
 	max_val = float('inf') #1e10
@@ -170,7 +171,8 @@ def custom_train_loss_better_faster(model, inp, targets, top_k, delta_1, delta_2
 
 def as_it_is_loss(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
 	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
-	w = model.module.model.classifier.weight
+	# w = model.module.model.classifier.weight
+	w = model.module.model.linear.weight
 
 	# Calculate normal loss
 	loss = train_criterion(logits, targets)
@@ -247,6 +249,163 @@ def as_it_is_loss_simpler(model, inp, targets, top_k, delta_1, delta_2, train_cr
 	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term + delta_3 * third_term)
 
 
+def try_dave(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	eps = 1e-5
+	classwise_scaled_deltas = []
+	f_mean = ch.mean(features, dim=0).unsqueeze(0).detach()
+	f_std  = ch.std(features, dim=0).unsqueeze(0).detach()
+	f_w_norm = ch.sum(features, dim=1).unsqueeze(1)
+	l_y = ch.stack([logits[i, y] for i,y in enumerate(targets)], dim=0)
+	den_right = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		l_y_hat  = logits[:, i]
+		den_left = w[i, :]
+		denominator = den_left - den_right
+		numerator   = (l_y - l_y_hat).unsqueeze(1)
+		delta = ch.abs(numerator / denominator)
+		scaled_delta = (delta - f_mean) / (f_std + eps)
+		# Mask (do not consider same-class targets)
+		scaled_delta *= (targets != i).unsqueeze(1).type(scaled_delta.type())
+		# Filter our NANs
+		scaled_delta[scaled_delta != scaled_delta] = eps
+		# Square instead of abs (for cleaner gradients)
+		scaled_delta = ch.pow(scaled_delta, 2)
+		classwise_scaled_deltas.append(scaled_delta)
+	classwise_scaled_deltas = ch.stack(classwise_scaled_deltas, dim=0)
+	classwise_scaled_deltas, _ = ch.topk(classwise_scaled_deltas, top_k, dim=2)
+	classwise_scaled_deltas = ch.mean(classwise_scaled_deltas)
+
+	return ((logits, features), final_inp, loss, -delta_1 * classwise_scaled_deltas)
+
+
+def try_dave_just_first(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	variance = ch.std(features, dim=0)
+	reg_term, _ = ch.topk(variance, top_k)
+	reg_term = ch.mean(reg_term)
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term)
+
+
+def try_dave_just_second(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	mean = ch.mean(features, dim=0)
+	_, indices = ch.topk(-mean, top_k)
+	reg_term = -ch.mean(mean[indices])
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term)
+
+
+def try_dave_just_third(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		max_w_diffs, _ = ch.topk(ch.pow(diff[0] - diff[1], 2), top_k)
+		diffs.append(ch.mean(max_w_diffs))
+	# Consider this across all class pairs (pick maximum possible)
+	reg_term = ch.mean(ch.stack(diffs, dim=0))
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term)
+
+
+def try_dave_just_fourth(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	# Consider detaching this term for possibly less orthogonal gradients?
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	first_logits = ch.stack([logits[i, y] for i, y in enumerate(targets)], dim=0)
+	diffs = []
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		second_logits = logits[:, i]
+		these_indices = (targets == i)
+		diff = ch.pow(first_logits - second_logits, 2)
+		diff[these_indices] = np.inf
+		diffs.append(diff)
+	diffs = ch.stack(diffs, dim=0)
+	diffs, _ = ch.topk(-diffs, 5, dim=0)
+	reg_term = ch.mean(diffs)
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term)
+
+
+def try_dave_just_fifth(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		max_w_diffs, _ = ch.topk(ch.pow(diff[0] - diff[1], 2), top_k)
+		diffs.append(ch.mean(max_w_diffs))
+	# Consider this across all class pairs (pick maximum possible)
+	reg_term = ch.mean(ch.stack(diffs, dim=0))
+
+	# reg_term_2,  = ch.topk(ch.mean(features), top_k, dim=0)
+	# reg_term_2  =  -ch.mean(reg_term_2)
+	reg_term_3, _ = ch.topk(ch.std(features, dim=0), top_k)
+	reg_term_3 = ch.pow(reg_term_3, 2) # Get rid of square-root
+	reg_term_3 = ch.mean(reg_term_3)
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term + delta_2 * reg_term_3)
+
+
+def try_dave_just_sixth(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	diffs = []
+	# Consider detaching this term for possibly less orthogonal gradients?
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2) / features_norm)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs.append(use_these)
+	reg_term = ch.mean(ch.stack(diffs, dim=0), dim=0)
+	reg_term = ch.mean(reg_term)
+	
+	return ((logits, features), final_inp, loss, delta_1 * reg_term)
+
+
 def custom_train_loss_best(model, inp, targets, top_k, delta_1, delta_2):
 	(logits, features), _ = model(inp, with_latent=True)
 	w = model.module.model.classifier.weight
@@ -291,7 +450,8 @@ if __name__ == "__main__":
 	parser.add_argument('--start_lr', type=float, default=0.1, help='starting LR for optimizer')
 	parser.add_argument('--delta_1', type=float, default=1e0, help='loss coefficient for first term')
 	parser.add_argument('--delta_2', type=float, default=1e0, help='loss coefficient for second term')
-	parser.add_argument('--reg_type', type=int, default=1, help='Regularization type [0, 1, 2, 3]')
+	parser.add_argument('--reg_type', type=int, default=1, help='Regularization type [0, 12]')
+	parser.add_argument('--batch_size', type=int, default=128, help='Batch Size')
 	parser.add_argument('--fast', type=bool, default=False, help='Use optimized method (single forward pass) with reg_type=1')
 
 	parsed_args = parser.parse_args()
@@ -314,6 +474,20 @@ if __name__ == "__main__":
 			return custom_train_loss_better_modified(model, inp, targets, parsed_args.top_k, parsed_args.delta_1, parsed_args.delta_2)
 	elif parsed_args.reg_type == 5:
 		pass
+	elif parsed_args.reg_type == 6:
+		pass
+	elif parsed_args.reg_type == 7:
+		pass
+	elif parsed_args.reg_type == 8:
+		pass
+	elif parsed_args.reg_type == 9:
+		pass
+	elif parsed_args.reg_type == 10:
+		pass
+	elif parsed_args.reg_type == 11:
+		pass
+	elif parsed_args.reg_type == 12:
+		pass
 	else:
 		print("Invalid regularization requested. Exiting")
 		exit(0)
@@ -329,6 +503,27 @@ if __name__ == "__main__":
 			elif parsed_args.reg_type == 5:
 				return as_it_is_loss_simpler(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
 					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 6:
+				return try_dave(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 7:
+				return try_dave_just_first(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 8:
+				return try_dave_just_second(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 9:
+				return try_dave_just_third(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 10:
+				return try_dave_just_fourth(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 11:
+				return try_dave_just_fifth(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
+			elif parsed_args.reg_type == 12:
+				return try_dave_just_sixth(model, inp, targets, parsed_args.top_k, parsed_args.delta_1,
+					parsed_args.delta_2, train_criterion, adv, attack_kwargs)
 
 	train_kwargs = {
 	    'out_dir': "/p/adversarialml/as9rw/models_cifar10_%s/" % (parsed_args.model_arch),
@@ -337,6 +532,7 @@ if __name__ == "__main__":
 	    'dataset': 'cifar',
     	'arch': parsed_args.model_arch,
     	'adv_eval': True,
+    	'batch_size': parsed_args.batch_size,
     	'attack_lr': (2.5 * 0.5) / 10,
     	'constraint': '2',
     	'eps': 0.5,

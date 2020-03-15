@@ -98,8 +98,8 @@ def read_given_dataset(data_path):
 	return (X, Y)
 
 
-def scaled_values(val, mean, std):
-	return (val - np.repeat(np.expand_dims(mean, 1), val.shape[1], axis=1)) / (np.expand_dims(std, 1) +  1e-10)
+def scaled_values(val, mean, std, eps=1e-10):
+	return (val - np.repeat(np.expand_dims(mean, 1), val.shape[1], axis=1)) / (np.expand_dims(std, 1) +  eps)
 
 
 def load_all_data(ds):

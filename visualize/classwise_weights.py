@@ -22,10 +22,11 @@ if __name__ == "__main__":
 	# scale_nat = "/p/adversarialml/as9rw/cifar10_vgg_stats/l2/stats/"
 	# model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_nat.pt"
 	# scale_nat = "/p/adversarialml/as9rw/cifar10_vgg_stats/nat/stats/"
-	model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_linf_8.pt"
-	scale_nat = "/p/adversarialml/as9rw/cifar10_vgg_stats/linf/stats/"
-	# model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best"
-	# scale_nat = "/u/as9rw/work/fnb/1e1_1e4_1e-2_16_1/"
+	# model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg/cifar_linf_8.pt"
+	# scale_nat = "/p/adversarialml/as9rw/cifar10_vgg_stats/linf/stats/"
+	model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best"
+	scale_nat = "/u/as9rw/work/fnb/1e1_1e2_1e-2_16_3/"
+	model_nat = "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_100.000000_1.000000_16_0.100000_9_fast_1/checkpoint.pt.best"
 
 	constants = utils.CIFAR10()
 	ds = constants.get_dataset()
@@ -42,9 +43,9 @@ if __name__ == "__main__":
 
 		# Get scaled delta values
 		(mean, std) = utils.get_stats(scale_path)
-		indices = np.argsort(mean)
-		mean = mean[indices]
-		std  = std[indices]
+		# indices = np.argsort(mean)
+		# mean = mean[indices]
+		# std  = std[indices]
 		x = list(range(mean.shape[0]))
 
 		# Extract final weights matrix from model
@@ -53,9 +54,11 @@ if __name__ == "__main__":
 			weights = model.state_dict().get("module.model.classifier.weight") # n_classes * n_features vector
 
 		for i in range(weights.shape[0]):
-			plt.scatter(x, weights[i][indices].cpu().numpy(), label='class ' + str(i), alpha=0.7, s=1)
+			# plt.scatter(x, weights[i][indices].cpu().numpy(), label='class ' + str(i), alpha=0.7, s=1)
+			plt.scatter(x, weights[i].cpu().numpy(), label='class ' + str(i), alpha=0.7, s=1)
 
 	populate(model_nat, scale_nat, (('turquoise', 'blue'), ('lightcoral', 'red')), 'nat')
-	plt.title('CIFAR-10 (Linf)')
+	plt.xlabel('Neuron Index')
+	plt.ylabel('Weight Value')
 	# plt.legend()
 	plt.savefig("just_weights.png")
