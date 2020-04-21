@@ -144,3 +144,13 @@ def get_stats(base_path):
 	mean = np.load(os.path.join(base_path, "feature_mean.npy"))
 	std  = np.load(os.path.join(base_path, "feature_std.npy"))
 	return mean, std
+
+
+def get_logits_layer_name(arch):
+	if "vgg" in arch:
+		return "module.model.classifier.weight"
+	elif "resnet" in arch:
+		return "module.model.fc.weight"
+	elif "densenet" in arch:
+		return "module.model.linear.weight"
+	return None

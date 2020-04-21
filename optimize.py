@@ -78,7 +78,6 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_rest
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
 		# loss = ch.norm(rep - targ, dim=1)
 		# Extra loss term (normalized)
-		# print(inp.shape, rep.shape, targ.shape, indices_mask.shape, "custom_inversion_loss")
 		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
 		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
 		return loss + reg_weight * aux_loss, output
