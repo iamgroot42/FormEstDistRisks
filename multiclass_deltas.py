@@ -1,8 +1,6 @@
 import torch as ch
 import utils
-from robustness.model_utils import make_and_restore_model
 import numpy as np
-import sys
 from tqdm import tqdm
 
 
@@ -60,6 +58,7 @@ def get_sensitivities(model, data_loader, weights, bias, validity_check_exit=Fal
 
 
 if __name__ == "__main__":
+	import sys
 	filename   = sys.argv[1]
 	model_arch = sys.argv[2]
 	model_type = sys.argv[3]
