@@ -11,3 +11,4 @@ neurons_*/
 GHM*
 binary_stats/*
 *.npy
+.idea/*

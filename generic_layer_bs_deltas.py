@@ -70,10 +70,10 @@ if __name__ == "__main__":
 	# VGG-19 specific parameters
 	injection_layer = 47
 	injection_range = 512 * 2 * 2
-	n_steps = 50 #100
+	n_steps = 100
 	sensitivities = get_sensitivities(model, test_loader, injection_layer, injection_range, n_steps)
 
 	with open("%s.txt" % filename, 'w') as f:
-		for i in range(n_features):
+		for i in range(injection_range):
 			floats_to_string = ",".join([str(x) for x in sensitivities[i]])
 			f.write(floats_to_string + "\n")
