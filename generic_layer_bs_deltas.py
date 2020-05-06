@@ -8,24 +8,38 @@ from tqdm import tqdm
 def delta_binary_search(model, image, injection_point, n_steps, injection_range, low, high, positive_range=True):
 	injection_layer, injection_index = injection_point
 	eps = 1e-10
+
+	low  = np.zeros(image.shape[0]) + low
+	high = np.zeros(image.shape[0]) + high
+
 	with ch.no_grad():
-		prediction = ch.argmax(model(image)[0], 1)
-		low  = np.zeros(image.shape[0]) + low
-		high = np.zeros(image.shape[0]) + high
+		# Get intermediate outputs of model (caching)
+		(logits, intermediate_outputs), _ = model(image, this_layer_output=injection_layer)
+		prediction = ch.argmax(logits, 1)
+
+		# Perform binary search
 		for _ in range(n_steps):
 			mid = (high + low) / 2
-			delta_vec = np.zeros((image.shape[0], injection_range))
+
+			# Construct delta vector (adding noise to output of specific layer's output)
+			delta_vec                     = np.zeros((image.shape[0], injection_range), dtype=np.float32)
 			delta_vec[:, injection_index] = mid
-			delta_vec = ch.from_numpy(delta_vec).cuda()
-			perturbed_pred, _ = model(image, injection=(injection_layer, delta_vec))
-			perturbed_pred = ch.argmax(perturbed_pred, 1)
+			delta_vec                     = ch.from_numpy(delta_vec).view_as(intermediate_outputs).cuda()
+			perturbed_input = intermediate_outputs + delta_vec
+
+			# Pass on modified input (intermediate output + noise) to rest of model
+			perturbed_pred, _ = model(perturbed_input, this_layer_input=injection_layer + 1)
+			perturbed_pred    = ch.argmax(perturbed_pred, 1)
 			unchanged_indices = (perturbed_pred == prediction).cpu().numpy()
+
+			# Proceed with binary search based on predictions
 			if positive_range:
 				low[unchanged_indices]   = mid[unchanged_indices]  + eps
 				high[~unchanged_indices] = mid[~unchanged_indices] - eps
 			else:
 				high[unchanged_indices] = mid[unchanged_indices]   - eps
 				low[~unchanged_indices] = mid[~unchanged_indices]  + eps
+		
 	return mid
 
 
@@ -64,11 +78,11 @@ if __name__ == "__main__":
 	ds = dx.get_dataset()
 	model = dx.get_model(model_type, model_arch)
 
-	batch_size = 5000
+	batch_size = 10000
 	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 	# VGG-19 specific parameters
-	injection_layer = 47
+	injection_layer = 48
 	injection_range = 512 * 2 * 2
 	n_steps = 100
 	sensitivities = get_sensitivities(model, test_loader, injection_layer, injection_range, n_steps)

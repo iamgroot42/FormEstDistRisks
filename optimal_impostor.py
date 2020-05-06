@@ -1,6 +1,5 @@
 import os
 import torch as ch
-from robustness.model_utils import make_and_restore_model
 from robustness.tools.vis_tools import show_image_row
 import numpy as np
 import sys
@@ -14,7 +13,7 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
 	binary=True, norm='2', save_attack=False, custom_best=False,
 	fake_relu=True, analysis_start=0, random_restarts=0, 
-	delta_analysis=False):
+	delta_analysis=False, corr_analysis=False, dist_stats=False):
 	image_ = []
 	# Get target images
 	for image in images:
@@ -24,13 +23,16 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	real = ch.cat(image_, 0)
 
 	# Get scaled senses
-	# scaled_delta_values = delta_values
 	scaled_delta_values = utils.scaled_values(delta_values, mean, std, eps=0)
 	# Replace inf values with largest non-inf values
 	delta_values[delta_values == np.inf] = delta_values[delta_values != np.inf].max()
 
-	# Pick easiest-to-attack neurons per image
-	easiest = np.argsort(scaled_delta_values, axis=0)
+	if corr_analysis:
+		easiest = np.arange(delta_values.shape[0])
+		easiest = np.repeat(np.expand_dims(easiest, 1), len(images), axis=1)
+	else:
+		# Pick easiest-to-attack neurons per image
+		easiest = np.argsort(scaled_delta_values, axis=0)
 
 	# Get loss coefficients using these delta values
 	loss_coeffs = 1 / np.abs(scaled_delta_values)
@@ -52,37 +54,42 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 		verbose, eps, iters, norm, custom_best, fake_relu, random_restarts)
 
 	with ch.no_grad():
-		if save_attack or delta_analysis:
+		if save_attack or delta_analysis or corr_analysis:
 			(pred, latent), _ = model(impostors, with_latent=True)
 		else:
 			pred, _ = model(impostors)
 			latent = None
+
+	if dist_stats:
+		flatten = (impostors - real.cuda()).view(impostors.shape[0], -1)
+		dist_l2   = ch.norm(flatten, p=2, dim=-1).cpu().numpy()
+		dist_linf = ch.max(ch.abs(flatten), dim=-1)[0].cpu().numpy()
+	else:
+		dist_l2, dist_linf = None, None
+
 	label_pred = ch.argmax(pred, dim=1)
 
 	clean_pred, _ = model(real)
 	clean_pred = ch.argmax(clean_pred, dim=1)
 
-	# Skip below steps if Imagenet
-	# if binary:
-	# 	mapping = ["animal", "vehicle"]
-	# else:
-	# 	mapping = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-
-	# clean_preds = [mapping[x] for x in clean_pred.cpu().numpy()]
-	# preds       = [mapping[x] for x in label_pred.cpu().numpy()]
 	clean_preds = clean_pred.cpu().numpy()
 	preds       = label_pred.cpu().numpy()
 
 	succeeded = [[] for _ in range(len(images))]
+	neuronwise_bincounts = np.zeros((n, delta_values.shape[0]), dtype=np.int32)
 	if delta_analysis:
 		delta_succeeded = [[] for _ in range(len(images))]
 	for i in range(len(images)):
 		for j in range(n):
 			succeeded[i].append(preds[i * n + j] != clean_preds[i * n + j])
-			if delta_analysis:
+			if delta_analysis or corr_analysis:
 				analysis_index = easiest[analysis_start : analysis_start + n, i][j]
 				success_criterion = (latent[i * n + j] >= (image_rep[i * n + j] + delta_vec[i * n + j]))
-				delta_succeeded[i].append(success_criterion[analysis_index].cpu().item())
+				if delta_analysis:
+					delta_succeeded[i].append(success_criterion[analysis_index].cpu().item())
+				if corr_analysis:
+					neuronwise_bincounts[j] += success_criterion.cpu().numpy()
+
 	succeeded = np.array(succeeded)
 	if delta_analysis:
 		delta_succeeded = np.array(delta_succeeded, 'float')
@@ -92,8 +99,8 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 		delta_succeeded = None
 
 	if save_attack:
-		return (real, impostors, image_labels, succeeded, latent.cpu().numpy(), delta_succeeded)
-	return (real, impostors, image_labels, succeeded, None, delta_succeeded)
+		return (real, impostors, image_labels, succeeded, latent.cpu().numpy(), delta_succeeded, dist_l2, dist_linf)
+	return (real, impostors, image_labels, succeeded, None, delta_succeeded, neuronwise_bincounts, dist_l2, dist_linf)
 
 
 def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps,
@@ -146,11 +153,11 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--model_arch', type=str, help='arch of model (resnet50/vgg19/desnetnet169)')
-	parser.add_argument('--model_type', type=str, help='type of model (nat/l2/linf)')
+	parser.add_argument('--model_arch', type=str, default='vgg19', help='arch of model (resnet50/vgg19/desnetnet169)')
+	parser.add_argument('--model_type', type=str, default='nat', help='type of model (nat/l2/linf)')
 	parser.add_argument('--eps', type=float, help='epsilon-iter')
-	parser.add_argument('--iters', type=int, help='number of iterations')
-	parser.add_argument('--n', type=int, default=4, help='number of neurons per image')
+	parser.add_argument('--iters', type=int, default=50, help='number of iterations')
+	parser.add_argument('--n', type=int, default=8, help='number of neurons per image')
 	parser.add_argument('--bs', type=int, default=8, help='batch size while performing attack')
 	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--custom_best', type=bool, default=False, help='look at absoltue loss or perturbation for best-loss criteria')
@@ -161,8 +168,10 @@ if __name__ == "__main__":
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	parser.add_argument('--analysis', type=bool, default=False, help='report neuron-wise attack success rates?')
 	parser.add_argument('--delta_analysis', type=bool, default=False, help='report neuron-wise delta-achieve rates?')
+	parser.add_argument('--corr_analysis', type=bool, default=False, help='log neuron-wise correlation statistics?')
 	parser.add_argument('--random_restarts', type=int, default=0, help='how many random restarts? (0 -> False)')
-	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n). used only when analysis flag is set')
+	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n)')
+	parser.add_argument('--distortion_statistics', type=bool, default=False, help='distortion statistics needed?')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
@@ -185,6 +194,8 @@ if __name__ == "__main__":
 	delta_analysis  = args.delta_analysis
 	analysis_start  = args.analysis_start
 	random_restarts = args.random_restarts
+	corr_analysis   = args.corr_analysis
+	dist_stats      = args.distortion_statistics
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -200,52 +211,68 @@ if __name__ == "__main__":
 	# Load model
 	model = constants.get_model(model_type , model_arch)
 	# Get stats for neuron activations
-	# senses = constants.get_deltas(model_type, model_arch)
-	# (mean, std) = constants.get_stats(model_type, model_arch)
-	prefix = "/u/as9rw/work/fnb/1e1_1e2_1e-2_16_3"
-	# prefix = "/u/as9rw/work/fnb/1e1_1e4_1e-2_16_1"
-	print(prefix)
-	senses = utils.get_sensitivities(prefix + ".txt")
-	(mean, std) = utils.get_stats(prefix)
+	senses = constants.get_deltas(model_type, model_arch)
+	(mean, std) = constants.get_stats(model_type, model_arch)
+	# prefix = "/u/as9rw/work/fnb/1e1_1e2_1e-2_16_3"
+	# print(prefix)
+	# senses = utils.get_sensitivities(prefix + ".txt")
+	# (mean, std) = utils.get_stats(prefix)
 
 	if args.longrun:
 		_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 		index_base, avg_successes = 0, 0
 		attack_rates = [0, 0, 0, 0]
+		l2_norm, linf_norm = 0, 0
+		norm_count = 0
 		impostors_latents = []
 		all_impostors = []
 		neuron_wise_success = []
 		delta_wise_success  = []
 		iterator = tqdm(test_loader)
+		succcess_histograms = np.zeros((n, senses.shape[0]), np.int32)
 		for (image, _) in iterator:
 			picked_indices = list(range(index_base, index_base + len(image)))
-			(real, impostors, image_labels, succeeded, impostors_latent, delta_succeeded) = find_impostors(model, senses[:, picked_indices], ds,
+			(real, impostors, image_labels, succeeded, impostors_latent,
+				delta_succeeded, neuronwise_bincounts, dist_l2, dist_linf) = find_impostors(model,
+																senses[:, picked_indices], ds,
 																image.cpu(), mean, std, n=n, binary=binary,
 																verbose=False, eps=eps, iters=iters,
 																optim_type=opt_type, norm=norm,
 																save_attack=(save_attack != None),
 																custom_best=custom_best, fake_relu=fake_relu,
 																analysis_start=analysis_start, random_restarts=random_restarts,
-																delta_analysis=delta_analysis)
+																delta_analysis=delta_analysis, corr_analysis=corr_analysis,
+																dist_stats=dist_stats)
 
 			attack_rates[0] += np.sum(np.sum(succeeded[:, :1], axis=1) > 0)
 			attack_rates[1] += np.sum(np.sum(succeeded[:, :4], axis=1) > 0)
 			attack_rates[2] += np.sum(np.sum(succeeded[:, :8], axis=1) > 0)
-			num_flips = np.sum(succeeded, axis=1)
+			num_flips       = np.sum(succeeded, axis=1)
 			attack_rates[3] += np.sum(num_flips > 0)
-			avg_successes += np.sum(num_flips)
-			index_base += len(image)
+			avg_successes   += np.sum(num_flips)
+			index_base      += len(image)
 			if save_attack:
 				all_impostors.append(impostors.cpu().numpy())
 				impostors_latents.append(impostors_latent)
+			if corr_analysis:
+				succcess_histograms += neuronwise_bincounts
+			# Keep track of distance statistics if asked
+			if dist_stats:
+				l2_norm   += np.sum(dist_l2)
+				linf_norm += np.sum(dist_linf)
+				norm_count += dist_l2.shape[0]
+				dist_string = "L2 norm: %.3f, Linf norm: %.2f/255"  % (l2_norm / norm_count, 255 * linf_norm / norm_count)
+			else:
+				dist_string = ""
 			# Keep track of attack success rate
-			iterator.set_description('(n=1,4,8,%d) Success rates : (%.2f, %.2f, %.2f, %.2f) | | Flips/Image : %.2f/%d' \
+			iterator.set_description('(n=1,4,8,%d) Success rates : (%.2f, %.2f, %.2f, %.2f) | Flips/Image : %.2f/%d | %s' \
 				% (n, 100 * attack_rates[0]/index_base,
 					100 * attack_rates[1]/index_base,
 					100 * attack_rates[2]/index_base,
 					100 * attack_rates[3]/index_base,
-					avg_successes / index_base, n))
+					avg_successes / index_base, n, 
+					dist_string))
 			# Keep track of neuron-wise attack success rate
 			if analysis:
 				neuron_wise_success.append(succeeded)
@@ -266,6 +293,12 @@ if __name__ == "__main__":
 				print("Neuron %d acheiving-delta success rate : %f %%" % (i + analysis_start, 100 * delta_wise_success[i]))
 			print()
 
+		if corr_analysis:
+			with open("%d_%d.txt" % (analysis_start, analysis_start + n), 'w') as f:
+				for i in range(n):
+					f.write("%d:%s\n" % (analysis_start + i, succcess_histograms[i].tolist()))
+			print("Dumped correlation histograms for delta values in [%d,%d)" % (analysis_start, analysis_start + n))
+
 		print("Attack success rate : %f %%" % (100 * attack_rates[-1]/index_base))
 		print("Average flips per image : %f/%d" % (avg_successes / index_base, n))
 		if save_attack:
@@ -284,11 +317,11 @@ if __name__ == "__main__":
 		# Visualize attack images
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
-		(real, impostors, image_labels, succeeded, _, delta_succeeded) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
+		(real, impostors, image_labels, succeeded, _, _, _, _, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
 																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
 																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts,
-																delta_analysis=delta_analysis)
+																delta_analysis=delta_analysis, corr_analysis=corr_analysis, dist_stats=dist_stats)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

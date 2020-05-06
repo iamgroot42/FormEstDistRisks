@@ -70,10 +70,11 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 	
 
 def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_restart_targets, iters=100,
-	reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True, random_restarts=0):
+	reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True, random_restarts=0, inject=None):
+
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(m, inp, targ):
-		output, rep = m(inp, with_latent=True, fake_relu=fake_relu)
+		output, rep = m(inp, with_latent=True, fake_relu=fake_relu, this_layer_output=inject)
 		# Normalized L2 error w.r.t. the target representation
 		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
 		# loss = ch.norm(rep - targ, dim=1)
@@ -88,7 +89,7 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_rest
 			def custom_loss_fn(loss, x):
 				# Check how much beyond minimum delta the  perturbation on i^th index is
 				# Negative sign, since we want higher delta-diff to score better
-				(_, rep), _ = model(x, with_latent=True, fake_relu=fake_relu)
+				(_, rep), _ = model(x, with_latent=True, fake_relu=fake_relu, this_layer_output=inject)
 				return - ch.sum((rep - target_rep) * indices_mask, dim=1)
 			custom_best = custom_loss_fn
 		# Else, expect custom_best function to be passed along
@@ -96,14 +97,11 @@ def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_rest
 		# If nothing passed along, use simple comparison
 		custom_best = None
 
-
 	kwargs = {
 		'custom_loss': custom_inversion_loss,
-		# 'constraint':'unconstrained',
-		# 'eps': 1000,
 		'constraint': p,
 		'eps': eps,
-		'step_size': 2.5 * eps / iters, #eps / 10,
+		'step_size': 2.5 * eps / iters,
 		'iterations': iters,
 		'targeted': True,
 		'do_tqdm': verbose,
@@ -183,31 +181,3 @@ def n_free_optimization(model, inp_og, target_rep, eps, p='2', iters=200, verbos
 		# Project data : constain ro eps p-norm ball
 		inp.data = project_pertb(p)(inp_og, inp.data, eps)
 	return inp.data
-
-
-def n_free_madry_optimization(model, inp_og, target_rep, indices_mask, eps, iters=100, verbose=True):
-	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
-	def custom_inversion_loss(m, inp, targ):
-		_, rep = m(inp, with_latent=True, fake_relu=True)
-		# Normalized L2 error w.r.t. the target representation
-		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
-		n = 8
-		extra_loss = ch.div(ch.norm((rep - targ)[:, :n], dim=1), ch.norm(targ, dim=1))
-		# Extra loss term (normalized)
-		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
-		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
-		return loss +  aux_loss, None
-
-	kwargs = {
-		'custom_loss': custom_inversion_loss,
-		# 'constraint':'unconstrained',
-		# 'eps': 1000,
-		'constraint':'2',
-		'eps': eps,
-		'step_size': eps / 10,
-		'iterations': iters,
-		'targeted': True,
-		'do_tqdm': verbose
-	}
-	_, im_matched = model(inp_og, target_rep, make_adv=True, **kwargs)
-	return im_matched

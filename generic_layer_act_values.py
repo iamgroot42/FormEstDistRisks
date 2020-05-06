@@ -14,7 +14,7 @@ ds = dx.get_dataset()
 
 model = dx.get_model(model_type, model_arch)
 
-batch_size = 256
+batch_size = 512
 all_reps = []
 train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
 
@@ -22,7 +22,7 @@ train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
 def get_reps(data_loader):
 	for (im, label) in tqdm(data_loader):
 		with ch.no_grad():
-			(_, rep), _ = model(im, this_layer_output=47)
+			(_, rep), _ = model(im, this_layer_output=48)
 			# Flatten out rep
 			all_reps.append(rep.cpu())
 
@@ -36,8 +36,7 @@ all_reps = ch.cat(all_reps)
 ch_mean  = ch.mean(all_reps, dim=0)
 ch_std   = ch.std(all_reps, dim=0)
 
-print("Mean:", ch_mean)
-print("Std: ",   ch_std)
+print("Statistics shape:", ch_mean.shape)
 
 # Dump mean, std vectors for later use:
 np_mean = ch_mean.cpu().numpy()

@@ -12,3 +12,5 @@ GHM*
 binary_stats/*
 *.npy
 .idea/*
+*_vgg_*
+achieving_*
