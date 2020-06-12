@@ -61,10 +61,10 @@ def custom_train_loss_better_faster(model, inp, targets, top_k, delta_1, delta_2
 
 
 @function_mapping(3)
-def as_it_is_loss(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, attack_kwargs):
+def as_it_is_loss(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, feature_normalizer, attack_kwargs):
 	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
-	# w = model.module.model.classifier.weight
-	w = model.module.model.linear.weight
+	w = model.module.model.classifier.weight
+	# w = model.module.model.linear.weight
 
 	# Calculate normal loss
 	loss = train_criterion(logits, targets)
@@ -314,7 +314,7 @@ def directly_with_gm(model, inp, targets, top_k, delta_1, delta_2, train_criteri
 	n_classes  = logits.shape[1]
 
 	# Large constant
-	large_const = 5e1
+	large_const = 1e3
 	small_const = 1e-5
 
 	# Aggregate across all classes
@@ -338,10 +338,144 @@ def directly_with_gm(model, inp, targets, top_k, delta_1, delta_2, train_criteri
 
 	# Work in log-space (to implciitly minimize product)
 	# Square delta values for 1) bette gradients, and 2) positive domain for log
-	delta_values = ch.log(ch.pow(delta_values, 2))
+	# delta_values = ch.log(ch.pow(delta_values, 2))
+	delta_values = ch.pow(delta_values, 2)
+
+	# Focus on only the top-k values (to not overwhelm model)
+	delta_values = delta_values.transpose(0, 1)
+	delta_values.resize_((delta_values.shape[0], delta_values.shape[1] * delta_values.shape[2]))
+	delta_values, _ = ch.topk(delta_values, top_k, dim=1, largest=False)
+
 	# Do not count -inf (0 value to log as input)
-	delta_values[delta_values == -np.inf] = 0
+	# delta_values[delta_values == -np.inf] = 0
+	extra_term   = delta_values.mean()
+	extra_term   = large_const - extra_term
+	# print(extra_term)
+	# exit(0)
+
+	return ((logits, features), final_inp, loss, delta_1 * extra_term)
+
+
+@function_mapping(14)
+def directly_with_gm(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, feature_normalizer, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Pass features through BN layer to get updated mean, std
+	feature_normalizer(features)
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+	
+	n_features = w.shape[1]
+	n_classes  = logits.shape[1]
+
+	# Large constant
+	large_const = 1e1
+	small_const = 1e-5
+
+	# Aggregate across all classes
+	delta_values = []
+	for i in range(n_classes):
+		numerator   = logits.gather(1, targets.view(-1,1)) - logits[:, i].unsqueeze(1)
+		denominator = w[i].unsqueeze(0) - w[targets]
+		# Do not count cases where label = target
+		mask = (targets != i).unsqueeze(1)
+		term = mask * (numerator / denominator)
+		# Set values with NANs to a small consant
+		term[term != term] = 1 + small_const
+		delta_values.append(term)
+	delta_values = ch.stack(delta_values)
+
+	# Normalize delta values with feature-wise mean, std
+	# Do not back-propagate beyond these terms (make life easier for the model)
+	with ch.no_grad():
+		var = feature_normalizer.running_var
+		delta_values /= ch.sqrt(var + small_const)
+
+	# Work in log-space (to implciitly minimize product)
+	# Square delta values for 1) bette gradients, and 2) positive domain for log
+	delta_values = ch.log(ch.pow(delta_values, 2))
+	# delta_values = ch.pow(delta_values, 2)
+
+	# Focus on only the top-k values (to not overwhelm model)
+	# delta_values = delta_values.transpose(0, 1)
+	# delta_values.resize_((delta_values.shape[0], delta_values.shape[1] * delta_values.shape[2]))
+	# delta_values, _ = ch.topk(delta_values, top_k, dim=1, largest=False)
+
+	# DO not count NaN/INF values
+	delta_values[ch.abs(delta_values) == np.inf] = 0
+	delta_values[delta_values != delta_values] = 0
 	extra_term   = delta_values.mean()
 	extra_term   = large_const - extra_term
 
 	return ((logits, features), final_inp, loss, delta_1 * extra_term)
+
+
+@function_mapping(15)
+def focus_on_weights(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, feature_normalizer, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Pass features through BN layer to get updated mean, std
+	# feature_normalizer(features)
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+	
+	n_features = w.shape[1]
+	n_classes  = logits.shape[1]
+
+	var = ch.pow(ch.std(features, 0), 2)
+	sorted_weights, _ = ch.sort(w, dim=0)
+	diffs = []
+	for i in range(n_classes - 1):
+		diffs.append(ch.pow(sorted_weights[i+1] - sorted_weights[i], 2) * var)
+
+	diffs    = ch.stack(diffs)
+	diffs, _ = ch.topk(diffs, top_k)
+	aux_loss = diffs.mean()
+
+	return ((logits, features), final_inp, loss, delta_1 * aux_loss)
+
+@function_mapping(16)
+def i_am_mad_loss(model, inp, targets, top_k, delta_1, delta_2, train_criterion, adv, feature_normalizer, attack_kwargs):
+	(logits, features), final_inp = model(inp, target=targets, make_adv=adv, with_latent=True, **attack_kwargs)
+	w = model.module.model.classifier.weight
+
+	# Calculate normal loss
+	loss = train_criterion(logits, targets)
+
+	# Pass features through BN layer to get updated mean, std
+	feature_normalizer(features)
+
+	var = feature_normalizer.running_var
+	
+	# First term : minimize weight values for same feature across any two different classes (nC2)
+	diffs = []
+	for c in combinations(range(logits.shape[1]), 2):
+		# Across all possible (i, j) class pairs
+		diff = w[c, :]
+		# Note differences in weight values for same feature, different classes
+		all_diffs = ch.pow(diff[0] - diff[1])
+		print(var.shape)
+		print(all_diffs.shape)
+		exit(0)
+		diffs.append(ch.mean(topk_diff))
+	first_term = ch.max(ch.stack(diffs, dim=0))
+
+	diffs_2 = []
+	# Consider detaching this term for possibly less orthogonal gradients?
+	features_norm = ch.sum(features, dim=1).unsqueeze(1)
+	diff_2_1 = ch.stack([w[y, :] for y in targets], dim=0)
+	# Iterate over classes
+	for i in range(logits.shape[1]):
+		diff_2_2 = w[i, :].unsqueeze(0)
+		normalized_drop_term = ch.abs(features * (diff_2_1 - diff_2_2) / features_norm)
+		use_these, _ = ch.topk(normalized_drop_term, top_k, dim=1)
+		use_these = ch.mean(use_these, dim=1)
+		diffs_2.append(use_these)
+	second_term = ch.mean(ch.stack(diffs_2, dim=0), dim=0)
+	second_term = ch.mean(second_term)
+
+	return ((logits, features), final_inp, loss, delta_1 * first_term + delta_2 * second_term)

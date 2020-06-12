@@ -11,7 +11,7 @@ def get_these_params(model, identifier):
 			return param
 	return None
 
-def classwise_closed_form_solutions(logits, weights):
+def classwise_closed_form_solutions(logits, weights, actual_label):
 	# Iterate through all possible classes, calculate flip probabilities
 	actual_label = ch.argmax(logits)
 	delta_values = logits[actual_label] - logits
@@ -33,7 +33,7 @@ def get_sensitivities(model, data_loader, weights, bias, validity_check_exit=Fal
 			for i in range(n_features):
 				specific_weights = weights[:, i]
 				# Get sensitivity values across classes
-				sensitivity = classwise_closed_form_solutions(logit, specific_weights)
+				sensitivity = classwise_closed_form_solutions(logit, specific_weights, label[j])
 				if validity_check_exit:
 					print()
 					# # Check wx+b before and after delta noise
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 	ds = dx.get_dataset()
 	model = dx.get_model(model_type, model_arch)
 
-	batch_size = 1024
+	batch_size = 10000
 	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 	weight_name = utils.get_logits_layer_name(model_arch)
@@ -83,6 +83,6 @@ if __name__ == "__main__":
 	sensitivities = get_sensitivities(model, test_loader, weights, bias)
 
 	with open("%s.txt" % filename, 'w') as f:
-		for i in range(n_features):
+		for i in range(weights.shape[1]):
 			floats_to_string = ",".join([str(x) for x in sensitivities[i]])
 			f.write(floats_to_string + "\n")

@@ -154,3 +154,14 @@ def get_logits_layer_name(arch):
 	elif "densenet" in arch:
 		return "module.model.linear.weight"
 	return None
+
+
+class SpecificLayerModel(ch.nn.Module):
+	def __init__(self, model, layer_index):
+		super(SpecificLayerModel, self).__init__()
+		self.model = model
+		self.layer_index = layer_index
+
+	def forward(self, x):
+		logits, _ = self.model(x, this_layer_input=self.layer_index)
+		return logits

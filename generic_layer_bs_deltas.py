@@ -63,10 +63,11 @@ def get_sensitivities(model, data_loader, injection_layer, injection_range, n_st
 
 if __name__ == "__main__":
 	import sys
-	filename   = sys.argv[1]
-	model_arch = sys.argv[2]
-	model_type = sys.argv[3]
-	dataset    = sys.argv[4]
+	filename         = sys.argv[1]
+	model_arch       = sys.argv[2]
+	model_type       = sys.argv[3]
+	dataset          = sys.argv[4]
+	injection_layer  = int(sys.argv[5])
 
 	if dataset == "cifar":
 		dx = utils.CIFAR10()
@@ -82,7 +83,6 @@ if __name__ == "__main__":
 	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
 
 	# VGG-19 specific parameters
-	injection_layer = 48
 	injection_range = 512 * 2 * 2
 	n_steps = 100
 	sensitivities = get_sensitivities(model, test_loader, injection_layer, injection_range, n_steps)

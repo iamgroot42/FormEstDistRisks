@@ -70,18 +70,40 @@ def custom_optimization(model, inp_og, target_rep, indices_mask, eps, p='2', ite
 	
 
 def madry_optimization(model, inp_og, target_rep, indices_mask, eps, random_restart_targets, iters=100,
-	reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True, random_restarts=0, inject=None):
+	reg_weight=1e0, p='2', verbose=True, custom_best=False, fake_relu=True, random_restarts=0, inject=None,
+	only_latent=False):
 
 	# Modified inversion loss that puts emphasis on non-matching neurons to have similar activations
 	def custom_inversion_loss(m, inp, targ):
 		output, rep = m(inp, with_latent=True, fake_relu=fake_relu, this_layer_output=inject)
 		# Normalized L2 error w.r.t. the target representation
-		loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
-		# loss = ch.norm(rep - targ, dim=1)
-		# Extra loss term (normalized)
-		aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
-		aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
-		return loss + reg_weight * aux_loss, output
+		if inject is None:
+			loss = ch.div(ch.norm(rep - targ, dim=1), ch.norm(targ, dim=1))
+			# Extra loss term (normalized)
+			aux_loss = ch.sum(ch.abs((rep - targ) * indices_mask), dim=1)
+			aux_loss = ch.div(aux_loss, ch.norm(targ * indices_mask, dim=1))
+			# Lagrangian formulation:
+			return loss + reg_weight * aux_loss, output
+		else:
+			rep_  = rep.view(rep.shape[0], -1)
+			targ_ = targ.view(rep.shape[0], -1)
+			# print(ch.sum(rep_  - targ_))
+			# print(ch.norm(rep_ - targ_, dim=1))
+			# print(ch.norm(targ_, dim=1))
+			# print(ch.sum(ch.norm(rep_ - targ_, dim=1) - ch.norm(targ_, dim=1)))
+			# exit(0)
+			# print(ch.norm(rep_ - targ_, dim=1))
+			# print(ch.norm(targ_, dim=1))
+			loss  = ch.mean(ch.pow(rep_ - targ_, 2), dim=1) # Do not normalize
+			# print(ch.mean(loss))
+			# loss  = ch.div(ch.norm(rep_ - targ_, dim=1), ch.norm(targ_, dim=1))
+			# Extra loss term (normalized)
+			# flattened_term = (ch.abs((rep - targ) * indices_mask)).view(targ.shape[0], -1)
+			# aux_loss       = ch.sum(flattened_term, dim=1)
+			# masked_targ    = (targ * indices_mask).view(targ.shape[0], -1)
+			# Do not normalize
+			# aux_loss       = ch.div(aux_loss, ch.norm(masked_targ, dim=1))
+			return loss, output
 
 	if custom_best:
 		# If True, use the 'only neuron i' based 'best' evaluation

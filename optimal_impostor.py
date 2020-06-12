@@ -9,17 +9,20 @@ from torch.autograd import Variable
 import optimize, utils
 
 
-def find_impostors(model, delta_values, ds, images, mean, std,
+def find_impostors(model, delta_values, ds, images, labels, mean, std,
 	optim_type='custom', verbose=True, n=4, eps=2.0, iters=200,
 	binary=True, norm='2', save_attack=False, custom_best=False,
 	fake_relu=True, analysis_start=0, random_restarts=0, 
-	delta_analysis=False, corr_analysis=False, dist_stats=False):
-	image_ = []
+	delta_analysis=False, corr_analysis=False, dist_stats=False,
+	goal=False):
+	image_, labels_ = [], []
 	# Get target images
-	for image in images:
+	for i, image in enumerate(images):
 		targ_img = image.unsqueeze(0)
 		real = targ_img.repeat(n, 1, 1, 1)
 		image_.append(real)
+		for j in range(n):
+			labels_.append(labels[i])
 	real = ch.cat(image_, 0)
 
 	# Get scaled senses
@@ -32,7 +35,13 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 		easiest = np.repeat(np.expand_dims(easiest, 1), len(images), axis=1)
 	else:
 		# Pick easiest-to-attack neurons per image
-		easiest = np.argsort(scaled_delta_values, axis=0)
+		easiest = np.argsort(np.abs(delta_values) / np.expand_dims(std, 1), axis=0)
+
+	# print("Targeting :", easiest[analysis_start : analysis_start + n, 0])
+
+	# Use totally random values
+	scale=1e2
+	delta_values = np.random.normal(mean, scale*std, size=(delta_values.shape[1], delta_values.shape[0])).T
 
 	# Get loss coefficients using these delta values
 	loss_coeffs = 1 / np.abs(scaled_delta_values)
@@ -48,9 +57,15 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	for j in range(len(images)):
 		for i, x in enumerate(easiest[analysis_start : analysis_start + n, j]):
 			delta_vec[i + j * n, x] = delta_values[x, j]
-			indices_mask[i + j * n, x] = 1		
+			indices_mask[i + j * n, x] = 1
 
-	impostors = parallel_impostor(model, delta_vec, real, indices_mask, loss_coeffs, optim_type,
+	# Use model's outputs or actual ground-truth labels?
+	if goal:
+		labels_ = ch.from_numpy(np.array(labels_)).cuda()
+	else:
+		labels_ = ch.argmax(model(real)[0], 1)
+
+	impostors = parallel_impostor(model, delta_vec, real, labels_, indices_mask, loss_coeffs, optim_type,
 		verbose, eps, iters, norm, custom_best, fake_relu, random_restarts)
 
 	with ch.no_grad():
@@ -103,12 +118,11 @@ def find_impostors(model, delta_values, ds, images, mean, std,
 	return (real, impostors, image_labels, succeeded, None, delta_succeeded, neuronwise_bincounts, dist_l2, dist_linf)
 
 
-def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbose, eps,
+def parallel_impostor(model, delta_vec, im, labels, indices_mask, l_c, optim_type, verbose, eps,
 	iters, norm, custom_best, fake_relu, random_restarts):
 	# Get feature representation of current image
 	with ch.no_grad():
-		(target_logits, image_rep), _  = model(im.cuda(), with_latent=True, fake_relu=fake_relu)
-		target_logits = ch.argmax(target_logits, dim=1)
+		(_, image_rep), _  = model(im.cuda(), with_latent=True, fake_relu=fake_relu)
 
 	# Get target feature rep
 	target_rep = image_rep + delta_vec
@@ -122,7 +136,7 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 	def ce_loss(loss, x):
 		output, _ = model(x, fake_relu=fake_relu)
 		# We want CE loss b/w new and old to be as high as possible
-		return -criterion(output, target_logits)
+		return -criterion(output, labels)
 	# Use CE loss
 	if custom_best: custom_best = ce_loss
 
@@ -130,7 +144,7 @@ def parallel_impostor(model, delta_vec, im, indices_mask, l_c, optim_type, verbo
 		# Use Madry's optimization
 		# Custom-Best (if True, look at i^th perturbation, not care about overall loss)
 		im_matched = optimize.madry_optimization(model, im, target_rep, indices_mask,
-			random_restart_targets=target_logits, eps=eps, iters=iters, verbose=verbose,
+			random_restart_targets=labels, eps=eps, iters=iters, verbose=verbose,
 			p=norm, reg_weight=1e1, custom_best=custom_best, fake_relu=fake_relu,
 			random_restarts=random_restarts)
 	elif optim_type == 'natural':
@@ -157,10 +171,10 @@ if __name__ == "__main__":
 	parser.add_argument('--model_type', type=str, default='nat', help='type of model (nat/l2/linf)')
 	parser.add_argument('--eps', type=float, help='epsilon-iter')
 	parser.add_argument('--iters', type=int, default=50, help='number of iterations')
-	parser.add_argument('--n', type=int, default=8, help='number of neurons per image')
-	parser.add_argument('--bs', type=int, default=8, help='batch size while performing attack')
-	parser.add_argument('--longrun', type=bool, default=False, help='whether experiment is long running or for visualization (default)')
-	parser.add_argument('--custom_best', type=bool, default=False, help='look at absoltue loss or perturbation for best-loss criteria')
+	parser.add_argument('--n', type=int, default=16, help='number of neurons per image')
+	parser.add_argument('--bs', type=int, default=50, help='batch size while performing attack')
+	parser.add_argument('--longrun', type=bool, default=True, help='whether experiment is long running or for visualization (default)')
+	parser.add_argument('--custom_best', type=bool, default=True, help='look at absoltue loss or perturbation for best-loss criteria')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binarycifar10, cifar10, imagenet]')
 	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
@@ -172,6 +186,7 @@ if __name__ == "__main__":
 	parser.add_argument('--random_restarts', type=int, default=0, help='how many random restarts? (0 -> False)')
 	parser.add_argument('--analysis_start', type=int, default=0, help='index to start from (to capture n)')
 	parser.add_argument('--distortion_statistics', type=bool, default=False, help='distortion statistics needed?')
+	parser.add_argument('--goal', type=bool, default=False, help='is goal to maximize misclassification (True, default) or flip model predictions (False)')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
@@ -196,6 +211,7 @@ if __name__ == "__main__":
 	random_restarts = args.random_restarts
 	corr_analysis   = args.corr_analysis
 	dist_stats      = args.distortion_statistics
+	goal            = args.goal
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -231,23 +247,23 @@ if __name__ == "__main__":
 		delta_wise_success  = []
 		iterator = tqdm(test_loader)
 		succcess_histograms = np.zeros((n, senses.shape[0]), np.int32)
-		for (image, _) in iterator:
+		for (image, labels) in iterator:
 			picked_indices = list(range(index_base, index_base + len(image)))
 			(real, impostors, image_labels, succeeded, impostors_latent,
 				delta_succeeded, neuronwise_bincounts, dist_l2, dist_linf) = find_impostors(model,
 																senses[:, picked_indices], ds,
-																image.cpu(), mean, std, n=n, binary=binary,
+																image, labels, mean, std, n=n, binary=binary,
 																verbose=False, eps=eps, iters=iters,
 																optim_type=opt_type, norm=norm,
 																save_attack=(save_attack != None),
 																custom_best=custom_best, fake_relu=fake_relu,
 																analysis_start=analysis_start, random_restarts=random_restarts,
 																delta_analysis=delta_analysis, corr_analysis=corr_analysis,
-																dist_stats=dist_stats)
+																dist_stats=dist_stats, goal=goal)
 
 			attack_rates[0] += np.sum(np.sum(succeeded[:, :1], axis=1) > 0)
-			attack_rates[1] += np.sum(np.sum(succeeded[:, :4], axis=1) > 0)
-			attack_rates[2] += np.sum(np.sum(succeeded[:, :8], axis=1) > 0)
+			attack_rates[1] += np.sum(np.sum(succeeded[:, :8], axis=1) > 0)
+			attack_rates[2] += np.sum(np.sum(succeeded[:, :16], axis=1) > 0)
 			num_flips       = np.sum(succeeded, axis=1)
 			attack_rates[3] += np.sum(num_flips > 0)
 			avg_successes   += np.sum(num_flips)
@@ -266,8 +282,12 @@ if __name__ == "__main__":
 			else:
 				dist_string = ""
 			# Keep track of attack success rate
-			iterator.set_description('(n=1,4,8,%d) Success rates : (%.2f, %.2f, %.2f, %.2f) | Flips/Image : %.2f/%d | %s' \
-				% (n, 100 * attack_rates[0]/index_base,
+			if goal:
+				name_it = "Misclassification Rates"
+			else:
+				name_it = "Success Rates"
+			iterator.set_description('(n=1,8,16,%d) %s : (%.2f, %.2f, %.2f, %.2f) | Flips/Image : %.2f/%d | %s' \
+				% (n, name_it, 100 * attack_rates[0]/index_base,
 					100 * attack_rates[1]/index_base,
 					100 * attack_rates[2]/index_base,
 					100 * attack_rates[3]/index_base,
@@ -317,11 +337,12 @@ if __name__ == "__main__":
 		# Visualize attack images
 		picked_indices = list(range(batch_size))
 		picked_images = [all_data[0][i] for i in picked_indices]
-		(real, impostors, image_labels, succeeded, _, _, _, _, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, mean, std,
-																n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
+		picked_labels = [all_data[1][i] for i in picked_indices]
+		(real, impostors, image_labels, succeeded, _, _, _, _, _) = find_impostors(model, senses[:, picked_indices], ds, picked_images, picked_labels, 
+																mean, std, n=n, verbose=True, optim_type=opt_type, save_attack=(save_attack != None),
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
 																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts,
-																delta_analysis=delta_analysis, corr_analysis=corr_analysis, dist_stats=dist_stats)
+																delta_analysis=delta_analysis, corr_analysis=corr_analysis, dist_stats=dist_stats, goal=goal)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],
