@@ -13,10 +13,12 @@ if __name__ == "__main__":
 	prefix       = sys.argv[3]
 	dataset      = sys.argv[4]
 
-	if dataset == 'cifar10':
+	if dataset == 'cifar':
 		dx = utils.CIFAR10()
 	elif dataset == 'imagenet':
 		dx = utils.ImageNet1000()
+	elif dataset == 'svhn':
+		dx = utils.SVHN10()
 	else:
 		raise ValueError("Dataset not supported")
 
@@ -26,7 +28,7 @@ if __name__ == "__main__":
 	batch_size = 128
 	all_reps = []
 	train_loader = None
-	if dataset == 'cifar10':
+	if dataset != 'imagenet':
 		train_loader, val_loader = ds.make_loaders(batch_size=batch_size, workers=8)
 	else:
 		_, val_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True)

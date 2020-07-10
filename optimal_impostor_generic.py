@@ -14,7 +14,7 @@ def find_impostors(model, delta_values, ds, images, labels, mean, std,
 	binary=True, norm='2', save_attack=False, custom_best=False,
 	fake_relu=True, analysis_start=0, random_restarts=0, 
 	delta_analysis=False, corr_analysis=False, dist_stats=False,
-	inject=None, goal=False, pot_def=False):
+	inject=None, goal=False, pot_def=False, active_only=False):
 	image_, labels_ = [], []
 	# Get target images
 	for i, image in enumerate(images):
@@ -27,6 +27,20 @@ def find_impostors(model, delta_values, ds, images, labels, mean, std,
 
 	# Replace inf values with largest non-inf values
 	delta_values[delta_values == np.inf] = delta_values[delta_values != np.inf].max()
+
+	# Get feature representation of current image
+	with ch.no_grad():
+		(_, image_rep), _  = model(real, with_latent=True, this_layer_output=inject)
+
+	# Consider only active neurons when targeting for attack
+	if active_only:
+		inactive_neurons = (image_rep[::n] == 0).view(delta_values.shape[1], -1).cpu().numpy()
+		# Transpose for ease
+		delta_values = delta_values.T
+		for i in range(inactive_neurons.shape[0]):
+			delta_values[i][inactive_neurons[i]] = np.inf
+		# Transpose back
+		delta_values = delta_values.T
 
 	if corr_analysis:
 		easiest = np.arange(delta_values.shape[0])
@@ -48,12 +62,8 @@ def find_impostors(model, delta_values, ds, images, labels, mean, std,
 		# 	easiest[:, j] = tp.T
 
 	# Use totally random values
-	scale=1e2
-	delta_values = np.random.normal(mean, scale*std, size=(delta_values.shape[1], delta_values.shape[0])).T
-
-	# Get feature representation of current image
-	with ch.no_grad():
-		(_, image_rep), _  = model(real, with_latent=True, this_layer_output=inject)
+	# scale=1e2
+	# delta_values = np.random.normal(mean, scale*std, size=(delta_values.shape[1], delta_values.shape[0])).T
 
 	# Construct delta vector and indices mask
 	delta_vec    = ch.zeros((image_rep.shape[0], mean.shape[0]))
@@ -173,16 +183,16 @@ if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--model_arch', type=str, default='vgg19', help='arch of model (resnet50/vgg19/desnetnet169)')
-	parser.add_argument('--model_type', type=str, default='nat', help='type of model (nat/l2/linf)')
-	parser.add_argument('--eps', type=float, default=0.5, help='epsilon-iter')
+	parser.add_argument('--model_type', type=str, default='linf', help='type of model (nat/l2/linf)')
+	parser.add_argument('--eps', type=float, default=0.031372549019608, help='epsilon-iter')
 	parser.add_argument('--iters', type=int, default=50, help='number of iterations')
-	parser.add_argument('--n', type=int, default=8, help='number of neurons per image')
-	parser.add_argument('--bs', type=int, default=64, help='batch size while performing attack')
+	parser.add_argument('--n', type=int, default=32, help='number of neurons per image')
+	parser.add_argument('--bs', type=int, default=32, help='batch size while performing attack')
 	parser.add_argument('--longrun', type=bool, default=True, help='whether experiment is long running or for visualization (default)')
 	parser.add_argument('--custom_best', type=bool, default=True, help='look at absoltue loss or perturbation for best-loss criteria')
 	parser.add_argument('--image', type=str, default='visualize', help='name of file with visualizations (if enabled)')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binarycifar10, cifar10, imagenet]')
-	parser.add_argument('--norm', type=str, default='2', help='P-norm to limit budget of adversary')
+	parser.add_argument('--norm', type=str, default='inf', help='P-norm to limit budget of adversary')
 	parser.add_argument('--technique', type=str, default='madry', help='optimization strategy while searching for examples')
 	parser.add_argument('--save_attack', type=str, default=None, help='path to save attack statistics (default: None, ie, do not save)')
 	parser.add_argument('--analysis', type=bool, default=False, help='report neuron-wise attack success rates?')
@@ -194,6 +204,7 @@ if __name__ == "__main__":
 	parser.add_argument('--inject', type=int, default=None, help='index of layers, to the output of which delta is to be added')
 	parser.add_argument('--goal', type=bool, default=False, help='is goal to maximize misclassification (True, default) or flip model predictions (False)')
 	parser.add_argument('--pot_def', type=bool, default=False, help='Run attack success evaluation on ground truth')
+	parser.add_argument('--active_only', type=bool, default=False, help='target only neurons that are already activated')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
@@ -221,6 +232,7 @@ if __name__ == "__main__":
 	inject          = args.inject
 	goal            = args.goal
 	pot_def         = args.pot_def
+	active_only     = args.active_only
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -267,7 +279,8 @@ if __name__ == "__main__":
 																custom_best=custom_best, fake_relu=fake_relu,
 																analysis_start=analysis_start, random_restarts=random_restarts,
 																delta_analysis=delta_analysis, corr_analysis=corr_analysis,
-																dist_stats=dist_stats, inject=inject, goal=goal, pot_def=pot_def)
+																dist_stats=dist_stats, inject=inject, goal=goal, pot_def=pot_def,
+																active_only=active_only)
 
 			attack_rates[0] += np.sum(np.sum(succeeded[:, :1], axis=1) > 0)
 			attack_rates[1] += np.sum(np.sum(succeeded[:, :8], axis=1) > 0)
@@ -351,7 +364,7 @@ if __name__ == "__main__":
 																eps=eps, iters=iters, binary=binary, norm=norm, custom_best=custom_best,
 																fake_relu=fake_relu, analysis_start=analysis_start, random_restarts=random_restarts,
 																delta_analysis=delta_analysis, corr_analysis=corr_analysis, dist_stats=dist_stats,
-																inject=inject, goal=goal, pot_def=pot_def)
+																inject=inject, goal=goal, pot_def=pot_def, active_only=active_only)
 
 		show_image_row([real.cpu(), impostors.cpu()],
 					["Real Images", "Attack Images"],

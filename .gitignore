@@ -1,4 +1,5 @@
 __pycache__/*
+decoder_weights/*
 *.h5
 models/*
 *.png
@@ -14,3 +15,4 @@ binary_stats/*
 .idea/*
 *_vgg_*
 achieving_*
+*.jpg

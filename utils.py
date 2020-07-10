@@ -1,9 +1,11 @@
 import torch as ch
 import numpy as np
+import torch.nn as nn
 from torchvision import transforms
 from robustness.model_utils import make_and_restore_model
-from robustness.datasets import GenericBinary, CIFAR, ImageNet
+from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
 from robustness.tools import folder
+from robustness.tools.misc import log_statement
 from tqdm import tqdm
 import sys
 import os
@@ -40,9 +42,10 @@ class DataPaths:
 		stats_path = os.path.join(self.stats_path, arch, m_type, "stats")
 		return get_stats(stats_path)
 
-	def get_deltas(self, m_type, arch='resnet50'):
-		deltas_path = os.path.join(self.stats_path, arch, m_type, "deltas.txt")
-		return get_sensitivities(deltas_path)
+	def get_deltas(self, m_type, arch='resnet50', numpy=False):
+		ext = ".npy" if numpy else ".txt"
+		deltas_path = os.path.join(self.stats_path, arch, m_type, "deltas" + ext)
+		return get_sensitivities(deltas_path, numpy=numpy)
 
 
 class BinaryCIFAR(DataPaths):
@@ -70,6 +73,25 @@ class CIFAR10(DataPaths):
 		self.models['nat']  = "cifar_nat.pt"
 		self.models['linf'] = "cifar_linf_8.pt"
 		self.models['l2']   = "cifar_l2_0_5.pt"
+
+
+class RobustCIFAR10(DataPaths):
+	def __init__(self, datapath, stats_prefix):
+		self.dataset_type = RobustCIFAR
+		super(RobustCIFAR10, self).__init__('robustcifar10',
+			datapath, stats_prefix)
+
+
+class SVHN10(DataPaths):
+	def __init__(self):
+		self.dataset_type = SVHN
+		super(SVHN10, self).__init__('svhn',
+			"/p/adversarialml/as9rw/datasets/svhn",
+			"/p/adversarialml/as9rw/svhn_stats/")
+		self.model_prefix['vgg16'] = "/p/adversarialml/as9rw/models_svhn_vgg/"
+		self.models['nat']  = "svhn_nat.pt"
+		self.models['linf'] = "svhn_linf_4.pt"
+		self.models['l2']   = "svhn_l2_0_5.pt"
 
 
 class ImageNet1000(DataPaths):
@@ -102,20 +124,28 @@ def scaled_values(val, mean, std, eps=1e-10):
 	return (val - np.repeat(np.expand_dims(mean, 1), val.shape[1], axis=1)) / (np.expand_dims(std, 1) +  eps)
 
 
-def load_all_data(ds):
-	batch_size = 512
-	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
-
+def load_all_loader_data(data_loader):
 	images, labels = [], []
-	for (image, label) in test_loader:
+	for (image, label) in data_loader:
 		images.append(image)
 		labels.append(label)
-	labels = ch.cat(labels).cpu()
-	images = ch.cat(images).cpu()
+	images = ch.cat(images)
+	labels = ch.cat(labels)
 	return (images, labels)
 
 
-def get_sensitivities(path):
+def load_all_data(ds):
+	batch_size = 512
+	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
+	return load_all_loader_data(test_loader)
+
+
+def get_sensitivities(path, numpy=False):
+	log_statement("==> Loading Delta Values")
+	# Directly load, if numpy array
+	if numpy:
+		return np.load(path)
+	# Process, if text file
 	features = []
 	with open(path, 'r') as f:
 		for line in tqdm(f):
@@ -165,3 +195,61 @@ class SpecificLayerModel(ch.nn.Module):
 	def forward(self, x):
 		logits, _ = self.model(x, this_layer_input=self.layer_index)
 		return logits
+
+
+class MadryToNormal:
+	def __init__(self, model, fake_relu=False):
+		self.model = model
+		self.fake_relu = fake_relu
+		self.model.eval()
+
+	def __call__(self, x):
+		logits, _ = self.model(x, fake_relu=self.fake_relu)
+		return logits
+
+	def eval(self):
+		return self.model.eval()
+
+	def parameters(self):
+		return self.model.parameters()
+
+	def named_parameters(self):
+		return self.model.named_parameters()
+
+
+class Decoder(nn.Module):
+	def __init__(self):
+		super(Decoder, self).__init__()
+		# Input size: [batch, n_features]
+		# Output size: [batch, 3, 32, 32]
+		# Expects 48, 4, 4
+		self.decoder = nn.Sequential(
+			nn.ConvTranspose2d(32, 24, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
+			nn.ReLU(),
+			# nn.BatchNorm2d(24),
+			nn.ConvTranspose2d(24, 12, 4, stride=2, padding=1),  # [batch, 12, 16, 16]
+			nn.ReLU(),
+			# nn.BatchNorm2d(12),
+			nn.ConvTranspose2d(12, 3, 4, stride=2, padding=1),   # [batch, 3, 32, 32]
+			nn.Sigmoid(),
+		)
+
+	def forward(self, x):
+		x_ = x.view(x.shape[0], 32, 4, 4)
+		# for l in self.decoder:
+			# x_ = l(x_)
+			# print(x_.shape)
+		# exit(0)
+		# return x_
+		return self.decoder(x_)
+
+
+class BasicDataset(ch.utils.data.Dataset):
+	def __init__(self, X, Y):
+		self.X, self.Y = X, Y
+
+	def __len__(self):
+		return len(self.Y)
+
+	def __getitem__(self, index):
+		return self.X[index], self.Y[index]

@@ -17,8 +17,10 @@ ds = dx.get_dataset()
 
 model_arch = "vgg19"
 # model_type = sys.argv[1]
-model_types = ["nat", "l2", "linf", "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best"]
-model_type_names = ["normal", "L-2 adv", "L-inf adv", "Custom Reg"]
+# model_types = ["nat", "l2", "linf", "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_100.000000_16_0.010000_3_fast_1/checkpoint.pt.best"]
+# model_type_names = ["normal", "L-2 adv", "L-inf adv", "Robust"]
+model_types = ["nat"]
+model_type_names = ["VGG-19 Model"]
 
 for model_name, model_type in zip(model_type_names, model_types):
 	model = dx.get_model(model_type, model_arch)
