@@ -83,8 +83,8 @@ if __name__ == "__main__":
 	import sys
 	dataset = sys.argv[1]
 	uses_cv2 = True
-	ftype = "orb"
-	# ftype = "cosine"
+	# ftype = "orb"
+	ftype = "cosine"
 	# ftype = "ssim"
 	if ftype == "orb":
 		ps = 7
@@ -112,9 +112,9 @@ if __name__ == "__main__":
 		model = constants.get_model("linf" , "vgg16")
 	# Get dataset
 	ds = constants.get_dataset()
-	train_loader, _ = ds.make_loaders(batch_size=250, workers=8, fixed_train_order=True, fixed_test_order=True, data_aug=False)
+	train_loader, _ = ds.make_loaders(batch_size=250, workers=8, shuffle_train=False, shuffle_val=False, data_aug=False)
 	train_images = []
-	target_label = 8
+	target_label = 1
 	#0 plane, 1 car, 2 bird, 3 cat, 4 deer, 5 dog, 6 frog, 7 horse, 8 ship, 9 truck
 	for (im, label) in train_loader:
 		train_images.append(im[label == target_label].numpy())
@@ -135,8 +135,8 @@ if __name__ == "__main__":
 	# Visualize top-N matches
 	# top_k = 256
 	# segment = 16
-	top_k = 64
-	segment = 1#1
+	top_k = 128
+	segment = 3#1
 	sort_indices = np.argsort(-np.array(scores))[top_k * (segment-1):top_k * segment]
 	best_images = train_images[sort_indices]
 	# Add original images to matches for visualization reference

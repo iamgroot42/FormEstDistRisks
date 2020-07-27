@@ -217,25 +217,42 @@ class MadryToNormal:
 		return self.model.named_parameters()
 
 
+def classwise_pixelwise_stats(loader, num_classes=10, classwise=False):
+	images, labels = load_all_loader_data(loader)
+	if not classwise:
+		return ch.mean(images, 0), ch.std(images, 0)
+	means, stds = [], []
+	for i in range(num_classes):
+		specific_images = images[labels == i]
+		means.append(ch.mean(specific_images, 0))
+		stds.append(ch.std(specific_images, 0))
+	return means, stds
+
+
 class Decoder(nn.Module):
 	def __init__(self):
 		super(Decoder, self).__init__()
 		# Input size: [batch, n_features]
 		# Output size: [batch, 3, 32, 32]
 		# Expects 48, 4, 4
+		self.dnn = nn.Sequential(
+			nn.Linear(512, 768),
+			nn.BatchNorm1d(768),
+			nn.ReLU())
 		self.decoder = nn.Sequential(
-			nn.ConvTranspose2d(32, 24, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
+			nn.ConvTranspose2d(48, 24, 4, stride=2, padding=1),  # [batch, 24, 8, 8]
+			nn.BatchNorm2d(24),
 			nn.ReLU(),
-			# nn.BatchNorm2d(24),
 			nn.ConvTranspose2d(24, 12, 4, stride=2, padding=1),  # [batch, 12, 16, 16]
+			nn.BatchNorm2d(12),
 			nn.ReLU(),
-			# nn.BatchNorm2d(12),
 			nn.ConvTranspose2d(12, 3, 4, stride=2, padding=1),   # [batch, 3, 32, 32]
 			nn.Sigmoid(),
 		)
 
 	def forward(self, x):
-		x_ = x.view(x.shape[0], 32, 4, 4)
+		x_ = self.dnn(x)
+		x_ = x_.view(x_.shape[0], 48, 4, 4)
 		# for l in self.decoder:
 			# x_ = l(x_)
 			# print(x_.shape)

@@ -1,4 +1,6 @@
 __pycache__/*
+npy_files/*
+txt_files/*
 decoder_weights/*
 *.h5
 models/*

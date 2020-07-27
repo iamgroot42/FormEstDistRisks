@@ -11,11 +11,14 @@ import utils
 
 
 def custom_optimization(model, inp_og, target_rep, eps, iters=100,
-	p='unconstrained', fake_relu=True, inject=None, retain_images=False, indices=None):
+	p='unconstrained', fake_relu=True, inject=None, retain_images=False, indices=None,
+	clip_min=0, clip_max=1):
+	# clip_min=0, clip_max=0.75):
 	inp =  inp_og.clone().detach().requires_grad_(True)
 	# optimizer = ch.optim.AdamW([inp], lr=1)
-	# optimizer = ch.optim.Adamax([inp], lr=0.1)
-	optimizer = ch.optim.Adamax([inp], lr=0.01)
+	optimizer = ch.optim.Adamax([inp], lr=0.1)
+	# optimizer = ch.optim.Adamax([inp], lr=0.05)
+	# optimizer = ch.optim.Adamax([inp], lr=0.01)
 	# optimizer = ch.optim.Adamax([inp], lr=0.001)
 	# scheduler = ch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[300], gamma=0.1)
 	iterator = range(iters)
@@ -52,13 +55,14 @@ def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 
 		# Old Loss Term
 		# loss = ch.div(ch.norm(rep_ - targ_, dim=1), ch.norm(targ_, dim=1))
-		loss = ch.norm(rep_ - targ_, dim=1)
+		# loss = ch.norm(rep_ - targ_, dim=1)
 
 		# Add aux loss if indices provided
 		if indices_mask is not None:
 			aux_loss = ch.sum(ch.abs((rep_ - targ_) * indices_mask), dim=1)
 			# aux_loss = ch.div(aux_loss, ch.norm(targ_ * indices_mask, dim=1))
 			# loss = loss + aux_loss
+			# When seed is not start as same, don't use aux_loss
 			loss = aux_loss
 
 		# Back-prop loss
@@ -74,15 +78,15 @@ def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 				# Linf
 				diff      = ch.clamp(inp.data - inp_og.data, -eps, eps)
 				# Add back perturbation, clip
-				inp.data  = ch.clamp(inp_og.data + diff, 0, 1)
+				inp.data  = ch.clamp(inp_og.data + diff, clip_min, clip_max)
 			elif p == '2':
 				# L2
 				diff = inp.data - inp_og.data
 				diff = diff.renorm(p=2, dim=0, maxnorm=eps)
 				# Add back perturbation, clip
-				inp.data  = ch.clamp(inp_og.data + diff, 0, 1)
+				inp.data  = ch.clamp(inp_og.data + diff, clip_min, clip_max)
 			elif p == 'unconstrained':
-				inp.data  = ch.clamp(inp.data, 0, 1)
+				inp.data  = ch.clamp(inp.data, clip_min, clip_max)
 			else:
 				raise ValueError("Projection Currently Not Supported")
 		
@@ -93,7 +97,7 @@ def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 			best_loss = loss.mean()
 			best_x    = inp.clone().detach()
 
-	return ch.clamp(best_x, 0, 1), retained
+	return ch.clamp(best_x, clip_min, clip_max), retained
 
 
 def find_impostors(model, delta_vec, ds, real, labels,
@@ -115,18 +119,25 @@ def find_impostors(model, delta_vec, ds, real, labels,
 		# real_ = ch.clamp(real_ + noise, 0, 1)
 
 	with ch.no_grad():
-		real_rep, _ = model(real_, with_latent=True, fake_relu=fake_relu, just_latent=True, this_layer_output=inject)
+		real_rep, _ = model(real, with_latent=True, fake_relu=fake_relu, just_latent=True, this_layer_output=inject)
+		real_rep_, _ = model(real_, with_latent=True, fake_relu=fake_relu, just_latent=True, this_layer_output=inject)
 		
 		# Take note of indices where neuron is activated
 		activated_indices = []
 		for i, x in enumerate(indices):
-			if real_rep[0][x] > 0:
+			# Break out when done
+			if len(activated_indices) == real_.shape[0]:
+				break
+			# if real_rep_[0][x] > 0:
+			if real_rep_[len(activated_indices)][x] > 0:
 				activated_indices.append(i)
+			# activated_indices.append(i)
 		delta_vec = delta_vec[activated_indices]
 		# Consider the best k-delta values out of these
 		delta_vec = delta_vec[:real_.shape[0]]
 
 		target_rep  = real_rep + delta_vec
+		# target_rep  = real_rep
 
 	# Map indices accordingly
 	indices_ = [indices[i] for i in activated_indices[:real_.shape[0]]]
@@ -134,9 +145,9 @@ def find_impostors(model, delta_vec, ds, real, labels,
 
 	# Print activations at indices; are they really not activated?
 	acts = real_rep[0][indices].cpu().numpy()
-	for i, act in enumerate(acts):
-		print(i, ":", act)
-	print(ch.sum(real_rep[0] == 0).item(), "/", real_rep[0].shape[0], "neurons not activated")
+	# for i, act in enumerate(acts):
+	# 	print(i, ":", act)
+	print(ch.sum(real_rep_[0] == 0).item(), "/", real_rep_[0].shape[0], "neurons not activated")
 
 	impostors, retained = custom_optimization(model, real_, target_rep,
 		eps=eps, iters=iters, p=norm, fake_relu=fake_relu,
@@ -153,8 +164,8 @@ def find_impostors(model, delta_vec, ds, real, labels,
 
 		succeeded = (label_pred != labels_)
 		mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-		for ii in label_pred:
-			print(mappinf[ii])
+		# for ii in label_pred:
+			# print(mappinf[ii])
 
 	return (impostors, succeeded, dist_l2, dist_linf, retained)
 
@@ -168,10 +179,11 @@ if __name__ == "__main__":
 	parser.add_argument('--iters', type=int, default=1000, help='number of iterations')
 	parser.add_argument('--bs', type=int, default=16, help='batch size while performing attack')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binarycifar10, cifar10, imagenet, robustcifar]')
-	parser.add_argument('--norm', type=str, default='unconstrained', help='P-norm to limit budget of adversary')	
+	parser.add_argument('--norm', type=str, default='unconstrained', help='P-norm to limit budget of adversary')
 	parser.add_argument('--inject', type=int, default=None, help='index of layers, to the output of which delta is to be added')
 	parser.add_argument('--save_gif', type=bool, default=False, help='save animation of optimization procedure?')
 	parser.add_argument('--work_with_train', type=bool, default=False, help='operate on train dataset or test')
+	parser.add_argument('--index_focus', type=int, default=0, help='which example to focus on?')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
@@ -187,6 +199,7 @@ if __name__ == "__main__":
 	inject          = args.inject
 	retain_images   = args.save_gif
 	work_with_train = args.work_with_train
+	index_focus     = args.index_focus
 
 	# Load model
 	if args.dataset == 'cifar10':
@@ -239,7 +252,7 @@ if __name__ == "__main__":
 	# 	senses.append(senses_raw[easiest[0, i], i])
 	# senses = np.array(senses)
 
-	index_focus  = 10#6#2
+	# index_focus  = 10#6#2
 	log_statement("==> Example in focus : %d" % index_focus)
 	easiest_wanted = easiest[:, index_focus]
 	condition = np.logical_and((senses_raw[easiest_wanted, index_focus] != np.inf), (std != 0))
@@ -295,9 +308,13 @@ if __name__ == "__main__":
 	# 	i += 1
 	
 	if work_with_train:
-		data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, fixed_train_order=True, data_aug=False)
+		data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_train=False, data_aug=False)
 	else:
-		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
+		# train_loader, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False)
+		# _, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=False)
+		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=True)
+		# pmean, pstd = utils.classwise_pixelwise_stats(train_loader)
+		# pmeans, pstds = utils.classwise_pixelwise_stats(train_loader, classwise=True)
 
 	index_base, asr = 0, 0
 	l2_norms   = [np.inf, -1.0, 0]
@@ -315,7 +332,15 @@ if __name__ == "__main__":
 		start_with = None
 		start_with = image.clone()
 		for j in range(image.shape[0]):
+			# distr = ch.distributions.normal.Normal(loc=pmean, scale=pstd)
+			# start_with[j] = distr.sample()
 			start_with[j] = image[index_focus]
+			# start_with[j][0] = np.random.uniform(0.2, 0.8)
+			# start_with[j][1] = np.random.uniform(0.2, 0.8)
+			# start_with[j][2] = np.random.uniform(0.2, 0.8)
+			# start_with[j] = pmean
+			# start_with[j] = pmeans[j % 10]
+			# start_with[j] = pmeans[7]
 			# start_with[j] = image[j]
 		# start_with = None
 
@@ -365,9 +390,8 @@ if __name__ == "__main__":
 					tlist=image_labels,
 					fontsize=22,
 					filename="./visualize/basic_deltas.png")
-					# filename="./visualize/cw_try.png")
 
-		want_this = 1
+		want_this = 16
 		image_in_sight = retained[-1][(want_this-1) * 32:want_this * 32]
 		np.save("./visualize/closest_to_this", image_in_sight)
 		log_statement("==> Saved as array")
@@ -391,10 +415,10 @@ if __name__ == "__main__":
 			# import cv2
 			# # Do for each image
 			# for k, x in enumerate(retained):
-			# 	for i in range(0, x.shape[0], 32):
-			# 		for j in range(0, x.shape[1], 32):
+				# for i in range(0, x.shape[0], 32):
+					# for j in range(0, x.shape[1], 32):
 			# 			retained[k][i:i+32, j:j+32] = cv2.GaussianBlur(x[i:i+32, j:j+32], (3,3), 0) #Gaussian Blur
-			# 			retained[k][i:i+32, j:j+32] = cv2.medianBlur(x[i:i+32, j:j+32], 3) # Median Blur
+						# retained[k][i:i+32, j:j+32] = cv2.medianBlur(x[i:i+32, j:j+32], 3) # Median Blur
 			# 			retained[k][i:i+32, j:j+32] = cv2.blur(x[i:i+32, j:j+32], (3, 3)) # Mean Blur
 
 
@@ -411,6 +435,8 @@ if __name__ == "__main__":
 			delta_actual = (latent_pert - latent).cpu().view(latent.shape[0], -1).numpy().T
 		else:
 			delta_actual = (latent_pert - latent).cpu().numpy().T
+
+		print(np.linalg.norm(delta_actual, 2, 0))
 
 		achieved = delta_actual >= senses_raw[:, index_base: index_base + len(image)]
 		print(np.sum(achieved, 0))
