@@ -92,9 +92,11 @@ def find_impostors(model, delta_vec, ds, real,
 
 	# Keep only activated indices
 	real_ = real_[:len(activated_indices)]
-	return custom_optimization(model, real_, target_rep,
+	impostors, retained =  custom_optimization(model, real_, target_rep,
 		iters=iters, fake_relu=fake_relu,
 		inject=inject, retain_images=retain_images, indices=indices)
+
+	return (impostors, retained, indices)
 
 
 if __name__ == "__main__":
@@ -103,11 +105,11 @@ if __name__ == "__main__":
 	parser.add_argument('--model_arch', type=str, default='vgg19', help='arch of model (resnet50/vgg19/desnetnet169)')
 	parser.add_argument('--model_type', type=str, default='linf', help='type of model (nat/l2/linf)')
 	parser.add_argument('--iters', type=int, default=300, help='number of iterations')
-	parser.add_argument('--bs', type=int, default=300, help='batch size while performing attack')
-	parser.add_argument('--dataset', type=str, default='binary', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
+	parser.add_argument('--bs', type=int, default=250, help='batch size while performing attack')
+	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--inject', type=int, default=None, help='index of layers, to the output of which delta is to be added')
 	parser.add_argument('--work_with_train', type=bool, default=False, help='operate on train dataset or test')
-	parser.add_argument('--save_path', type=str, default='/p/adversarialml/as9rw/generated_images_binary/', help='path to save generated images')
+	parser.add_argument('--save_path', type=str, default='/p/adversarialml/as9rw/generated_images_neuronwise/', help='path to save generated images')
 	
 	args = parser.parse_args()
 	for arg in vars(args):
@@ -146,13 +148,13 @@ if __name__ == "__main__":
 		senses_raw  = utils.get_sensitivities("./generic_deltas_%s/%d.txt" %( model_type, inject))
 		(mean, std) = utils.get_stats("./generic_stats/%s/%d/" % (model_type, inject))
 	else:
-		# senses_raw  = constants.get_deltas(model_type, model_arch, numpy=True)
-		# (mean, std) = constants.get_stats(model_type, model_arch)
+		senses_raw  = constants.get_deltas(model_type, model_arch, numpy=True)
+		(mean, std) = constants.get_stats(model_type, model_arch)
 
 		# prefix = "./npy_files/binary_deltas_linf"
-		prefix = "./npy_files/binary_nodog_deltas_linf"
-		(mean, std) = utils.get_stats(prefix + "/")
-		senses_raw  = utils.get_sensitivities(prefix + ".npy", numpy=True)
+		# prefix = "./npy_files/binary_nodog_deltas_linf"
+		# (mean, std) = utils.get_stats(prefix + "/")
+		# senses_raw  = utils.get_sensitivities(prefix + ".npy", numpy=True)
 
 	# Process and make senses
 	if inject:
@@ -170,7 +172,7 @@ if __name__ == "__main__":
 	glob_counter = 1
 	# mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 	# mappinf = [str(x) for x in range(1000)]
-	mappinf  = [str(x) for x in range(2)]
+	mappinf  = [str(x) for x in range(512)]
 	for mm in mappinf:
 		os.mkdir(os.path.join(save_path, mm))
 
@@ -208,17 +210,16 @@ if __name__ == "__main__":
 				index_focus += 1
 				continue
 
-			impostors, _ = returned_tup
+			impostors, _, activated_indices = returned_tup
 		
 			# Impostor labels
-			bad_labels = ch.argmax(model(impostors)[0], 1)
 			impostors = impostors.cpu().numpy().transpose(0, 2, 3, 1)
 
 			# Save to appropriate folders
 			for k, impostor in enumerate(impostors):
 				from PIL import Image
 				im = Image.fromarray((impostor * 255).astype(np.uint8))
-				im.save(os.path.join(save_path, mappinf[bad_labels[k]], str(glob_counter) + ".png"))
+				im.save(os.path.join(save_path, mappinf[activated_indices[k]], str(glob_counter) + ".png"))
 				glob_counter += 1
 
 			index_focus += 1

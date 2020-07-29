@@ -91,15 +91,19 @@ if __name__ == "__main__":
 		dx = utils.ImageNet1000()
 	elif dataset == "svhn":
 		dx = utils.SVHN10()
+	elif dataset == 'binary':
+		# dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
+		dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
 	else:
 		raise ValueError("Dataset not supported")
 
 	ds = dx.get_dataset()
 	model = dx.get_model(model_type, model_arch)
+	model = ch.nn.DataParallel(model)
 
 	batch_size = 10000
-	_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
-	# data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, fixed_train_order=True, data_aug=False)
+	_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=False)
+	# data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_train=False, data_aug=False)
 
 	weight_name = utils.get_logits_layer_name(model_arch)
 	weights = get_these_params(model, weight_name)

@@ -19,13 +19,16 @@ if __name__ == "__main__":
 		dx = utils.ImageNet1000()
 	elif dataset == 'svhn':
 		dx = utils.SVHN10()
+	elif dataset == 'binary':
+		# dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
+		dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
 	else:
 		raise ValueError("Dataset not supported")
 
 	ds = dx.get_dataset()
 	model = dx.get_model(model_type, model_arch)
 
-	batch_size = 128
+	batch_size = 256
 	all_reps = []
 	train_loader = None
 	if dataset != 'imagenet':
@@ -36,7 +39,7 @@ if __name__ == "__main__":
 	def get_reps(data_loader):
 		for (im, label) in tqdm(data_loader):
 			with ch.no_grad():
-				(_, rep), _ = model(im, with_latent=True)
+				(_, rep), _ = model(im.cuda(), with_latent=True)
 				all_reps.append(rep.cpu())
 
 	if train_loader:

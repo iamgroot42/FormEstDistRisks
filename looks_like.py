@@ -128,30 +128,30 @@ def find_impostors(model, delta_vec, ds, real, labels,
 			# Break out when done
 			if len(activated_indices) == real_.shape[0]:
 				break
-			# if real_rep_[0][x] > 0:
-			if real_rep_[len(activated_indices)][x] > 0:
+			# if real_rep_[len(activated_indices)][x] > 0:
+			if real_rep_[0][x] > 0:
 				activated_indices.append(i)
-			# activated_indices.append(i)
+
+		if len(activated_indices) == 0: raise ValueError("No target neuron identified. Sorry!")
+
 		delta_vec = delta_vec[activated_indices]
-		# Consider the best k-delta values out of these
-		delta_vec = delta_vec[:real_.shape[0]]
+		real_rep = real_rep[:len(activated_indices)]
 
 		target_rep  = real_rep + delta_vec
-		# target_rep  = real_rep
 
 	# Map indices accordingly
 	indices_ = [indices[i] for i in activated_indices[:real_.shape[0]]]
 	indices = indices_[:]
 
-	# Print activations at indices; are they really not activated?
-	acts = real_rep[0][indices].cpu().numpy()
-	# for i, act in enumerate(acts):
-	# 	print(i, ":", act)
-	print(ch.sum(real_rep_[0] == 0).item(), "/", real_rep_[0].shape[0], "neurons not activated")
+	print("Indices:", indices)
+	print(ch.sum(real_rep_[0] > 0).item(), "/", real_rep_[0].shape[0], "neurons activated")
 
+	# Keep only activated indices
+	real_ = real_[:len(activated_indices)]
 	impostors, retained = custom_optimization(model, real_, target_rep,
 		eps=eps, iters=iters, p=norm, fake_relu=fake_relu,
 		inject=inject, retain_images=retain_images, indices=indices)
+
 
 	with ch.no_grad():
 		labels_    = ch.argmax(model(real_)[0], dim=1)
@@ -167,7 +167,7 @@ def find_impostors(model, delta_vec, ds, real, labels,
 		# for ii in label_pred:
 			# print(mappinf[ii])
 
-	return (impostors, succeeded, dist_l2, dist_linf, retained)
+	return (impostors, succeeded, dist_l2, dist_linf, retained, activated_indices)
 
 
 if __name__ == "__main__":
@@ -208,6 +208,9 @@ if __name__ == "__main__":
 		constants = utils.ImageNet1000()
 	elif args.dataset == 'svhn':
 		constants = utils.SVHN10()
+	elif args.dataset == 'binary':
+		# constants = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
+		constants = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
 	# elif args.dataset == 'robustcifar':
 	# 	data_path = 
 	# 	constants = utils.RobustCIFAR10("")
@@ -222,8 +225,14 @@ if __name__ == "__main__":
 		senses_raw  = utils.get_sensitivities("./generic_deltas_%s/%d.txt" %( model_type, inject))
 		(mean, std) = utils.get_stats("./generic_stats/%s/%d/" % (model_type, inject))
 	else:
-		senses_raw  = constants.get_deltas(model_type, model_arch, numpy=True)
-		(mean, std) = constants.get_stats(model_type, model_arch)
+		# senses_raw  = constants.get_deltas(model_type, model_arch, numpy=True)
+		# (mean, std) = constants.get_stats(model_type, model_arch)
+
+		# prefix = "./npy_files/binary_deltas_linf"
+		prefix = "./npy_files/binary_nodog_deltas_linf"
+		(mean, std) = utils.get_stats(prefix + "/")
+		senses_raw  = utils.get_sensitivities(prefix + ".npy", numpy=True)
+
 		# senses_raw  = utils.get_sensitivities("./deltas_train_cifar10_linf.txt")
 	# senses = np.load("./cw_deltas_%s/%d.npy" % (model_type, inject))
 	# senses = np.load("./pgd_deltas_%s/%d.npy" % (model_type, inject))
@@ -296,8 +305,6 @@ if __name__ == "__main__":
 	# Reshape senses to reflect the number of neurons we are considering
 	senses = senses[:i]
 
-	# print(indices[:batch_size])
-
 	# while i < batch_size:
 	# 	if senses_raw[easiest_wanted[i], index_focus] == np.inf:
 	# 		continue
@@ -312,7 +319,7 @@ if __name__ == "__main__":
 	else:
 		# train_loader, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False)
 		# _, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=False)
-		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=True)
+		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=False)
 		# pmean, pstd = utils.classwise_pixelwise_stats(train_loader)
 		# pmeans, pstds = utils.classwise_pixelwise_stats(train_loader, classwise=True)
 
@@ -348,7 +355,7 @@ if __name__ == "__main__":
 			image[j] = image[index_focus]
 			label[j] = label[index_focus]
 
-		(impostors, succeeded, dist_l2, dist_linf, retained) = find_impostors(model,
+		(impostors, succeeded, dist_l2, dist_linf, retained, activated_indices) = find_impostors(model,
 															# senses[index_base: index_base + len(image)], ds,
 															senses, ds,
 															image, label, eps=eps, iters=iters,
@@ -385,13 +392,13 @@ if __name__ == "__main__":
 		linf_norms  = ch.sum(dist_linf[succeeded])
 		print("\nSucceeded images: L2 norm: %.3f, Linf norm: %.2f/255"  % (l2_norms / norm_count, 255 * linf_norms / norm_count))
 
-		show_image_row([image.cpu(), impostors.cpu()],
-					["Real Images", "Attack Images"],
-					tlist=image_labels,
-					fontsize=22,
-					filename="./visualize/basic_deltas.png")
+		# show_image_row([image.cpu(), impostors.cpu()],
+		# 			["Real Images", "Attack Images"],
+		# 			tlist=image_labels,
+		# 			fontsize=22,
+		# 			filename="./visualize/basic_deltas.png")
 
-		want_this = 16
+		want_this = 1
 		image_in_sight = retained[-1][(want_this-1) * 32:want_this * 32]
 		np.save("./visualize/closest_to_this", image_in_sight)
 		log_statement("==> Saved as array")
@@ -407,8 +414,13 @@ if __name__ == "__main__":
 		# Save GIF
 		if retain_images:
 			log_statement("==> Generating GIF")
+			# print(image.shape)
+			# print(activated_indices)
+			# exit(0)
 			import imageio
+			image = image[:len(activated_indices)]
 			basic_image = np.concatenate(image.cpu().numpy().transpose(0, 2, 3, 1), 0)
+			# print(basic_image.shape, len(retained), retained[0].shape)
 			retained = [np.concatenate([x, basic_image], 1) for x in retained]
 
 			# Add blurring
@@ -425,6 +437,7 @@ if __name__ == "__main__":
 			# Scale to [0, 255] with uint8
 			retained = [(255 * x).astype(np.uint8) for x in retained]
 			imageio.mimsave('./visualize/basic_deltas.gif', retained)
+			log_statement("==> Generated GIF")
 
 		with ch.no_grad():
 			# Get latent reps of perturbed images

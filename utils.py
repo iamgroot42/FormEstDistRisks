@@ -49,16 +49,9 @@ class DataPaths:
 
 
 class BinaryCIFAR(DataPaths):
-	def __init__(self):
+	def __init__(self, path):
 		self.dataset_type = GenericBinary
-		super(BinaryCIFAR, self).__init__('binary cifar10',
-			"/p/adversarialml/as9rw/datasets/cifar_binary/animal_vehicle_correct",
-			"/p/adversarialml/as9rw/binary_stats/")
-		self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_correct/"
-		self.models['nat']  = "normal/checkpoint.pt.latest"
-		self.models['linf'] = "linf/checkpoint.pt.latest"
-		self.models['l1']   = "l1/checkpoint.pt.latest"
-		self.models['l2']   = "l2/checkpoint.pt.latest"
+		super(BinaryCIFAR, self).__init__('binary_cifar10', path, None)
 
 
 class CIFAR10(DataPaths):
