@@ -9,18 +9,9 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 import utils
 
-paths = [
-"/p/adversarialml/as9rw/models_cifar10_vgg/cifar_nat.pt",
-"/p/adversarialml/as9rw/models_cifar10_vgg/cifar_l2_0_5.pt",
-"/p/adversarialml/as9rw/models_cifar10_vgg/cifar_linf_8.pt",
-# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1/checkpoint.pt.best",
-# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_10000.000000_16_0.010000_1_fast_1/checkpoint.pt.best"
-# "/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_1000.000000_16_0.010000_3_fast_1/checkpoint.pt.best"
-"/p/adversarialml/as9rw/models_cifar10_vgg19/custom_adv_train_try_10.000000_100.000000_16_0.010000_3_fast_1/checkpoint.pt.best"
-]
-
 constants = utils.CIFAR10()
-ds = constants.get_dataset()
+data_constants = utils.RobustCIFAR10("/p/adversarialml/as9rw/generated_images_binary_dog50p/", None)
+ds = data_constants.get_dataset()
 
 def norm_grad(grad):
 	grad_normed = grad
@@ -32,8 +23,9 @@ def norm_grad(grad):
 
 
 def get_grad(model):
-	_, test_loader = ds.make_loaders(batch_size=8, workers=8, only_val=True, fixed_test_order=True)
+	_, test_loader = ds.make_loaders(batch_size=8, workers=8, only_val=True, shuffle_val=False)
 	for i, (image, label) in enumerate(test_loader):
+		if i < 15: continue
 		image = image.cuda().requires_grad_(True)
 		label = label.cuda()
 		loss = ch.nn.CrossEntropyLoss()
@@ -43,15 +35,12 @@ def get_grad(model):
 		return (image, norm_grad(grad))
 
 
-(_, grad_norm) = get_grad(constants.get_model(paths[0], "vgg19"))
-(_, grad_l2) = get_grad(constants.get_model(paths[1], "vgg19"))
-(_, grad_linf) = get_grad(constants.get_model(paths[2], "vgg19"))
-(image, grad_my) = get_grad(constants.get_model(paths[3], "vgg19"))
-# (_, grad_my_fast) = get_grad(constants.get_model(paths[4], "vgg19"))
+(_, grad_norm) = get_grad(constants.get_model("nat", "vgg19"))
+(_, grad_l2) = get_grad(constants.get_model("l2", "vgg19"))
+(image, grad_linf) = get_grad(constants.get_model("linf", "vgg19"))
 
 # show_image_row([image.detach().cpu(), grad_norm, grad_l2, grad_linf, grad_my, grad_my_fast],
-show_image_row([image.detach().cpu(), grad_norm, grad_l2, grad_linf, grad_my],
-				# ["Images", "Normal", "L2", "Linf", "Custom", "Custom Proper"],
-				["Images", "Normal", "L2", "Linf", "Custom"],
+show_image_row([image.detach().cpu(), grad_norm, grad_l2, grad_linf],
+				["Images", "Normal", "L2", "Linf"],
 				fontsize=22,
 				filename="./saliency_maps.png")

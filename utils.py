@@ -23,7 +23,7 @@ class DataPaths:
 	def get_dataset(self):
 		return self.dataset
 
-	def get_model(self, m_type, arch='resnet50'):
+	def get_model(self, m_type, arch='resnet50', parallel=False):
 		model_path = self.models.get(m_type, None)
 		if not model_path:
 			model_path = m_type
@@ -32,7 +32,8 @@ class DataPaths:
 		model_kwargs = {
 			'arch': arch,
 			'dataset': self.dataset,
-			'resume_path': model_path
+			'resume_path': model_path,
+			'parallel': parallel
 		}
 		model, _ = make_and_restore_model(**model_kwargs)
 		model.eval()
@@ -55,10 +56,13 @@ class BinaryCIFAR(DataPaths):
 
 
 class CIFAR10(DataPaths):
-	def __init__(self):
+	def __init__(self, data_path=None):
 		self.dataset_type = CIFAR
+		datapath = "/p/adversarialml/as9rw/datasets/cifar10" if data_path is None else data_path
+		# print(datapath, "wtf?!")
+		# exit(0)
 		super(CIFAR10, self).__init__('cifar10',
-			"/p/adversarialml/as9rw/datasets/cifar10",
+			datapath,
 			"/p/adversarialml/as9rw/cifar10_stats/")
 		self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_cifar10/"
 		self.model_prefix['densenet169'] = "/p/adversarialml/as9rw/models_cifar10_densenet/"
@@ -88,10 +92,11 @@ class SVHN10(DataPaths):
 
 
 class ImageNet1000(DataPaths):
-	def __init__(self):
+	def __init__(self, data_path=None):
 		self.dataset_type = ImageNet
+		datapath = "/p/adversarialml/as9rw/datasets/imagenet/" if data_path is None else data_path
 		super(ImageNet1000, self).__init__('imagenet1000',
-			"/p/adversarialml/as9rw/datasets/imagenet/",
+			datapath,
 			"/p/adversarialml/as9rw/imagenet_stats/")
 		self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_imagenet/"
 		self.models['nat']  = "imagenet_nat.pt"
@@ -246,11 +251,6 @@ class Decoder(nn.Module):
 	def forward(self, x):
 		x_ = self.dnn(x)
 		x_ = x_.view(x_.shape[0], 48, 4, 4)
-		# for l in self.decoder:
-			# x_ = l(x_)
-			# print(x_.shape)
-		# exit(0)
-		# return x_
 		return self.decoder(x_)
 
 
@@ -263,3 +263,21 @@ class BasicDataset(ch.utils.data.Dataset):
 
 	def __getitem__(self, index):
 		return self.X[index], self.Y[index]
+
+
+def compute_delta_values(logits, weights, actual_label=None):
+	# Iterate through all possible classes, calculate flip probabilities
+	actual_label = ch.argmax(logits)
+	numerator = (logits[actual_label] - logits).unsqueeze(1)
+	denominator = weights - weights[actual_label]
+	numerator = numerator.repeat(1, denominator.shape[1])
+	delta_values = ch.div(numerator, denominator)
+	delta_values[actual_label] = np.inf
+	return delta_values
+
+
+def get_these_params(model, identifier):
+	for name, param in model.state_dict().items():
+		if name == identifier:
+			return param
+	return None
