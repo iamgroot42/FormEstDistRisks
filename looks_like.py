@@ -182,7 +182,7 @@ if __name__ == "__main__":
 	parser.add_argument('--model_arch', type=str, default='vgg19', help='arch of model (resnet50/vgg19/desnetnet169)')
 	parser.add_argument('--model_type', type=str, default='linf', help='type of model (nat/l2/linf)')
 	parser.add_argument('--eps', type=float, default=0.5, help='epsilon-iter')
-	parser.add_argument('--iters', type=int, default=1000, help='number of iterations')
+	parser.add_argument('--iters', type=int, default=500, help='number of iterations')
 	parser.add_argument('--bs', type=int, default=16, help='batch size while performing attack')
 	parser.add_argument('--lr', type=float, default=0.01, help='lr for optimizer')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binarycifar10, cifar10, imagenet, robustcifar]')
@@ -214,6 +214,10 @@ if __name__ == "__main__":
 	target_class    = args.target_class
 	maximize_mode   = args.maximize_mode
 	is_gray_image   = args.gray_image
+
+	# Valid range check
+	if is_gray_image is not None and (is_gray_image < 0 or is_gray_image > 1):
+		raise ValueError("is_gray_image should be in [0,1]")
 
 	# Load model
 	side_size = 32
@@ -315,9 +319,6 @@ if __name__ == "__main__":
 	# senses_raw = np.random.normal(mean, scale*std, size=(senses_raw.shape[1], senses_raw.shape[0])).T
 	# print("Totally random delta values")
 
-	# valid_senses = senses_raw[easiest[:, index_focus], index_focus]
-	# valid_senses = valid_senses[valid_senses != np.inf]
-
 	# value_try = list(range(-batch_size // 2, batch_size // 2 + 1))
 	# value_try = list(range(1, batch_size + 1))
 	# indices   = None
@@ -327,15 +328,23 @@ if __name__ == "__main__":
 	# Override 
 	# easiest_wanted = list(range(easiest_wanted.shape[0]))
 
+	# Use loaded image as gray image
+	# print("Using template image")
+	# from PIL import Image
+	# loaded_image = np.asarray(Image.open("./visualize/sky_animal_grass_template.png")).astype('float32') / 255
+	# loaded_image = np.asarray(Image.open("./visualize/imagenet_warthog.png")).astype('float32') / 255
+	# loaded_image = np.expand_dims(np.transpose(loaded_image, (2, 0, 1)), 0)
+	# gray_image = ch.from_numpy(loaded_image).cuda()
+	gray_image = ch.zeros((1, 3, side_size, side_size)).cuda() + is_gray_image
+
 	i = 0
 	for ew in easiest_wanted:
-		# DO not deal with INF delta values
+		# Do not deal with INF delta values
 		if senses_raw[ew, index_focus] == np.inf:
 			continue
 		senses[i][ew] = senses_raw[ew, index_focus]
 		indices.append(ew)
 		# senses[i] = value_try[i]
-		# print(senses[i][ew])
 		i += 1
 		# if i == batch_size:
 		# 	break
@@ -383,12 +392,9 @@ if __name__ == "__main__":
 			# distr = ch.distributions.normal.Normal(loc=pmean, scale=pstd)
 			# start_with[j] = distr.sample()
 			# start_with[j] = 0.5
-			# start_with[j][0] = np.random.uniform(0.2, 0.8)
-			# start_with[j][1] = np.random.uniform(0.2, 0.8)
-			# start_with[j][2] = np.random.uniform(0.2, 0.8)
 			# start_with[j] = pmean
 			# start_with[j] = pmeans[j % 10]
-			# start_with[j] = pmeans[7]
+			# start_with[j] = pmeans[0]
 			# start_with[j] = image[j]
 		# start_with = None
 
@@ -398,6 +404,8 @@ if __name__ == "__main__":
 				label[j] = label[index_focus]
 			else:
 				image[j] = gray_image[0]
+			# image[j] = pmeans[j % 10]
+			# image[j] = pmeans[0]
 
 		(impostors, succeeded, dist_l2, dist_linf, retained, activated_indices) = find_impostors(model,
 															# senses[index_base: index_base + len(image)], ds,
