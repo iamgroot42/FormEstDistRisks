@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from tqdm import tqdm
 from torch.autograd import Variable
+from PIL import Image
 
 import utils
 
@@ -76,11 +77,10 @@ if __name__ == "__main__":
 	parser.add_argument('--lr', type=float, default=0.01, help='lr for optimizer')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--save_path', type=str, default='/p/adversarialml/as9rw/generated_images_binary/', help='path to save generated images')
-	parser.add_argument('--gray_value', type=float, default=0.5, help='use image filled with this value ([0, 1])')
+	parser.add_argument('--seed_mode_normal', type=bool, default=False, help='use normal images as seeds instead of gray images?')
 	
 	args = parser.parse_args()
-	for arg in vars(args):
-		print(arg, " : ", getattr(args, arg))
+	utils.flash_utils(args)
 	
 	model_arch      = args.model_arch
 	model_type      = args.model_type
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 	fake_relu       = ('vgg' not in model_arch)
 	save_path       = args.save_path
 	lr              = args.lr
-	gray_value      = args.gray_value
+	gray_mode       = not args.seed_mode_normal
 
 	# Load model
 	img_side, num_feat = 32, 512
@@ -99,32 +99,80 @@ if __name__ == "__main__":
 	elif args.dataset == 'imagenet':
 		constants = utils.ImageNet1000()
 		img_side, num_feat = 224, 2048
+		mappinf = [str(x) for x in range(1000)]
 	elif args.dataset == 'binary':
 		constants = utils.BinaryCIFAR(None)
+		mappinf = [str(x) for x in range(2)]
 	else:
 		print("Invalid Dataset Specified")
 
 	# Load model
 	model = constants.get_model(model_type , model_arch, parallel=True)
 
+	# For extraction of data satisfying property
+	# test_data, test_labels = utils.load_all_loader_data(data_loader)
+	# Get cat images
+	# which_one = 369
+	# dog_image = test_data[test_labels == 6][which_one:which_one+1].numpy()
+
 	glob_counter = 1
-	gray_vales = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-	# gray_vales = [0.3, 0.4, 0.5, 0.6, 0.7]
-	for gray_value in gray_vales:
-		for i in tqdm(range(0, num_feat, batch_size)):
+	if gray_mode:
+		gray_vales = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+		for gv in gray_vales:
+			for i in tqdm(range(0, num_feat, batch_size)):
 	
-			gray_image = ch.zeros((batch_size, 3, img_side, img_side)).cuda() + gray_value
-			indices = list(range(i, min(i + batch_size, num_feat)))
-		
-			impostors = find_impostors(model, gray_image, iters=iters,
+				gray_image = ch.zeros((batch_size, 3, img_side, img_side)).cuda() + gv
+
+				# Use own image
+				# loaded_image = np.asarray(Image.open("./visualize/sky_animal_grass_template.jpg")).astype('float32') / 255
+				# loaded_image = np.expand_dims(np.transpose(loaded_image, (2, 0, 1)), 0)
+				# loaded_image = dog_image
+				# loaded_image = np.tile(loaded_image, (batch_size, 1, 1, 1))
+				# gray_image = ch.from_numpy(loaded_image).cuda()
+
+				indices = list(range(i, min(i + batch_size, num_feat)))
+				impostors = find_impostors(model, gray_image, iters=iters,
 										fake_relu=fake_relu, indices=indices, lr=lr)
 
-			if impostors is None: continue
-			impostors = impostors.cpu().numpy().transpose(0, 2, 3, 1)
+				if impostors is None: continue
+				impostors = impostors.cpu().numpy().transpose(0, 2, 3, 1)
 
-			# Save to appropriate folders
-			for k, impostor in enumerate(impostors):
-				from PIL import Image
-				im = Image.fromarray((impostor * 255).astype(np.uint8))
-				im.save(os.path.join(save_path, str(glob_counter) + ".png"))
-				glob_counter += 1
+				# Save to appropriate folders
+				for k, impostor in enumerate(impostors):
+					im = Image.fromarray((impostor * 255).astype(np.uint8))
+					im.save(os.path.join(save_path, str(glob_counter) + ".png"))
+					glob_counter += 1
+
+	else:
+		# Define and load data loaders
+		ds = utils.CIFAR10().get_dataset()
+		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False, only_val=True)
+		mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+
+		# Create class directories
+		for mm in mappinf:
+			os.mkdir(os.path.join(save_path, mm))
+
+		for (images, labels) in tqdm(data_loader, total=len(data_loader)):
+
+			# Per example
+			for j in range(images.shape[0]):
+
+				# Batches of neurons
+				for i in range(0, num_feat, batch_size):
+					image_template = ch.empty_like(images)
+					for k in range(images.shape[0]): image_template[k] = images[j].clone()
+					image_template = image_template.cuda()
+
+					indices = list(range(i, min(i + batch_size, num_feat)))
+					impostors = find_impostors(model, image_template, iters=iters,
+												fake_relu=fake_relu, indices=indices, lr=lr)
+
+					if impostors is None: continue
+					impostors = impostors.cpu().numpy().transpose(0, 2, 3, 1)
+
+					# Save to appropriate folders
+					for impostor in impostors:
+						im = Image.fromarray((impostor * 255).astype(np.uint8))
+						im.save(os.path.join(save_path, mappinf[labels[j]], str(glob_counter) + ".png"))
+						glob_counter += 1

@@ -12,9 +12,9 @@ import utils
 
 def custom_optimization(model, inp_og, target_rep, iters=100,
 	fake_relu=True, inject=None, retain_images=False, indices=None,
-	clip_min=0, clip_max=1):
+	clip_min=0, clip_max=1, lr=0.01):
 	inp =  inp_og.clone().detach().requires_grad_(True)
-	optimizer = ch.optim.Adamax([inp], lr=0.01)
+	optimizer = ch.optim.Adamax([inp], lr=lr)
 	iterator = range(iters)
 	targ_ = target_rep.view(target_rep.shape[0], -1)
 	# retain images
@@ -60,7 +60,7 @@ def custom_optimization(model, inp_og, target_rep, iters=100,
 
 def find_impostors(model, delta_vec, ds, real,
 	iters=200, fake_relu=True, inject=None,
-	retain_images=False, indices=None):
+	retain_images=False, indices=None, lr=0.01):
 
 	# Shift delta_vec to GPU
 	delta_vec = ch.from_numpy(delta_vec).cuda()
@@ -71,15 +71,18 @@ def find_impostors(model, delta_vec, ds, real,
 	with ch.no_grad():
 		real_rep,  _ = model(real, with_latent=True, fake_relu=fake_relu, just_latent=True, this_layer_output=inject)
 		real_rep_, _ = model(real_, with_latent=True, fake_relu=fake_relu, just_latent=True, this_layer_output=inject)
-		
+
 		# Take note of indices where neuron is activated
 		activated_indices = []
 		for i, x in enumerate(indices):
-			# if real_rep_[0][x] > 0:
-			if real_rep_[len(activated_indices)][x] > 0:
+			if real_rep_[0][x] > 0:
+			# if real_rep_[len(activated_indices)][x] > 0:
 				activated_indices.append(i)
 
 		if len(activated_indices) == 0: return None
+
+		# If too many activated indices, keep only the ones that batch-size allows
+		activated_indices = activated_indices[:real_rep.shape[0]]
 
 		delta_vec = delta_vec[activated_indices]
 		real_rep = real_rep[:len(activated_indices)]
@@ -94,7 +97,7 @@ def find_impostors(model, delta_vec, ds, real,
 	real_ = real_[:len(activated_indices)]
 	return custom_optimization(model, real_, target_rep,
 		iters=iters, fake_relu=fake_relu,
-		inject=inject, retain_images=retain_images, indices=indices)
+		inject=inject, retain_images=retain_images, indices=indices, lr=lr)
 
 
 if __name__ == "__main__":
@@ -104,6 +107,7 @@ if __name__ == "__main__":
 	parser.add_argument('--model_type', type=str, default='linf', help='type of model (nat/l2/linf)')
 	parser.add_argument('--iters', type=int, default=300, help='number of iterations')
 	parser.add_argument('--bs', type=int, default=300, help='batch size while performing attack')
+	parser.add_argument('--lr', type=float, default=0.01, help='lr for optimizer')
 	parser.add_argument('--dataset', type=str, default='binary', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--inject', type=int, default=None, help='index of layers, to the output of which delta is to be added')
 	parser.add_argument('--work_with_train', type=bool, default=False, help='operate on train dataset or test')
@@ -121,26 +125,34 @@ if __name__ == "__main__":
 	inject          = args.inject
 	work_with_train = args.work_with_train
 	save_path       = args.save_path
+	lr              = args.lr
 
 	# Load model
 	if args.dataset == 'cifar10':
 		constants = utils.CIFAR10()
+		mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 	elif args.dataset == 'imagenet':
 		constants = utils.ImageNet1000()
+		mappinf = [str(x) for x in range(1000)]
 	elif args.dataset == 'svhn':
 		constants = utils.SVHN10()
 	elif args.dataset == 'binary':
 		constants = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
+		mappinf  = [str(x) for x in range(2)]
 		# constants = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
 	# elif args.dataset == 'robustcifar':
 	# 	data_path = 
 	# 	constants = utils.RobustCIFAR10("")
 	else:
 		print("Invalid Dataset Specified")
-	ds = constants.get_dataset()
+
+	# Use CIFAR10 test set (balanced) when generating
+	ds = utils.CIFAR10().get_dataset()
+	print("=> Gonna use all of CIFAR10 test-set for generation")
+	# ds = constants.get_dataset()
 
 	# Load model
-	model = constants.get_model(model_type , model_arch)
+	model = constants.get_model(model_type , model_arch, parallel=True)
 	# Get stats for neuron activations
 	if inject:
 		senses_raw  = utils.get_sensitivities("./generic_deltas_%s/%d.txt" %( model_type, inject))
@@ -149,8 +161,12 @@ if __name__ == "__main__":
 		# senses_raw  = constants.get_deltas(model_type, model_arch, numpy=True)
 		# (mean, std) = constants.get_stats(model_type, model_arch)
 
-		# prefix = "./npy_files/binary_deltas_linf"
-		prefix = "./npy_files/binary_nodog_deltas_linf"
+		# prefix = "/u/as9rw/work/fnb/npy_files/binary_deltas_linf"
+		# prefix = "/u/as9rw/work/fnb/npy_files/binary_nodog_deltas_linf"
+		# prefix = "/u/as9rw/work/fnb/npy_files/binary_nodog_deltas_linf"
+		# prefix = "/u/as9rw/work/fnb/npy_files/10p_deltas_linf"
+		prefix = "/u/as9rw/work/fnb/npy_files/50p_deltas_linf"
+		print("=> PREFIX:", prefix)
 		(mean, std) = utils.get_stats(prefix + "/")
 		senses_raw  = utils.get_sensitivities(prefix + ".npy", numpy=True)
 
@@ -164,13 +180,11 @@ if __name__ == "__main__":
 	if work_with_train:
 		data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_train=False, data_aug=False)
 	else:
-		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False)
+		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False, only_val=True)
 
 	index_focus = 0
 	glob_counter = 1
 	# mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-	# mappinf = [str(x) for x in range(1000)]
-	mappinf  = [str(x) for x in range(2)]
 	for mm in mappinf:
 		os.mkdir(os.path.join(save_path, mm))
 
@@ -198,11 +212,11 @@ if __name__ == "__main__":
 			senses = senses[:i]
 
 			image_template = ch.empty_like(images)
-			for k in range(batch_size): image_template[k] = images[j].clone()
+			for k in range(images.shape[0]): image_template[k] = images[j].clone()
 			image_template = image_template.cuda()
 		
 			returned_tup = find_impostors(model,senses, ds, image_template, iters=iters,
-													fake_relu=fake_relu, inject=inject, indices=indices)
+											fake_relu=fake_relu, inject=inject, indices=indices, lr=lr)
 
 			if returned_tup is None:
 				index_focus += 1

@@ -18,3 +18,7 @@ binary_stats/*
 *_vgg_*
 achieving_*
 *.jpg
+graph_*/*
+
+resnet18_cifar/*
+vgg16_cifar/*

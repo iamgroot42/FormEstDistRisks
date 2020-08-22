@@ -20,13 +20,17 @@ if __name__ == "__main__":
 	elif dataset == 'svhn':
 		dx = utils.SVHN10()
 	elif dataset == 'binary':
-		# dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
-		dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
+		dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary/")
+		# dx = utils.BinaryCIFAR("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
 	else:
 		raise ValueError("Dataset not supported")
 
 	ds = dx.get_dataset()
 	model = dx.get_model(model_type, model_arch)
+
+	# Use CIFAR10 test set (balanced) when generating
+	dx = utils.CIFAR10()
+	ds = dx.get_dataset()
 
 	batch_size = 256
 	all_reps = []

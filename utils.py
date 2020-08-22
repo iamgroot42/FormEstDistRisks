@@ -134,7 +134,7 @@ def load_all_loader_data(data_loader):
 
 def load_all_data(ds):
 	batch_size = 512
-	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, fixed_test_order=True)
+	_, test_loader = ds.make_loaders(batch_size=batch_size, workers=8, only_val=True, shuffle_val=False)
 	return load_all_loader_data(test_loader)
 
 
@@ -281,3 +281,9 @@ def get_these_params(model, identifier):
 		if name == identifier:
 			return param
 	return None
+
+
+def flash_utils(args):
+	log_statement("==> Arguments:")
+	for arg in vars(args):
+		print(arg, " : ", getattr(args, arg))
