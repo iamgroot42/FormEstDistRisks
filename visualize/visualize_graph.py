@@ -15,14 +15,17 @@ if __name__ =="__main__":
 
 	folder_path = sys.argv[1]
 	model_type  = sys.argv[2]
+	graph_name  = sys.argv[3]
 	batch_size  = 1500 * 2
 	n_classes   = 10
 	count_matrix = np.zeros((n_classes, n_classes))
 
 	constants = utils.RobustCIFAR10(folder_path, None)
+	# constants = utils.CIFAR10()
+
 	model = utils.CIFAR10().get_model(model_type , "vgg19", parallel=True)
 	ds = constants.get_dataset()
-	_, data_loader = ds.make_loaders(batch_size=batch_size, workers=10, shuffle_val=False, only_val=True)
+	_, data_loader = ds.make_loaders(batch_size=batch_size, workers=16, shuffle_val=False, only_val=True)
 
 	for (images, labels) in tqdm(data_loader, total=len(data_loader)):
 		logits, _ = model(images.cuda())
@@ -40,14 +43,19 @@ if __name__ =="__main__":
 	for x in mappinf:
 		G.add_node(x)
 
+	# for i in range(n_classes):
+	# 	wt = np.around(count_matrix[i][i], decimals=2)
+	# 	G.add_edge(mappinf[i],mappinf[i], weight=wt)
+
 	for i in range(n_classes):
 		for j in range(n_classes):
 			wt = np.around(count_matrix[i][j], decimals=2)
-			if wt > 1:
+			# print(wt, mappinf[i], mappinf[j])
+			if wt > 0.7:
 				G.add_edge(mappinf[i],mappinf[j], weight=wt)
 
 	pos=nx.circular_layout(G)
 	nx.draw_networkx(G, pos, node_color=node_colors, node_size=1300, font_color='w')
 	labels = nx.get_edge_attributes(G,'weight')
 	nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
-	plt.savefig("./transition_graph.png")
+	plt.savefig("./%s.png" % graph_name)

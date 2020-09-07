@@ -6,6 +6,7 @@ import numpy as np
 import sys
 from tqdm import tqdm
 from torch.autograd import Variable
+from torch.utils.data import DataLoader
 from PIL import Image
 
 import utils
@@ -72,12 +73,13 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--model_arch', type=str, default='vgg19', help='arch of model (resnet50/vgg19/desnetnet169)')
 	parser.add_argument('--model_type', type=str, default='linf', help='type of model (nat/l2/linf)')
-	parser.add_argument('--iters', type=int, default=300, help='number of iterations')
-	parser.add_argument('--bs', type=int, default=300, help='batch size while performing attack')
+	parser.add_argument('--iters', type=int, default=250, help='number of iterations')
+	parser.add_argument('--bs', type=int, default=250, help='batch size while performing attack')
 	parser.add_argument('--lr', type=float, default=0.01, help='lr for optimizer')
 	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--save_path', type=str, default='/p/adversarialml/as9rw/generated_images_binary/', help='path to save generated images')
 	parser.add_argument('--seed_mode_normal', type=bool, default=False, help='use normal images as seeds instead of gray images?')
+	parser.add_argument('--sample_ratio', type=float, default=1.0, help='how much of the test set (class balanced) to be used when generating images?')
 	
 	args = parser.parse_args()
 	utils.flash_utils(args)
@@ -90,17 +92,19 @@ if __name__ == "__main__":
 	save_path       = args.save_path
 	lr              = args.lr
 	gray_mode       = not args.seed_mode_normal
+	sample_ratio    = args.sample_ratio
 
 	# Load model
-	img_side, num_feat = 32, 512
+	img_side, num_feat, n_classes = 32, 512, 10
 	if args.dataset == 'cifar10':
 		constants = utils.CIFAR10()
 		mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 	elif args.dataset == 'imagenet':
 		constants = utils.ImageNet1000()
-		img_side, num_feat = 224, 2048
+		img_side, num_feat, n_classes = 224, 2048, 1000
 		mappinf = [str(x) for x in range(1000)]
 	elif args.dataset == 'binary':
+		n_classes = 2
 		constants = utils.BinaryCIFAR(None)
 		mappinf = [str(x) for x in range(2)]
 	else:
@@ -152,6 +156,23 @@ if __name__ == "__main__":
 		# Create class directories
 		for mm in mappinf:
 			os.mkdir(os.path.join(save_path, mm))
+
+		# If sampling requested, sub-select data (class balanced)
+		images, labels = utils.load_all_loader_data(data_loader)
+		if sample_ratio < 1:
+			images_, labels_ = [], []
+			for i in range(n_classes):
+				eligible_indices = np.nonzero(labels == i)[:,0]
+				np.random.shuffle(eligible_indices) 
+				# Pick according to ratio
+				picked_indices = eligible_indices[:int(len(eligible_indices) * sample_ratio)]
+				images_.append(images[picked_indices])
+				labels_.append(labels[picked_indices])
+			images = ch.cat(images_)
+			labels = ch.cat(labels_)
+
+		use_ds = utils.BasicDataset(images, labels)
+		data_loader = DataLoader(use_ds, batch_size=batch_size, shuffle=False, num_workers=8)
 
 		for (images, labels) in tqdm(data_loader, total=len(data_loader)):
 

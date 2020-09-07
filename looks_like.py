@@ -14,7 +14,7 @@ import utils
 
 def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 	p='unconstrained', fake_relu=True, inject=None, retain_images=False, indices=None,
-	clip_min=0, clip_max=1, lr=0.01, maximize_mode=False):
+	clip_min=0, clip_max=1, lr=0.01, maximize_mode=False, border_erase=0):
 
 	# Define the variable that the optimizer will optimize
 	inp =  inp_og.clone().detach().requires_grad_(True)
@@ -41,6 +41,15 @@ def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 	if retain_images: retained = []
 
 	for i in iterator:
+
+		# Add black border if specified:
+		if border_erase > 0:
+			# print(inp.data.shape)
+			# exit(0)
+			inp.data[:,:,:border_erase]   = 0
+			inp.data[:,:,:,:border_erase:]  = 0
+			inp.data[:,:,-border_erase:]  = 0
+			inp.data[:,:,:,-border_erase:] = 0
 
 		# Keep track of images for GIF
 		if retain_images:
@@ -107,7 +116,7 @@ def custom_optimization(model, inp_og, target_rep, eps, iters=100,
 def neuron_optimization(model, delta_vec, real, labels,
 	eps=2.0, iters=200, norm='2', fake_relu=True, inject=None,
 	retain_images=False, indices=None, start_with=None, lr=0.01,
-	target_class=None, maximize_mode=False):
+	target_class=None, maximize_mode=False, border_erase=0):
 
 	if start_with is None:
 		# If some seed image given explicitly to start with, use that
@@ -161,7 +170,7 @@ def neuron_optimization(model, delta_vec, real, labels,
 	impostors, retained = custom_optimization(model, real_, target_rep,
 		eps=eps, iters=iters, p=norm, fake_relu=fake_relu,
 		inject=inject, retain_images=retain_images, indices=indices, lr=lr,
-		maximize_mode=maximize_mode)
+		maximize_mode=maximize_mode, border_erase=border_erase)
 
 	with ch.no_grad():
 		labels_    = ch.argmax(model(real_)[0], dim=1)
@@ -183,20 +192,21 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--model_arch',      type=str,   default='vgg19',         help='arch of model (resnet50/vgg19/desnetnet169)')
 	parser.add_argument('--model_type',      type=str,   default='linf',          help='type of model (nat/l2/linf)')
-	parser.add_argument('--eps',             type=float, default=0.5,             help='epsilon-iter')
-	parser.add_argument('--iters',           type=int,   default=500,             help='number of iterations')
-	parser.add_argument('--bs',              type=int,   default=16,              help='batch size while performing attack')
-	parser.add_argument('--lr',              type=float, default=0.01,            help='lr for optimizer')
 	parser.add_argument('--dataset',         type=str,   default='cifar10',       help='dataset: one of [binarycifar10, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--norm',            type=str,   default='unconstrained', help='P-norm to limit budget of adversary')
+	parser.add_argument('--load_gray_image', type=str,   default=None,            help='iif path provided, load this image and use as seed instead')
+	parser.add_argument('--eps',             type=float, default=0.5,             help='epsilon-iter')
+	parser.add_argument('--lr',              type=float, default=0.01,            help='lr for optimizer')
+	parser.add_argument('--gray_image',      type=float, default=None,            help='if not None, use image filled with this value ([0, 1]) and use its deltas')
+	parser.add_argument('--iters',           type=int,   default=500,             help='number of iterations')
+	parser.add_argument('--bs',              type=int,   default=16,              help='batch size while performing attack')
 	parser.add_argument('--inject',          type=int,   default=None,            help='index of layers, to the output of which delta is to be added')
-	parser.add_argument('--save_gif',        type=bool,  default=False,           help='save animation of optimization procedure?')
-	parser.add_argument('--work_with_train', type=bool,  default=False,           help='operate on train dataset or test')
 	parser.add_argument('--index_focus',     type=int,   default=0,               help='which example to focus on?')
 	parser.add_argument('--target_class',    type=int,   default=None,            help='which class to target (default: untargeted)')
+	parser.add_argument('--border_erase',    type=int,   default=0,               help='zero out border of image?')
+	parser.add_argument('--work_with_train', type=bool,  default=False,           help='operate on train dataset or test')
+	parser.add_argument('--save_gif',        type=bool,  default=False,           help='save animation of optimization procedure?')
 	parser.add_argument('--maximize_mode',   type=bool,  default=False,           help='maximize neuron activation instead of working with delta values')
-	parser.add_argument('--gray_image',      type=float, default=None,            help='if not None, use image filled with this value ([0, 1]) and use its deltas')
-	parser.add_argument('--load_gray_image', type=str,   default=None,            help='iif path provided, load this image and use as seed instead')
 	
 	args = parser.parse_args()
 	utils.flash_utils(args)
@@ -217,6 +227,7 @@ if __name__ == "__main__":
 	maximize_mode   = args.maximize_mode
 	is_gray_image   = args.gray_image
 	load_gray_image = args.load_gray_image
+	border_erase    = args.border_erase
 
 	# Valid range check
 	if is_gray_image is not None and (is_gray_image < 0 or is_gray_image > 1):
@@ -310,21 +321,22 @@ if __name__ == "__main__":
 		# Reshape senses to reflect the number of neurons we are considering
 		senses = senses[:i]
 
-	# Use loaded image as gray image
-	if load_gray_image is None:
-		gray_image = ch.zeros((1, 3, side_size, side_size)).cuda() + is_gray_image
-	else:
-		# Use user-specified template image as seed instead of gray image, if path given
-		log_statement("Using template image")
-		loaded_image = np.asarray(Image.open(load_gray_image)).astype('float32') / 255
-		loaded_image = np.expand_dims(np.transpose(loaded_image, (2, 0, 1)), 0)
-		gray_image = ch.from_numpy(loaded_image).cuda()
+		# Use loaded image as gray image
+		if load_gray_image is None :
+			gray_image = ch.zeros((1, 3, side_size, side_size)).cuda() + is_gray_image
+		else:
+			# Use user-specified template image as seed instead of gray image, if path given
+			log_statement("Using template image")
+			loaded_image = np.asarray(Image.open(load_gray_image)).astype('float32') / 255
+			loaded_image = np.expand_dims(np.transpose(loaded_image, (2, 0, 1)), 0)
+			gray_image = ch.from_numpy(loaded_image).cuda()
 	
 	if work_with_train:
 		# Work with images from the train dataset (for debugging, not the real usecase) if specified
 		data_loader, _ = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_train=False, data_aug=False)
 	else:
-		train_loader, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False)
+		# train_loader, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False)
+		_, data_loader = ds.make_loaders(batch_size=batch_size, workers=8, shuffle_val=False, only_val=True)
 		# pmeans, pstds = utils.classwise_pixelwise_stats(train_loader, classwise=True)
 
 	index_base, asr = 0, 0
@@ -359,7 +371,7 @@ if __name__ == "__main__":
 															norm=norm, fake_relu=fake_relu, inject=inject,
 															retain_images=retain_images, indices=indices,
 															start_with=start_with, lr=lr, target_class=target_class,
-															maximize_mode=maximize_mode)
+															maximize_mode=maximize_mode, border_erase=border_erase)
 		asr        += ch.sum(succeeded).float()
 		index_base += len(image)
 
