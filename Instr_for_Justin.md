@@ -20,3 +20,15 @@
 ## For 9/7-9/13
 
 - Try running the experiment with sample_ratio=0.05 2-3 times
+
+## For 9/17
+
+- I have created a folder in `/p/adversarialml/jyc9fyf`
+
+- You can now run the experiments above, and save them in folders inside this directory (this way, I can access them as well)
+
+- Run the following experiments (replace `<folder_name>` with your own name for experiment), twice each:
+
+  - `python collect_maximization_images.py --dataset binary --seed_mode_normal True --model_type /p/adversarialml/as9rw/models_cifar10binary_vgg/cifar10_binary_10pdog_v2_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/<folder_name> --sample_ratio 0.1`
+  
+  - `python collect_maximization_images.py --dataset binary --seed_mode_normal True --model_type /p/adversarialml/as9rw/models_cifar10binary_vgg/cifar10_binary_50pdog_v2_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/<folder_name> --sample_ratio 0.1`
