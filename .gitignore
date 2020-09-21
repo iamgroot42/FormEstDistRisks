@@ -19,6 +19,10 @@ binary_stats/*
 achieving_*
 *.jpg
 graph_*/*
+10p_5percent_sanity/*
+10p_5percent_sanity_2/*
+50p_5percent_sanity/*
+50p_5percent_sanity_2/*
 
 resnet18_cifar/*
 vgg16_cifar/*

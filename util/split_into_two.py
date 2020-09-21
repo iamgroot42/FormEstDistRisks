@@ -26,6 +26,8 @@ def add_to_dataset(prefix, X, Y, class_names):
 
 
 if __name__ == "__main__":
+	import sys
+	split_ratio = float(sys.argv[1])
 
 	# Ready data loaders
 	ds = CIFAR("/p/adversarialml/as9rw/datasets/cifar10")
@@ -39,10 +41,10 @@ if __name__ == "__main__":
 	X_test, Y_test   = X_test.numpy(), Y_test.numpy()
 
 	# Get class-wise random indices, split into two
-	indices_1, indices_2 = [], []
+	indices_1, indices_2 = [], []sdsdsd
 	for i in range(n_classes):
 		permuted_indices = np.random.permutation(np.nonzero((Y_train == i)))[0]
-		split_point = int(len(permuted_indices) * 0.8)
+		split_point = int(len(permuted_indices) * split_ratio)
 		indices_1.append(permuted_indices[:split_point])
 		indices_2.append(permuted_indices[split_point:])
 	# Join all indices together
@@ -50,8 +52,8 @@ if __name__ == "__main__":
 	indices_2 = np.concatenate(np.array(indices_2))
 
 	# Folder paths
-	folder_path_1 = "/p/adversarialml/as9rw/datasets/cifar10_80"
-	folder_path_2 = "/p/adversarialml/as9rw/datasets/cifar10_20"
+	folder_path_1 = "/p/adversarialml/as9rw/datasets/cifar10_split1"
+	folder_path_2 = "/p/adversarialml/as9rw/datasets/cifar10_split2"
 
 	# Make class-level folders
 	for class_name in ds.class_names:

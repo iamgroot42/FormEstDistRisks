@@ -76,7 +76,7 @@ if __name__ == "__main__":
 	parser.add_argument('--iters', type=int, default=250, help='number of iterations')
 	parser.add_argument('--bs', type=int, default=250, help='batch size while performing attack')
 	parser.add_argument('--lr', type=float, default=0.01, help='lr for optimizer')
-	parser.add_argument('--dataset', type=str, default='cifar10', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
+	parser.add_argument('--dataset', type=str, default='binary', help='dataset: one of [binary, cifar10, imagenet, robustcifar]')
 	parser.add_argument('--save_path', type=str, default='/p/adversarialml/as9rw/generated_images_binary/', help='path to save generated images')
 	parser.add_argument('--seed_mode_normal', type=bool, default=False, help='use normal images as seeds instead of gray images?')
 	parser.add_argument('--sample_ratio', type=float, default=1.0, help='how much of the test set (class balanced) to be used when generating images?')
@@ -104,7 +104,7 @@ if __name__ == "__main__":
 		img_side, num_feat, n_classes = 224, 2048, 1000
 		mappinf = [str(x) for x in range(1000)]
 	elif args.dataset == 'binary':
-		n_classes = 2
+		# n_classes = 2
 		constants = utils.BinaryCIFAR(None)
 		mappinf = [str(x) for x in range(2)]
 	else:
@@ -158,8 +158,8 @@ if __name__ == "__main__":
 			os.mkdir(os.path.join(save_path, mm))
 
 		# If sampling requested, sub-select data (class balanced)
-		images, labels = utils.load_all_loader_data(data_loader)
 		if sample_ratio < 1:
+			images, labels = utils.load_all_loader_data(data_loader)
 			images_, labels_ = [], []
 			for i in range(n_classes):
 				eligible_indices = np.nonzero(labels == i)[:,0]
@@ -171,8 +171,8 @@ if __name__ == "__main__":
 			images = ch.cat(images_)
 			labels = ch.cat(labels_)
 
-		use_ds = utils.BasicDataset(images, labels)
-		data_loader = DataLoader(use_ds, batch_size=batch_size, shuffle=False, num_workers=8)
+			use_ds = utils.BasicDataset(images, labels)
+			data_loader = DataLoader(use_ds, batch_size=batch_size, shuffle=False, num_workers=8)
 
 		for (images, labels) in tqdm(data_loader, total=len(data_loader)):
 

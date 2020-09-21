@@ -16,7 +16,7 @@ if __name__ =="__main__":
 	folder_path = sys.argv[1]
 	model_type  = sys.argv[2]
 	graph_name  = sys.argv[3]
-	batch_size  = 1500 * 2
+	batch_size  = 1500 * 3
 	n_classes   = 10
 	count_matrix = np.zeros((n_classes, n_classes))
 
@@ -33,9 +33,29 @@ if __name__ =="__main__":
 		for i, j in zip(labels, labels_):
 			count_matrix[i][j] += 1
 
-	# Normalize weights, bring to [0,100] range
-	count_matrix /= np.sum(count_matrix)
+	# Filter out small values
+	count_matrix[count_matrix < 15] = 0
+
+	# Normalize row-wise
+	for i in range(count_matrix.shape[0]):
+		count_matrix[i] /= np.sum(count_matrix[i])
+
+	# Normalize column-wise
+	# for i in range(count_matrix.shape[1]):
+		 # count_matrix[:, i] /= np.sum(count_matrix[:, i])
 	count_matrix *= 100
+
+	# print(count_matrix)
+
+	# Normalize column-wise
+	# count_matrix = count_matrix.T
+	# count_matrix[:, ] /= np.sum(count_matrix, 0)
+	# count_matrix = count_matrix.T
+	# count_matrix *= 100
+
+	# Normalize weights, bring to [0,100] range
+	# count_matrix /= np.sum(count_matrix)
+	# count_matrix *= 100
 
 	G=nx.DiGraph()
 	mappinf     = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
@@ -49,13 +69,20 @@ if __name__ =="__main__":
 
 	for i in range(n_classes):
 		for j in range(n_classes):
-			wt = np.around(count_matrix[i][j], decimals=2)
-			# print(wt, mappinf[i], mappinf[j])
-			if wt > 0.7:
-				G.add_edge(mappinf[i],mappinf[j], weight=wt)
+			if count_matrix[i][j] != np.nan:
+				wt = np.around(count_matrix[i][j], decimals=2)
+				# print(wt, mappinf[i], mappinf[j])
+				# if wt > 0.7:
+				# if i==5 or j==5:
+				if wt > 10: G.add_edge(mappinf[i],mappinf[j], weight=wt)
+
+	# print(count_matrix[5, :])
+	# print(count_matrix[:, 5])
+	for i in range(10):
+		print(np.sum(count_matrix[:, i]))
 
 	pos=nx.circular_layout(G)
 	nx.draw_networkx(G, pos, node_color=node_colors, node_size=1300, font_color='w')
 	labels = nx.get_edge_attributes(G,'weight')
-	nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+	nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=6)
 	plt.savefig("./%s.png" % graph_name)

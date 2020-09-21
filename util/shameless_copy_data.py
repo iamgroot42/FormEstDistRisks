@@ -50,11 +50,11 @@ def add_batch_to_dataset(ds, data, suffix, class_names, already_image=False, cla
 ds = CIFAR()
 # ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary/")
 # ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary_nodog/")
-# ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary_10pdog/")
-ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary_50pdog/")
+ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary_10pdog_v2/")
+# ds_binary = GenericBinary("/p/adversarialml/as9rw/datasets/cifar_binary_50pdog_v2/")
 # mappinf = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 class_to_skip = 5
-keep_prob = 0.5
+keep_prob = 0.1
 
 class_names = ['vehicle', 'vehicle', 'animal', 'animal', 'animal', 'animal', 'animal', 'animal', 'vehicle', 'vehicle']
 
