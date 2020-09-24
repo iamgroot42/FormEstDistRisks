@@ -32,3 +32,14 @@
   - `python collect_maximization_images.py --dataset binary --seed_mode_normal True --model_type /p/adversarialml/as9rw/models_cifar10binary_vgg/cifar10_binary_10pdog_v2_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/<folder_name> --sample_ratio 0.1`
   
   - `python collect_maximization_images.py --dataset binary --seed_mode_normal True --model_type /p/adversarialml/as9rw/models_cifar10binary_vgg/cifar10_binary_50pdog_v2_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/<folder_name> --sample_ratio 0.1`
+
+
+## For 9/23
+
+- We'll be running the same process with 5% sample ratio (twice, for reproducability) across various models trained on different ratios. This data (via various ways) will then be used to train a meta classifier.
+
+- Run the following experiments (replace `<folder_name>` with your own name for experiment), varying '0p_linf' in the path in [0p_linf, 10p_linf, 20p_linf, 30p_linf, 40p_linf, 50p_linf, 60p_linf, 70p_linf, 80p_linf, 90p_linf, 100p_linf] 
+
+- `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small/<folder_name> --sample_ratio 0.05`
+
+- `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf_2/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small/<folder_name> --sample_ratio 0.05`
