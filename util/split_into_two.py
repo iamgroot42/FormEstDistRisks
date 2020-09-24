@@ -41,7 +41,7 @@ if __name__ == "__main__":
 	X_test, Y_test   = X_test.numpy(), Y_test.numpy()
 
 	# Get class-wise random indices, split into two
-	indices_1, indices_2 = [], []sdsdsd
+	indices_1, indices_2 = [], []
 	for i in range(n_classes):
 		permuted_indices = np.random.permutation(np.nonzero((Y_train == i)))[0]
 		split_point = int(len(permuted_indices) * split_ratio)
@@ -54,6 +54,10 @@ if __name__ == "__main__":
 	# Folder paths
 	folder_path_1 = "/p/adversarialml/as9rw/datasets/cifar10_split1"
 	folder_path_2 = "/p/adversarialml/as9rw/datasets/cifar10_split2"
+
+	# Create these folders
+	if not os.path.exists(folder_path_1): os.mkdir(folder_path_1)
+	if not os.path.exists(folder_path_2): os.mkdir(folder_path_2)
 
 	# Make class-level folders
 	for class_name in ds.class_names:
