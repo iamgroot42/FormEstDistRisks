@@ -42,4 +42,4 @@
 
 - `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small/<folder_name> --sample_ratio 0.05`
 
-- `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf_2/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small/<folder_name> --sample_ratio 0.05`
+- `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf_2/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small_2/<folder_name> --sample_ratio 0.05`
