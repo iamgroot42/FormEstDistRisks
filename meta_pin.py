@@ -1,6 +1,10 @@
 import torch as ch
 import torch.nn as nn
+from tqdm import tqdm
+import numpy as np
+import os
 
+# Custom module imports
 import utils
 
 
@@ -40,7 +44,7 @@ def get_PIN_representations(params, phis):
 			# print(combined_c.shape)
 			combined_c = ch.cat((combined_c, prev_nodes), -1)
 			# print(combined_c.shape)
-		node_rep = phi(combined_c.cuda())
+		node_rep = phi(combined_c.cuda()).clone().detach()
 		# Compute and keep track of layer-wise reps
 		layer_rep = ch.sum(node_rep, 0)
 		layer_reps.append(layer_rep)
@@ -52,8 +56,38 @@ def get_PIN_representations(params, phis):
 
 
 if __name__ == "__main__":
-	constants = utils.CIFAR10()
-	model = constants.get_model("nat" , "vgg19", parallel=True)
+	# Read all models and store their representations
+	reps = []
+	labels  = [
+		0, 0,
+		0, 0,
+		0, 0,
+		0, 0,
+		0, 0,
+		1, 1,
+		1, 1,
+		1, 1,
+		1, 1,
+		1, 1,
+		1, 1
+	]
+	paths = [
+		"0p_linf", "0p_linf_2",
+		"10p_linf", "10p_linf_2",
+		"20p_linf", "20p_linf_2",
+		"30p_linf", "30p_linf_2",
+		"40p_linf", "40p_linf_2",
+		"50p_linf", "50p_linf_2",
+		"60p_linf", "60p_linf_2",
+		"70p_linf", "70p_linf_2",
+		"80p_linf", "80p_linf_2",
+		"90p_linf", "90p_linf_2",
+		"100p_linf", "100p_linf_2"
+	]
+
+	# Use a dummy model to get required dimensionalities
+	constants = utils.BinaryCIFAR(None)
+	model = constants.get_model(None , "vgg19", parallel=True)
 	params = extract_wb(model)
 
 	# Get phi-functions ready
@@ -63,21 +97,35 @@ if __name__ == "__main__":
 		if i > 0: rs += params[i-1].shape[0]
 		phi_models.append(nn.Sequential(nn.Linear(rs, 1), nn.ReLU()).cuda())
 
-	# Classifier on top of PIN
-	rho = nn.Sequential(
-		nn.Linear(33, 8),
-		nn.ReLU(),
-		nn.Linear(8, 1),
-		nn.Sigmoid()
-		).cuda()
+	# Generate PI (permutation invariant) model representations
+	prefix = "/p/adversarialml/as9rw/new_exp_models/small/"
+	suffix = "checkpoint.pt.best"
+	for path in tqdm(paths):
+		model = constants.get_model(os.path.join(prefix, path, suffix) , "vgg19", parallel=True)
+		params = extract_wb(model)
 
-	model_rep = get_PIN_representations(params, phi_models)
+		model_rep = get_PIN_representations(params, phi_models)
+		reps.append(model_rep.cpu().numpy())
+
+		if len(params) == 2: break
+
+	reps = np.array(reps)
+	print(reps.shape)
+
+	np.save("model_reps", reps)
+
+	# Classifier on top of PIN
+	# rho = nn.Sequential(
+	# 	nn.Linear(33, 8),
+	# 	nn.ReLU(),
+	# 	nn.Linear(8, 1),
+	# 	nn.Sigmoid()
+	# 	).cuda()
+
 	
 	# Use a fewer-parameters rho (a decision tree, perhaps)
 	# Train using the 22 training points
 	# Quite low, but something like clustering and considering
 	# just binary <=50 classification should give decent results?
 
-	model_rep = rho(model_rep.unsqueeze_(0))
-
-	print(model_rep)
+	# model_rep = rho(model_rep.unsqueeze_(0))
