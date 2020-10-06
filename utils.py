@@ -3,10 +3,14 @@ import numpy as np
 import torch.nn as nn
 from torchvision import transforms
 from robustness.model_utils import make_and_restore_model
-from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
+from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR, CelebA
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
+from facenet_pytorch import InceptionResnetV1
+
 from tqdm import tqdm
+import requests
+import pandas as pd
 import sys
 import os
 
@@ -102,6 +106,16 @@ class ImageNet1000(DataPaths):
 		self.models['nat']  = "imagenet_nat.pt"
 		self.models['l2']   = "imagenet_l2_3_0.pt"
 		self.models['linf'] = "imagenet_linf_4.pt"
+
+
+class Celeb(DataPaths):
+	def __init__(self, data_path=None):
+		self.dataset_type = CelebA
+		datapath = "/p/adversarialml/as9rw/datasets/celeba/" if data_path is None else data_path
+		super(Celeb, self).__init__('celeb',
+			datapath,
+			"/p/adversarialml/as9rw/celeba_stats/")
+		# self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_celeba/"
 
 
 def read_given_dataset(data_path):
@@ -287,3 +301,122 @@ def flash_utils(args):
 	log_statement("==> Arguments:")
 	for arg in vars(args):
 		print(arg, " : ", getattr(args, arg))
+
+
+# US Income dataset
+class CensusIncome:
+	def __init__(self, path):
+		self.urls = ["http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
+		"https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.names",
+		"https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"]
+		self.columns = ["age", "workClass", "fnlwgt", "education", "education-num",
+			"marital-status", "occupation", "relationship",
+			"race", "sex", "capital-gain", "capital-loss",
+			"hours-per-week", "native-country", "income"]
+		self.path = path
+		self.download_dataset()
+
+	def download_dataset(self):
+		if not os.path.exists(self.path):
+			log_statement("==> Downloading US Census Income dataset")
+			os.mkdir(self.path)
+
+			for url in self.urls:
+				data = requests.get(url).content
+				filename = os.path.join(self.path, os.path.basename(url))
+				with open(filename, "wb") as file:
+					file.write(data)
+
+	def process_df(self, df):
+		df['income'] = df['income'].apply(lambda x: 1 if '>50K' in x else 0)
+		# Y = df['income'].to_numpy()
+		
+		# df = df.drop(columns = 'income', axis = 1)
+
+		def oneHotCatVars(x, colname):
+			df_1 = df.drop(columns = colname, axis = 1)
+			df_2 = pd.get_dummies(df[colname], prefix=colname, prefix_sep=':')
+			return (pd.concat([df_1, df_2], axis=1, join='inner'))
+
+		colnames = ['workClass', 'education', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
+		for colname in colnames: df = oneHotCatVars(df, colname)
+		return df
+		# X = df.to_numpy()
+		# return (X, Y)
+
+
+	def load_data(self):
+		train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
+			sep=' *, *', na_values='?')
+		test_data  = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
+			sep=' *, *', skiprows=1, na_values='?')
+
+		# print(test_data.info())
+		# exit(0)
+
+		# Add field to identify train/test, process together, split back
+		train_data['is_train'] = 1
+		test_data['is_train']  = 0
+		df = pd.concat([train_data, test_data], axis=0)
+		# print(df.info())
+		df = self.process_df(df)
+		train_df, test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
+		
+		def get_x_y(P):
+			Y = P['income'].to_numpy()
+			X = P.drop(columns = 'income', axis = 1).to_numpy()
+			return (X.astype(float), Y)
+
+		return get_x_y(train_df), get_x_y(test_df)
+
+
+# Small MLP
+class MLP(nn.Module):
+	def __init__(self, n_feat, n_classes):
+		super(Decoder, self).__init__()
+		self.dnn = nn.Sequential(
+			nn.Linear(n_feat, 32),
+			nn.ReLU(),
+			nn.Linear(32, 16),
+			nn.ReLU(),
+			nn.Linear(16, 8),
+			nn.ReLU(),
+			nn.Linear(8, n_classes))
+
+	def forward(self, x):
+		return self.dnn(x)
+
+
+# Classifier on top of face features
+class FaceModel(nn.Module):
+	def __init__(self, n_feat, n_classes):
+		super(FaceModel, self).__init__()
+		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
+		self.dnn = nn.Sequential(
+			nn.Linear(n_feat, 64),
+			nn.ReLU(),
+			nn.Linear(64, 16),
+			nn.ReLU(),
+			nn.Linear(8, 1),
+			nn.Sigmoid())
+
+	def forward(self, x):
+		return self.forward(x)
+
+
+class MNISTFlatModel(nn.Module):
+	def __init__(self):
+		super(FaceModel, self).__init__()
+		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
+		self.dnn = nn.Sequential(
+			nn.Linear(n_feat, 128),
+			nn.ReLU(),
+			nn.Linear(128, 32),
+			nn.ReLU(),
+			nn.Linear(32, 16),
+			nn.ReLU(),
+			nn.Linear(16, 10))
+
+	def forward(self, x):
+		x_ = x.view(x.shape[0], -1)
+		return self.forward(x_)

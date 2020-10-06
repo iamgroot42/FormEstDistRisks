@@ -16,7 +16,7 @@ if __name__ =="__main__":
 	folder_path = sys.argv[1]
 	model_type  = sys.argv[2]
 	graph_name  = sys.argv[3]
-	batch_size  = 1500 * 3
+	batch_size  = 1500 * 4
 	n_classes   = 10
 	count_matrix = np.zeros((n_classes, n_classes))
 
@@ -73,8 +73,8 @@ if __name__ =="__main__":
 				wt = np.around(count_matrix[i][j], decimals=2)
 				# print(wt, mappinf[i], mappinf[j])
 				# if wt > 0.7:
-				# if i==5 or j==5:
-				if wt > 10: G.add_edge(mappinf[i],mappinf[j], weight=wt)
+				if i==5 or j==5:
+					if wt > 10: G.add_edge(mappinf[i],mappinf[j], weight=wt)
 
 	# print(count_matrix[5, :])
 	# print(count_matrix[:, 5])
