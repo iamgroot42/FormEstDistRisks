@@ -372,8 +372,8 @@ class CensusIncome:
 
 # Small MLP
 class MLP(nn.Module):
-	def __init__(self, n_feat, n_classes):
-		super(Decoder, self).__init__()
+	def __init__(self, n_feat):
+		super(MLP, self).__init__()
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 32),
 			nn.ReLU(),
@@ -381,7 +381,8 @@ class MLP(nn.Module):
 			nn.ReLU(),
 			nn.Linear(16, 8),
 			nn.ReLU(),
-			nn.Linear(8, n_classes))
+			nn.Linear(8, 1),
+			nn.Sigmoid())
 
 	def forward(self, x):
 		return self.dnn(x)
@@ -389,7 +390,7 @@ class MLP(nn.Module):
 
 # Classifier on top of face features
 class FaceModel(nn.Module):
-	def __init__(self, n_feat, n_classes):
+	def __init__(self, n_feat):
 		super(FaceModel, self).__init__()
 		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
 		self.dnn = nn.Sequential(
@@ -406,7 +407,7 @@ class FaceModel(nn.Module):
 
 class MNISTFlatModel(nn.Module):
 	def __init__(self):
-		super(FaceModel, self).__init__()
+		super(MNISTFlatModel, self).__init__()
 		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 128),
