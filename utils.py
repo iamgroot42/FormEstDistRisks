@@ -341,15 +341,13 @@ class CensusIncome:
 		colnames = ['workClass', 'education', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
 		for colname in colnames: df = oneHotCatVars(df, colname)
 		return df
-		# X = df.to_numpy()
-		# return (X, Y)
 
 
 	def load_data(self):
 		train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
-			sep=' *, *', na_values='?')
+			sep=' *, *', na_values='?', engine='python')
 		test_data  = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
-			sep=' *, *', skiprows=1, na_values='?')
+			sep=' *, *', skiprows=1, na_values='?', engine='python')
 
 		# print(test_data.info())
 		# exit(0)
@@ -365,7 +363,7 @@ class CensusIncome:
 		def get_x_y(P):
 			Y = P['income'].to_numpy()
 			X = P.drop(columns = 'income', axis = 1).to_numpy()
-			return (X.astype(float), Y)
+			return (X.astype(float), np.expand_dims(Y, 1))
 
 		return get_x_y(train_df), get_x_y(test_df)
 
@@ -392,23 +390,24 @@ class MLP(nn.Module):
 class FaceModel(nn.Module):
 	def __init__(self, n_feat):
 		super(FaceModel, self).__init__()
-		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
+		self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 64),
 			nn.ReLU(),
 			nn.Linear(64, 16),
 			nn.ReLU(),
-			nn.Linear(8, 1),
+			nn.Linear(16, 1),
 			nn.Sigmoid())
 
 	def forward(self, x):
-		return self.forward(x)
+		with ch.no_grad():
+			x_ = self.feature_model(x)
+		return self.dnn(x_)
 
 
 class MNISTFlatModel(nn.Module):
 	def __init__(self):
 		super(MNISTFlatModel, self).__init__()
-		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 128),
 			nn.ReLU(),
