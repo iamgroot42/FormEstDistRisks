@@ -350,9 +350,6 @@ class CensusIncome:
 		test_data  = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
 			sep=' *, *', skiprows=1, na_values='?', engine='python')
 
-		# Apply filter to train data: efectively using different distribution to train it
-		if train_filter is not None: train_data = train_filter(train_data)
-
 		# print(np.mean((test_data['income']=='<=50K').to_numpy()))
 		# print(np.mean((train_data['income']=='<=50K').to_numpy()))
 
@@ -362,12 +359,18 @@ class CensusIncome:
 		df = pd.concat([train_data, test_data], axis=0)
 		# print(df.info())
 		df = self.process_df(df)
+
 		train_df, test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
+
+		# Apply filter to train data: efectively using different distribution to train it
+		if train_filter is not None: train_df = train_filter(train_df)
 		
 		def get_x_y(P):
 			Y = P['income'].to_numpy()
-			X = P.drop(columns = 'income', axis = 1).to_numpy()
-			return (X.astype(float), np.expand_dims(Y, 1))
+			X = P.drop(columns = 'income', axis = 1)
+			cols = X.columns
+			X = X.to_numpy()
+			return (X.astype(float), np.expand_dims(Y, 1), cols)
 
 		return get_x_y(train_df), get_x_y(test_df)
 
@@ -376,7 +379,9 @@ class CensusIncome:
 class FaceModel(nn.Module):
 	def __init__(self, n_feat):
 		super(FaceModel, self).__init__()
-		self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
+		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
+		self.feature_model = InceptionResnetV1(pretrained='casia-webface').eval()
+		for param in self.feature_model.parameters(): param.requires_grad = False
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 64),
 			nn.ReLU(),
@@ -386,8 +391,8 @@ class FaceModel(nn.Module):
 			nn.Sigmoid())
 
 	def forward(self, x):
-		with ch.no_grad():
-			x_ = self.feature_model(x)
+		# with ch.no_grad():
+		x_ = self.feature_model(x)
 		return self.dnn(x_)
 
 
@@ -406,3 +411,11 @@ class MNISTFlatModel(nn.Module):
 	def forward(self, x):
 		x_ = x.view(x.shape[0], -1)
 		return self.forward(x_)
+
+
+def filter(df, condition, ratio):
+	qi    = np.nonzero((condition(df)).to_numpy())[0]
+	notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
+	np.random.shuffle(notqualify)
+	nqi = notqualify[:int(((1-ratio) * len(qi))/ratio)]
+	return pd.concat([df.iloc[qi], df.iloc[nqi]])
