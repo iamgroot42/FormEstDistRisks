@@ -320,6 +320,7 @@ class CensusIncome:
 		if not os.path.exists(self.path):
 			log_statement("==> Downloading US Census Income dataset")
 			os.mkdir(self.path)
+			log_statement("==> Please modify test file to remove stray dot characters")
 
 			for url in self.urls:
 				data = requests.get(url).content
@@ -329,28 +330,31 @@ class CensusIncome:
 
 	def process_df(self, df):
 		df['income'] = df['income'].apply(lambda x: 1 if '>50K' in x else 0)
-		# Y = df['income'].to_numpy()
-		
-		# df = df.drop(columns = 'income', axis = 1)
 
 		def oneHotCatVars(x, colname):
 			df_1 = df.drop(columns = colname, axis = 1)
 			df_2 = pd.get_dummies(df[colname], prefix=colname, prefix_sep=':')
 			return (pd.concat([df_1, df_2], axis=1, join='inner'))
 
-		colnames = ['workClass', 'education', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
+		# colnames = ['workClass', 'education', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
+		colnames = ['workClass', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
+		# Drop education
+		df = df.drop(columns = 'education', axis=1)
 		for colname in colnames: df = oneHotCatVars(df, colname)
 		return df
 
 
-	def load_data(self):
+	def load_data(self, train_filter=None):
 		train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
 			sep=' *, *', na_values='?', engine='python')
 		test_data  = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
 			sep=' *, *', skiprows=1, na_values='?', engine='python')
 
-		# print(test_data.info())
-		# exit(0)
+		# Apply filter to train data: efectively using different distribution to train it
+		if train_filter is not None: train_data = train_filter(train_data)
+
+		# print(np.mean((test_data['income']=='<=50K').to_numpy()))
+		# print(np.mean((train_data['income']=='<=50K').to_numpy()))
 
 		# Add field to identify train/test, process together, split back
 		train_data['is_train'] = 1
@@ -366,24 +370,6 @@ class CensusIncome:
 			return (X.astype(float), np.expand_dims(Y, 1))
 
 		return get_x_y(train_df), get_x_y(test_df)
-
-
-# Small MLP
-class MLP(nn.Module):
-	def __init__(self, n_feat):
-		super(MLP, self).__init__()
-		self.dnn = nn.Sequential(
-			nn.Linear(n_feat, 32),
-			nn.ReLU(),
-			nn.Linear(32, 16),
-			nn.ReLU(),
-			nn.Linear(16, 8),
-			nn.ReLU(),
-			nn.Linear(8, 1),
-			nn.Sigmoid())
-
-	def forward(self, x):
-		return self.dnn(x)
 
 
 # Classifier on top of face features
