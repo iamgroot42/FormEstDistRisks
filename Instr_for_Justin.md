@@ -43,3 +43,14 @@
 - `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small/<folder_name> --sample_ratio 0.05`
 
 - `python collect_maximization_images.py --seed_mode_normal True --model_type /p/adversarialml/as9rw/new_exp_models/small/0p_linf_2/checkpoint.pt.best --save_path /p/adversarialml/jyc9fyf/small_2/<folder_name> --sample_ratio 0.05`
+
+
+## For 10/13
+
+Here's a brief tutorial to sklearn: [link](https://scikit-learn.org/stable/tutorial/basic/tutorial.html#learning-and-predicting). It's quite straight forward: you can use `.predict()` on models to get predictions, `.fit()` to train, etc. The documentation is self-explanatory. Let me know if you have any doubts. 
+
+1. Looking at instances where models trained on different datasets fail or are right: a qualitative analysis of those examples. The file `implems/functional_test.py` loads models (multiple trained on each dataset) and performs some analysis. You can look at the part relevant to getting model predictions [here](https://github.com/iamgroot42/fnb/blob/master/implems/functional_test.py#L70). 
+
+2. You can access the initial layer (or any layer) of the model using `MLP.coefs_[0])` and `MLP.intercepts_[0]` (corresponding to the weight, bias) for any of those models. Some analysis on how each of them gives different importance (absolute, relative: we can look at both) might be useful. For instance, some of them might give 0 weight corresponding to the 'sex' feature, or have a high/low bias that corresponds to the classifier trained on an imbalanced-gender version of the dataset.
+
+Note: You can use the mapping of column names [here](https://github.com/iamgroot42/fnb/blob/master/implems/functional_test.py#L36) to see what each feature actually corresponds to: for a better understanding of how different models are looking at those features differently.
