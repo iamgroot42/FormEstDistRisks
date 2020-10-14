@@ -1,3 +1,4 @@
 __pycache__/*
 census_models/*
+census_models_mlp/*
 mnist_models/*

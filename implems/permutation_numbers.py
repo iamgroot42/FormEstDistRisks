@@ -77,20 +77,18 @@ if __name__ == "__main__":
 		sex_filter    = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
 		race_filter   = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
 		income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
-		# (x_tr, y_tr), (x_te, y_te) = ci.load_data(race_filter)
-		# (x_tr, y_tr), (x_te, y_te) = ci.load_data(income_filter)
 
-		num_cfs = 1
+		num_cfs = 10
 		for i in range(1, num_cfs + 1):
-			(x_tr, y_tr, _), (x_te, y_te, _) = ci.load_data(race_filter)
-			clf = RandomForestClassifier(max_depth=30, random_state=0, n_jobs=-1)
-			# clf = MLPClassifier(hidden_layer_sizes=(32, 16, 8), max_iter=500)
+			(x_tr, y_tr), (x_te, y_te), _ = ci.load_data(race_filter)
+			# clf = RandomForestClassifier(max_depth=30, random_state=0, n_jobs=-1)
+			clf = MLPClassifier(hidden_layer_sizes=(60, 30, 30), max_iter=200)
 			clf.fit(x_tr, y_tr.ravel())
 			print("Classifier %d : Train acc %.2f , Test acc %.2f" % (i,
 				100 * clf.score(x_tr, y_tr.ravel()),
 				100 * clf.score(x_te, y_te.ravel())))
 
-			dump(clf, os.path.join('census_models/race/', str(i)))
+			dump(clf, os.path.join('census_models_mlp/race/', str(i)))
 
 	elif args.dataset == 'celeba':
 		# CelebA dataset

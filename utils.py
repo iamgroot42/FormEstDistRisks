@@ -7,6 +7,7 @@ from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFA
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
 from facenet_pytorch import InceptionResnetV1
+from sklearn import preprocessing
 
 from tqdm import tqdm
 import requests
@@ -366,13 +367,20 @@ class CensusIncome:
 		if train_filter is not None: train_df = train_filter(train_df)
 		
 		def get_x_y(P):
+			# Scale X values
 			Y = P['income'].to_numpy()
 			X = P.drop(columns = 'income', axis = 1)
 			cols = X.columns
 			X = X.to_numpy()
 			return (X.astype(float), np.expand_dims(Y, 1), cols)
 
-		return get_x_y(train_df), get_x_y(test_df)
+		(x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(train_df), get_x_y(test_df)
+		# Preprocess data (scale)
+		X = np.concatenate((x_tr, x_te), 0)
+		X = preprocessing.scale(X)
+		x_tr = X[:x_tr.shape[0]]
+		x_te = X[x_tr.shape[0]:]
+		return  (x_tr, y_tr), (x_te, y_te), cols
 
 
 # Classifier on top of face features
