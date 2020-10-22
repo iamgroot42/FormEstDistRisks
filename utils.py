@@ -1,12 +1,13 @@
 import torch as ch
 import numpy as np
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision import transforms
 from robustness.model_utils import make_and_restore_model
 from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR, CelebA
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
-from facenet_pytorch import InceptionResnetV1
+from facenet_pytorch import InceptionResnetV1, MTCNN
 from sklearn import preprocessing
 
 from tqdm import tqdm
@@ -116,6 +117,13 @@ class Celeb(DataPaths):
 		super(Celeb, self).__init__('celeb',
 			datapath,
 			"/p/adversarialml/as9rw/celeba_stats/")
+		self.attr_names = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes',
+			'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair',
+			'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup',
+			'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard', 
+			'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns',
+			'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick',
+			'Wearing_Necklace', 'Wearing_Necktie', 'Young']
 		# self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_celeba/"
 
 
@@ -385,23 +393,47 @@ class CensusIncome:
 
 # Classifier on top of face features
 class FaceModel(nn.Module):
-	def __init__(self, n_feat):
+	def __init__(self, n_feat, train_feat=False):
 		super(FaceModel, self).__init__()
+		self.train_feat = train_feat
 		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
-		self.feature_model = InceptionResnetV1(pretrained='casia-webface').eval()
-		for param in self.feature_model.parameters(): param.requires_grad = False
+		self.feature_model = InceptionResnetV1(pretrained='vggface2')
+		if not self.train_feat: self.feature_model.eval()
+		# self.feature_model = InceptionResnetV1(pretrained='casia-webface').eval()
+		# for param in self.feature_model.parameters(): param.requires_grad = False
 		self.dnn = nn.Sequential(
 			nn.Linear(n_feat, 64),
 			nn.ReLU(),
 			nn.Linear(64, 16),
 			nn.ReLU(),
-			nn.Linear(16, 1),
-			nn.Sigmoid())
+			nn.Linear(16, 1))
 
 	def forward(self, x):
-		# with ch.no_grad():
-		x_ = self.feature_model(x)
+		if self.train_feat:
+			x_ = self.feature_model(x)
+		else:
+			with ch.no_grad():
+				x_ = self.feature_model(x)
 		return self.dnn(x_)
+
+
+class FlatFaceModel(nn.Module):
+	def __init__(self, n_feat):
+		super(FlatFaceModel, self).__init__()
+		self.fc1 = nn.Linear(n_feat, 64)
+		self.fc2 = nn.Linear(64, 16)
+		self.fc3 = nn.Linear(16, 1)
+
+		# Weight init
+		ch.nn.init.xavier_uniform(self.fc1.weight)
+		ch.nn.init.xavier_uniform(self.fc2.weight)
+		ch.nn.init.xavier_uniform(self.fc3.weight)
+
+	def forward(self, x):
+		x = F.dropout(F.relu(self.fc1(x)), 0.5)
+		x = F.dropout(F.relu(self.fc2(x)), 0.5)
+		x = self.fc3(x)
+		return x
 
 
 class MNISTFlatModel(nn.Module):

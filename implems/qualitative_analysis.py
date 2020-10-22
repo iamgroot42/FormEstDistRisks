@@ -26,7 +26,7 @@ if __name__ == "__main__":
 	_, (x_te, y_te), cols = ci.load_data()
 	cols = list(cols)
 	# print(cols)
-	# desired_property = cols.index("sex:Female")
+	# desired_property = cols.index("sex:Male")
 	desired_property = cols.index("race:White")
 
 	# (x_tr, y_tr), _, cols = ci.load_data()
@@ -68,11 +68,14 @@ if __name__ == "__main__":
 		avg_pred = np.mean(per_model, 0)
 		need_em.append(np.around(avg_pred))
 
-
-	print(np.unique(x_te[:, desired_property]))
-
 	need_em = np.array(need_em)
 
-	# Cases where original and sex don't match
-	ids = np.nonzero(need_em[0] != need_em[3])[0]
-	print(np.unique(x_te[ids, desired_property], return_counts=True))
+
+	for i in range(4):
+		for j in range(4):
+			if i == j: continue
+			# ids = np.nonzero(need_em[i] != need_em[j])[0]
+			ids = np.nonzero(need_em[i] == need_em[j])[0]
+			vals, counts = np.unique(x_te[ids, desired_property], return_counts=True)
+			print(vals, counts[0]/np.sum(counts))
+		print()
