@@ -63,7 +63,8 @@ if __name__ == "__main__":
 				# processed = processed / (processed + 1)
 				# processed = clf.coefs_[0] ** 2
 				processed = clf.coefs_[0]
-				processed = np.mean(processed, 1)
+				# processed = np.mean(processed, 1)
+				processed = np.concatenate((np.mean(processed, 1), np.mean(processed ** 2, 1)))
 				w.append(processed)
 				b.append(clf.intercepts_[0])
 				labels.append(i)
@@ -72,9 +73,10 @@ if __name__ == "__main__":
 		b = np.array(w)
 		labels = np.array(labels)
 
-		clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=200)
+		clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
 		from sklearn.model_selection import train_test_split
-		X_train, X_test, y_train, y_test = train_test_split(w, labels, test_size=0.2, random_state=42)
+		# X_train, X_test, y_train, y_test = train_test_split(w, labels, test_size=0.3, random_state=42)
+		X_train, X_test, y_train, y_test = train_test_split(w, labels, test_size=0.3)
 		clf.fit(X_train, y_train)
 		print(clf.score(X_train, y_train))
 		print(clf.score(X_test, y_test))

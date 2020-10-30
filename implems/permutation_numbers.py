@@ -7,6 +7,8 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
+import torchvision
+from torchvision import transforms
 from sklearn.neural_network import MLPClassifier
 from joblib import dump, load
 from tensorflow import keras
@@ -68,6 +70,10 @@ if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--dataset', type=str, default='none', help='which dataset to work on (census/mnist/celeba/processed)')
+	parser.add_argument('--which', type=str, default='', help='(valid for celeba) which split of data to train all')
+	parser.add_argument('--savepath', type=str, default='', help='folder where trained model(s) should be saved')
+	parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train model for')
+	parser.add_argument('--bs', type=int, default=512, help='batch size')
 	args = parser.parse_args()
 	utils.flash_utils(args)
 
@@ -98,45 +104,35 @@ if __name__ == "__main__":
 		model = utils.FaceModel(512, train_feat=True).cuda()
 		model = nn.DataParallel(model)
 
-		import torchvision
-		from torchvision import transforms
-		# path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_male"
-		path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_old"
-		# path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_attractive"
-		# path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_all"
-		batch_size = 512
+		if args.which == 'male':
+			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_male"
+		elif args.which == 'old':
+			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_old"
+		elif args.which == 'attractive':
+			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_attractive"
+		elif args.which == 'all':
+			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_all"
+		else:
+			raise ValueError("Invalid split requested!")
 
 		train_transform = transforms.Compose([
-											# transforms.Resize(220),
-											# transforms.CenterCrop(160),
 											transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), shear=0.2),
 											transforms.RandomHorizontalFlip(),
 											transforms.ToTensor(),
 											transforms.Normalize((0.5), (0.5))])
 		test_transform  = transforms.Compose([
-											# transforms.Resize(220),
-											# transforms.CenterCrop(160),
 											transforms.ToTensor(),
 											transforms.Normalize((0.5), (0.5))])
 
 		train_set = torchvision.datasets.ImageFolder(path + "/train", transform=train_transform)
 		test_set  = torchvision.datasets.ImageFolder(path+ "/test", transform=test_transform)
-		trainloader  = ch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=8)
-		testloader   = ch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True, num_workers=8)
+		trainloader  = ch.utils.data.DataLoader(train_set, batch_size=args.bs, shuffle=True, pin_memory=True, num_workers=8)
+		testloader   = ch.utils.data.DataLoader(test_set, batch_size=args.bs, shuffle=True, num_workers=8)
 
 		loss_fn = nn.BCEWithLogitsLoss(reduction='sum')
 		acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
 
-		# base_save_path = "celeba_models/smile_male_vggface_full"
-		# base_save_path = "celeba_models/smile_male_vggface_cropped"
-		# base_save_path = "celeba_models/smile_old_vggface_cropped"
-		# base_save_path = "celeba_models/smile_attractive_vggface_cropped"
-		# base_save_path = "/u/as9rw/work/fnb/implems/celeba_models/smile_all_vggface_cropped"
-		# base_save_path = "/u/as9rw/work/fnb/implems/celeba_models/smile_all_vggface_cropped_augs"
-		base_save_path = "/u/as9rw/work/fnb/implems/celeba_models/smile_old_vggface_cropped_augs"
-		# base_save_path = "celeba_models/smile_male_vggface_cropped_nofeat"
-		# base_save_path = "celeba_models/smile_male_webface_cropped"
-		train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_save_path, epochs=10)
+		train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, args.savepath, epochs=args.epochs)
 
 	elif args.dataset == 'processed':
 		# CelebA dataset
@@ -156,8 +152,7 @@ if __name__ == "__main__":
 
 		loss_fn = nn.BCEWithLogitsLoss(reduction='sum')
 		acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
-		# base_save_path = "celeba_models/smile_male"
-		# base_save_path = "celeba_models/smile_old"
+		base_save_path = "celeba_models/smile_male"
 		train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_save_path)
 
 	elif args.dataset == 'mnist':

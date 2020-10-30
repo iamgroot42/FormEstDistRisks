@@ -9,6 +9,7 @@ from robustness.tools import folder
 from robustness.tools.misc import log_statement
 from facenet_pytorch import InceptionResnetV1, MTCNN
 from sklearn import preprocessing
+from PIL import Image
 
 from tqdm import tqdm
 import requests
@@ -408,12 +409,13 @@ class FaceModel(nn.Module):
 			nn.ReLU(),
 			nn.Linear(16, 1))
 
-	def forward(self, x):
+	def forward(self, x, only_latent=False):
 		if self.train_feat:
 			x_ = self.feature_model(x)
 		else:
 			with ch.no_grad():
 				x_ = self.feature_model(x)
+		if only_latent: return x_
 		return self.dnn(x_)
 
 
@@ -459,3 +461,19 @@ def filter(df, condition, ratio):
 	np.random.shuffle(notqualify)
 	nqi = notqualify[:int(((1-ratio) * len(qi))/ratio)]
 	return pd.concat([df.iloc[qi], df.iloc[nqi]])
+
+
+def get_cropped_faces(cropmodel, x):
+	renormalize = lambda z: (z * 0.5) + 0.5
+
+	images = [Image.fromarray((255 * np.transpose(renormalize(x_.numpy()), (1, 2, 0))).astype('uint8')) for x_ in x]
+	crops  = cropmodel(images)
+
+	x_cropped = []
+	indices = []
+	for j, cr in enumerate(crops):
+		if cr is not None:
+			x_cropped.append(cr)
+			indices.append(j)
+	
+	return ch.stack(x_cropped, 0), indices
