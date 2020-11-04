@@ -394,27 +394,40 @@ class CensusIncome:
 
 # Classifier on top of face features
 class FaceModel(nn.Module):
-	def __init__(self, n_feat, train_feat=False):
+	def __init__(self, n_feat, weight_init='vggface2', train_feat=False, hidden=[64,16]):
 		super(FaceModel, self).__init__()
 		self.train_feat = train_feat
-		# self.feature_model = InceptionResnetV1(pretrained='vggface2').eval()
-		self.feature_model = InceptionResnetV1(pretrained='vggface2')
+		self.feature_model = InceptionResnetV1(pretrained=weight_init) #.eval()
 		if not self.train_feat: self.feature_model.eval()
-		# self.feature_model = InceptionResnetV1(pretrained='casia-webface').eval()
 		# for param in self.feature_model.parameters(): param.requires_grad = False
-		self.dnn = nn.Sequential(
-			nn.Linear(n_feat, 64),
-			nn.ReLU(),
-			nn.Linear(64, 16),
-			nn.ReLU(),
-			nn.Linear(16, 1))
 
-	def forward(self, x, only_latent=False):
+		layers = []
+		# Input features -> hidden layer
+		layers.append(nn.Linear(n_feat, hidden[0]))
+		layers.append(nn.ReLU())
+		for i in range(len(hidden)-1):
+			layers.append(nn.Linear(hidden[i], hidden[i+1]))
+			layers.append(nn.ReLU())
+
+		# Last hidden -> binary classification layer
+		layers.append(nn.Linear(hidden[-1], 1))
+		self.dnn = nn.Sequential(*layers)
+		# self.dnn = nn.Sequential(
+		# 	nn.Linear(n_feat, 64),
+		# 	nn.ReLU(),
+		# 	nn.Linear(64, 16),
+		# 	nn.ReLU(),
+		# 	nn.Linear(16, 1))
+
+	def forward(self, x, only_latent=False, deep_latent=None):
 		if self.train_feat:
-			x_ = self.feature_model(x)
+			x_ = self.feature_model(x, with_latent=deep_latent)
 		else:
 			with ch.no_grad():
-				x_ = self.feature_model(x)
+				x_ = self.feature_model(x, with_latent=deep_latent)
+		
+		# Check if Tuple
+		if type(x_) is tuple and x_[1] is not None: return x_[1]
 		if only_latent: return x_
 		return self.dnn(x_)
 

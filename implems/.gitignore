@@ -4,3 +4,4 @@ census_models_mlp/*
 census_models_mlp_many/*
 mnist_models/*
 celeba_models/*
+celeba_models_split/*

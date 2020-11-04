@@ -70,10 +70,13 @@ if __name__ == "__main__":
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--dataset', type=str, default='none', help='which dataset to work on (census/mnist/celeba/processed)')
-	parser.add_argument('--which', type=str, default='', help='(valid for celeba) which split of data to train all')
+	parser.add_argument('--which', type=str, default='', help='patho to data')
 	parser.add_argument('--savepath', type=str, default='', help='folder where trained model(s) should be saved')
-	parser.add_argument('--epochs', type=int, default=10, help='number of epochs to train model for')
+	parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train model for')
 	parser.add_argument('--bs', type=int, default=512, help='batch size')
+	parser.add_argument('--weightinit', type=str, default='vggface2', help='which weight initialization to use: vggface2 or casia-webface')
+	parser.add_argument('--augment', type=bool, default=False, help='use data augmentations when training models?')
+	parser.add_argument('--hidden', type=str, default="64,16", help='comma-separated dimensions for hidden layers for models classification layer')
 	args = parser.parse_args()
 	utils.flash_utils(args)
 
@@ -101,28 +104,29 @@ if __name__ == "__main__":
 
 	elif args.dataset == 'celeba':
 		# CelebA dataset
-		model = utils.FaceModel(512, train_feat=True).cuda()
+		hidden_layer_sizes = [int(x) for x in args.hidden.split(",")]
+		model = utils.FaceModel(512,
+				weight_init=args.weightinit,
+				train_feat=True,
+				hidden=hidden_layer_sizes).cuda()
 		model = nn.DataParallel(model)
 
-		if args.which == 'male':
-			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_male"
-		elif args.which == 'old':
-			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_old"
-		elif args.which == 'attractive':
-			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_attractive"
-		elif args.which == 'all':
-			path = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/smile_all"
-		else:
-			raise ValueError("Invalid split requested!")
+		path = args.which
 
-		train_transform = transforms.Compose([
-											transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), shear=0.2),
-											transforms.RandomHorizontalFlip(),
-											transforms.ToTensor(),
-											transforms.Normalize((0.5), (0.5))])
-		test_transform  = transforms.Compose([
-											transforms.ToTensor(),
-											transforms.Normalize((0.5), (0.5))])
+		test_transforms  = [
+			transforms.ToTensor(),
+			transforms.Normalize((0.5), (0.5))
+		]
+		train_transforms = test_transforms[:]
+		if args.augment:
+			augment_transforms = [
+				transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), shear=0.2),
+				transforms.RandomHorizontalFlip()
+				]
+			train_transforms = augment_transforms + train_transforms
+
+		train_transform = transforms.Compose(train_transforms)
+		test_transform  = transforms.Compose(test_transforms)
 
 		train_set = torchvision.datasets.ImageFolder(path + "/train", transform=train_transform)
 		test_set  = torchvision.datasets.ImageFolder(path+ "/test", transform=test_transform)
@@ -133,27 +137,6 @@ if __name__ == "__main__":
 		acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
 
 		train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, args.savepath, epochs=args.epochs)
-
-	elif args.dataset == 'processed':
-		# CelebA dataset
-		model = utils.FlatFaceModel(512).cuda()
-		model = nn.DataParallel(model)
-
-		import torchvision
-		path = "/p/adversarialml/as9rw/datasets/celeba_process_vggface1/smile_attractive_vggface"
-		# path = "/p/adversarialml/as9rw/datasets/celeba_process_vggface1/smile_attractive"
-		# path = "/p/adversarialml/as9rw/datasets/celeba_process_vggface1/smile_male"
-		# path = "/p/adversarialml/as9rw/datasets/celeba_process_vggface1/smile_old"
-		myloader = lambda x: np.load(x)
-		train_set = torchvision.datasets.DatasetFolder(path + "/train", loader=myloader, extensions="npy")
-		test_set = torchvision.datasets.DatasetFolder(path+ "/test", loader=myloader, extensions="npy")
-		trainloader = ch.utils.data.DataLoader(train_set, batch_size=4096, shuffle=True, pin_memory=True, num_workers=8)
-		testloader   = ch.utils.data.DataLoader(test_set, batch_size=4096, shuffle=True, num_workers=8)
-
-		loss_fn = nn.BCEWithLogitsLoss(reduction='sum')
-		acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
-		base_save_path = "celeba_models/smile_male"
-		train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_save_path)
 
 	elif args.dataset == 'mnist':
 		# MNIST

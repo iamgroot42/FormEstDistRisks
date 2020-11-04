@@ -1,6 +1,7 @@
 from cleverhans.future.torch.attacks import projected_gradient_descent
 from PIL import Image
 from facenet_pytorch import MTCNN
+from tqdm import tqdm
 import torch as ch
 import numpy as np
 import torch.nn as nn
@@ -23,17 +24,18 @@ if __name__ == "__main__":
 	for MODELPATH in paths:
 		model = utils.FaceModel(512, train_feat=True).cuda()
 		model = nn.DataParallel(model)
-		# MODELPATH = "/u/as9rw/work/fnb/implems/celeba_models/smile_all_vggface_cropped_augs/10_0.9289294306335204"
 		model.load_state_dict(ch.load(MODELPATH))
 		model.eval()
 		models.append(model)
 
 	constants = utils.Celeb()
 	ds = constants.get_dataset()
-	_, dataloader = ds.make_loaders(batch_size=128, workers=8, shuffle_val=False, only_val=True)
+	_, dataloader = ds.make_loaders(batch_size=256, workers=8, shuffle_val=True, only_val=True)
 
 	attrs = constants.attr_names
 	target_prop = attrs.index("Smiling")
+	# Look at examples that satisfy particular property
+	inspect_these = ["Attractive", "Male", "Young"]
 
 	def saveimg(x_, path):
 		x_ = (x_ * 0.5) + 0.5
@@ -46,10 +48,16 @@ if __name__ == "__main__":
 		x_, indices = utils.get_cropped_faces(cropmodel, x)
 		y_picked = y[indices, target_prop].cuda()
 
-		for j, model in enumerate(models):
-			model_fn = lambda x: model(x)[:,0]
+		# Pick only the ones that satisfy property
+		y_anal   = y[indices]
+		satisfy  = ch.nonzero(y_anal[:, attrs.index(inspect_these[1])])[:, 0]
+		x_       = x_[satisfy]
+		y_picked = y_picked[satisfy]
 
-			y_pseudo = 1. * (model(x)[:, 0] >= 0)
+		for j, model in tqdm(enumerate(models)):
+			model_fn = lambda z: model(z)[:,0]
+
+			y_pseudo = 1. * (model(x_)[:, 0] >= 0)
 
 			x_adv = projected_gradient_descent(model_fn, x_, eps, eps_iter, nb_iter, norm,
 							   clip_min=-1, clip_max=1, y=y_pseudo,
@@ -66,10 +74,11 @@ if __name__ == "__main__":
 		break
 
 	# Look at inter-model transfer for adversarial examples
+	names = ["old", "all", "attractive", "male"]
 	for i in range(len(x_advs)):
 		preds_og = models[i](x_advs[i])[:, 0]
-		print("Original error: %.2f" % (1 - ch.mean(1. * (y_picked == (preds_og >=0)))))
+		print("Original error on %s : %.2f" % (names[i], 1 - ch.mean(1. * (y_picked == (preds_og >=0)))))
 		for j in range(i, len(x_advs)):
 			preds_target = models[j](x_advs[i])[:, 0]
-			print("Transfer rate: %.2f" % (1 - 1 *ch.mean(1. * (y_picked == (preds_target >=0)))))
+			print("Transfer rate to %s : %.2f" % (names[j], 1 - 1 *ch.mean(1. * (y_picked == (preds_target >=0)))))
 		print()
