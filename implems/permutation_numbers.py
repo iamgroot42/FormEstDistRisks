@@ -74,7 +74,7 @@ if __name__ == "__main__":
 	parser.add_argument('--savepath', type=str, default='', help='folder where trained model(s) should be saved')
 	parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train model for')
 	parser.add_argument('--bs', type=int, default=512, help='batch size')
-	parser.add_argument('--weightinit', type=str, default='vggface2', help='which weight initialization to use: vggface2 or casia-webface')
+	parser.add_argument('--weightinit', type=str, default='vggface2', help='which weight initialization to use: vggface2, casia-webface, or none')
 	parser.add_argument('--augment', type=bool, default=False, help='use data augmentations when training models?')
 	parser.add_argument('--hidden', type=str, default="64,16", help='comma-separated dimensions for hidden layers for models classification layer')
 	args = parser.parse_args()

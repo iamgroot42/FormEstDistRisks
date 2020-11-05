@@ -360,9 +360,6 @@ class CensusIncome:
 		test_data  = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
 			sep=' *, *', skiprows=1, na_values='?', engine='python')
 
-		# print(np.mean((test_data['income']=='<=50K').to_numpy()))
-		# print(np.mean((train_data['income']=='<=50K').to_numpy()))
-
 		# Add field to identify train/test, process together, split back
 		train_data['is_train'] = 1
 		test_data['is_train']  = 0
@@ -397,6 +394,7 @@ class FaceModel(nn.Module):
 	def __init__(self, n_feat, weight_init='vggface2', train_feat=False, hidden=[64,16]):
 		super(FaceModel, self).__init__()
 		self.train_feat = train_feat
+		if weight_init == "none": weight_init = None
 		self.feature_model = InceptionResnetV1(pretrained=weight_init) #.eval()
 		if not self.train_feat: self.feature_model.eval()
 		# for param in self.feature_model.parameters(): param.requires_grad = False
@@ -469,11 +467,19 @@ class MNISTFlatModel(nn.Module):
 
 
 def filter(df, condition, ratio):
-	qi    = np.nonzero((condition(df)).to_numpy())[0]
-	notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
-	np.random.shuffle(notqualify)
-	nqi = notqualify[:int(((1-ratio) * len(qi))/ratio)]
-	return pd.concat([df.iloc[qi], df.iloc[nqi]])
+	qualify       = np.nonzero((condition(df)).to_numpy())[0]
+	notqualify    = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
+	current_ratio = len(qualify) / (len(qualify) + len(notqualify))
+	# If current ratio less than desired ratio, subsample from non-ratio
+	print("Changed ratio from %.2f to %.2f" % (current_ratio, ratio))
+	if current_ratio <= ratio:
+		np.random.shuffle(notqualify)
+		nqi = notqualify[:int(((1-ratio) * len(qualify))/ratio)]
+		return pd.concat([df.iloc[qualify], df.iloc[nqi]])
+	else:
+		np.random.shuffle(qualify)
+		qi = qualify[:int(((1-ratio) * len(notqualify))/ratio)]
+		return pd.concat([df.iloc[qi], df.iloc[notqualify]])
 
 
 def get_cropped_faces(cropmodel, x):
