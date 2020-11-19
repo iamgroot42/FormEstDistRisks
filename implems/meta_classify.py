@@ -1,82 +1,71 @@
-import torch as ch
-import torch.optim as optim
-import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 from tqdm import tqdm
-from sklearn.ensemble import RandomForestClassifier
-import pandas as pd
 from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
 from joblib import dump, load
-from tensorflow import keras
 import os
 
 import utils
 
 
 if __name__ == "__main__":
-	import argparse
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--dataset', type=str, default='census', help='which dataset to work on (census/mnist/celeba)')
-	args = parser.parse_args()
-	utils.flash_utils(args)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, default='census',
+                        help='which dataset to work on (census/mnist/celeba)')
+    parser.add_argument('--path1', type=str, default='',
+                        help='path to first folder of models')
+    parser.add_argument('--path2', type=str, default='',
+                        help='path to second folder of models')
+    parser.add_argument('--sample', type=int, default=0,
+                        help='how many models to use for meta-classifier')
+    args = parser.parse_args()
+    utils.flash_utils(args)
 
+    if args.dataset == 'census':
+        # Census Income dataset
+        if args.sample < 1: raise ValueError(
+            "At least one model must be used!")
 
-	if args.dataset == 'census':
-		# Census Income dataset
+        paths = [args.path1, args.path2]
+        ci = utils.CensusIncome("./census_data/")
 
-		base_path = "census_models_mlp_many"
-		paths = ['original', 'income', 'sex', 'race']
-		ci = utils.CensusIncome("./census_data/")
+        def sex_filter(df): return utils.filter(
+            df, lambda x: x['sex:Female'] == 1, 0.65)
 
-		sex_filter    = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
-		race_filter   = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
-		income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
+        def race_filter(df): return utils.filter(
+            df, lambda x: x['race:White'] == 0,  1.0)
 
-		_, (x_te, y_te), cols = ci.load_data()
-		cols = list(cols)
-		# desired_property = cols.index("sex:Female")
+        def income_filter(df): return utils.filter(
+            df, lambda x: x['income'] == 1, 0.5)
 
-		# Get intermediate layer representations
-		from sklearn.neural_network._base import ACTIVATIONS
+        w, b = [], []
+        labels = []
+        for i, path_seg in enumerate(paths):
+            models_in_folder = os.listdir(path_seg)
+            np.random.shuffle(models_in_folder)
+            models_in_folder = models_in_folder[:args.sample]
+            for path in models_in_folder:
+                clf = load(os.path.join(path_seg, path))
 
-		import matplotlib.pyplot as plt
-		import matplotlib as mpl
-		mpl.rcParams['figure.dpi'] = 200
+                # Look at initial layer weights, biases
+                processed = clf.coefs_[0]
+                processed = np.concatenate(
+                    (np.mean(processed, 1), np.mean(processed ** 2, 1)))
+                w.append(processed)
+                b.append(clf.intercepts_[0])
+                labels.append(i)
 
-		def layer_output(data, MLP, layer=0):
-			L = data.copy()
-			for i in range(layer):
-				L = ACTIVATIONS['relu'](np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
-			return L
+        w = np.array(w)
+        b = np.array(w)
+        labels = np.array(labels)
 
-		import math
+        clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
+        X_train, X_test, y_train, y_test = train_test_split(
+            w, labels, test_size=0.3)
+        clf.fit(X_train, y_train)
+        print("Meta-classifier performance on train data: %.2f" % clf.score(X_train, y_train))
+        print("Meta-classifier performance on test data: %.2f" % clf.score(X_test, y_test))
 
-		w, b = [], []
-		labels = []
-		for i, path_seg in enumerate(paths):
-			for path in os.listdir(os.path.join(base_path, path_seg)):
-				clf = load(os.path.join(base_path, path_seg, path))
-
-				# Look at initial layer weights, biases
-				# processed = np.exp(clf.coefs_[0])
-				# processed = processed / (processed + 1)
-				# processed = clf.coefs_[0] ** 2
-				processed = clf.coefs_[0]
-				# processed = np.mean(processed, 1)
-				processed = np.concatenate((np.mean(processed, 1), np.mean(processed ** 2, 1)))
-				w.append(processed)
-				b.append(clf.intercepts_[0])
-				labels.append(i)
-
-		w = np.array(w)
-		b = np.array(w)
-		labels = np.array(labels)
-
-		clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
-		from sklearn.model_selection import train_test_split
-		# X_train, X_test, y_train, y_test = train_test_split(w, labels, test_size=0.3, random_state=42)
-		X_train, X_test, y_train, y_test = train_test_split(w, labels, test_size=0.3)
-		clf.fit(X_train, y_train)
-		print(clf.score(X_train, y_train))
-		print(clf.score(X_test, y_test))
+    else:
+        raise ValueError("Support for this dataset not added yet")

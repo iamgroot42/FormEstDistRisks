@@ -54,3 +54,46 @@ Here's a brief tutorial to sklearn: [link](https://scikit-learn.org/stable/tutor
 2. You can access the initial layer (or any layer) of the model using `MLP.coefs_[0])` and `MLP.intercepts_[0]` (corresponding to the weight, bias) for any of those models. Some analysis on how each of them gives different importance (absolute, relative: we can look at both) might be useful. For instance, some of them might give 0 weight corresponding to the 'sex' feature, or have a high/low bias that corresponds to the classifier trained on an imbalanced-gender version of the dataset.
 
 Note: You can use the mapping of column names [here](https://github.com/iamgroot42/fnb/blob/master/implems/functional_test.py#L36) to see what each feature actually corresponds to: for a better understanding of how different models are looking at those features differently.
+
+
+## For 11/18
+
+1. Re-run the functional tests we discussed in our meeting  (after fixing the filter-on-test-data bug that we went through in the meeting) and take note of trends/numbers for both the sex and gender filters.
+
+2. Use `train_ratio_models.py` to train multiple models for different filters and ratios. For instance, to train 30 classifiers on data with the sex filter (60% females) and save them in your folder, run:
+
+`python train_ratio_models.py --savepath MYFOLDER --filter sex --ratio 0.6 --num 30`
+
+3. Run these experiments and save models in separate folders. Set `num` to 500 and run experiments for the following ratios and filters:
+
+* sex: 0, 0.25, 0.4, 0.5, 0.6, 0.75, 1
+* race: 0, 0.25, 0.4, 0.5, 0.6, 0.75, 1
+* income: 0, 0.25, 0.4, 0.5, 0.6, 0.75, 1
+* none: 0.5
+
+4. Use `meta_classify.py` to train meta-classifiers using the models you trained above. This file takes as arguments paths to two folders, and takes models from them to train a meta classifier.
+Example:
+
+`python python meta_classify.py --path1 FOLDER1 --path2 FOLDER2 --sample SIZE`
+
+Run these experiments for the following ratios:
+
+* sex (0) vs sex (1)
+* sex (0) vs sex (0.5)
+* sex (0.5) vs sex (1)
+* sex (0) vs sex (0.25)
+* sex (0.25) vs sex (0.5)
+* sex (0.5) vs sex (0.75)
+* sex (0.75) vs sex (0.1)
+* sex (0.4) vs sex (0.6)
+
+* sex (0) vs normal
+* sex (0.25) vs normal
+* sex (0.4) vs normal
+* sex (0.5) vs normal
+* sex (0.6) vs normal
+* sex (0.75) vs normal
+* sex (1) vs normal
+
+
+Repeat the above set of experiments for 'race' and 'income' instead of 'sex'. Also, for each experiment, vary `sample` in [10, 25, 50, 100, 150, 200, 300, 400, 500]
