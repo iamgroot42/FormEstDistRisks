@@ -15,14 +15,16 @@ if __name__ == "__main__":
 	norm = 2
 
 	cropmodel = MTCNN(device='cuda')
-	paths = ["/u/as9rw/work/fnb/implems/celeba_models/smile_old_vggface_cropped_augs/10_0.9244576840818821",
-			"/u/as9rw/work/fnb/implems/celeba_models/smile_all_vggface_cropped_augs/10_0.9289294306335204",
-			"/u/as9rw/work/fnb/implems/celeba_models/smile_attractive_vggface_cropped_augs/20_0.9265191091558977",
-			"/u/as9rw/work/fnb/implems/celeba_models/smile_male_vggface_cropped_augs/7_0.9226591187270502"]
+	paths = [
+		"/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/20_0.9235165574046058.pth",
+		"/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/20_0.9006555723651034.pth",
+		"/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_none/20_0.9065300896286812.pth",
+		"/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth"
+		]
 	
 	models = []
 	for MODELPATH in paths:
-		model = utils.FaceModel(512, train_feat=True).cuda()
+		model = utils.FaceModel(512, train_feat=True, weight_init=None).cuda()
 		model = nn.DataParallel(model)
 		model.load_state_dict(ch.load(MODELPATH))
 		model.eval()
@@ -74,10 +76,10 @@ if __name__ == "__main__":
 		break
 
 	# Look at inter-model transfer for adversarial examples
-	names = ["old", "all", "attractive", "male"]
+	names = ["al", "all", "male", "male"]
 	for i in range(len(x_advs)):
 		preds_og = models[i](x_advs[i])[:, 0]
-		print("Original error on %s : %.2f" % (names[i], 1 - ch.mean(1. * (y_picked == (preds_og >=0)))))
+		# print("Original error on %s : %.2f" % (names[i], 1 - ch.mean(1. * (y_picked == (preds_og >=0)))))
 		for j in range(i, len(x_advs)):
 			preds_target = models[j](x_advs[i])[:, 0]
 			print("Transfer rate to %s : %.2f" % (names[j], 1 - 1 *ch.mean(1. * (y_picked == (preds_target >=0)))))
