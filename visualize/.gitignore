@@ -1,3 +1,4 @@
 *.png
 *.gif
 __pycache__/*
+query_views/*
