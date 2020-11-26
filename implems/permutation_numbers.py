@@ -80,7 +80,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     utils.flash_utils(args)
 
-
     if args.dataset == 'census':
         # Census Income dataset
         ci = utils.CensusIncome("./census_data/")

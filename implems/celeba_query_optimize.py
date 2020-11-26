@@ -5,6 +5,9 @@ import torch.nn as nn
 import os
 from tqdm import tqdm
 
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
+
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -53,8 +56,24 @@ def optimizationLoop(models, labels, numQuery=100, numSteps=500, seed=None,
 
 
 if __name__ == "__main__":
+    import argparse
+    methods = ['standalone', 'meta']
 
-    batch_size = 1024  # 128 #512
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--qp', type=int, default=75, help='number of query points to generate')
+    parser.add_argument('--randomseed', type=bool, default=False, help='use random seed(True) or actual examples (True)')
+    parser.add_argument('--dump', type=bool, default=False, help='save generated query points?')
+    parser.add_argument('--method', type=str, default='standalone', help='which method to use (%s)' % "/".join(methods))
+    args = parser.parse_args()
+    utils.flash_utils(args)
+
+    numQuery = args.qp
+    try:
+        method_type = methods.index(args.method)
+    except ValueError:
+        print("Method %s not implemented yet: Pick one of: %s" % (args.method, "/".join(methods)))
+        exit(0)
+
     constants = utils.Celeb()
     ds = constants.get_dataset()
 
@@ -111,10 +130,11 @@ if __name__ == "__main__":
                 models.append(model)
 
     # Get a sample of random data to seed query generation process
-    numQuery = 75  # 100
-    _, dataloader = ds.make_loaders(
-            batch_size=numQuery, workers=8, shuffle_train=False, shuffle_val=True, only_val=True)
-    seed, _ = next(iter(dataloader))
+    seed = None
+    if not args.randomseed:
+        _, dataloader = ds.make_loaders(
+                batch_size=numQuery, workers=8, shuffle_train=False, shuffle_val=True, only_val=True)
+        seed, _ = next(iter(dataloader))
 
     queries = optimizationLoop(models,
                                [1] * 4 + [0] * 4,
@@ -123,15 +143,34 @@ if __name__ == "__main__":
                                learningRate=1e2,
                                seed=seed)
 
-    # Save them somewhere for visualization
-    queries_cpu = queries.cpu().numpy()
-    for i in range(queries_cpu.shape[0]):
-        image = Image.fromarray(
-                    (255 * np.transpose(queries_cpu[i], (1, 2, 0))).astype('uint8'))
-        image.save("../visualize/query_views/" + str(i + 1) + ".png")
+    if args.dump:
+        # Save them somewhere for visualization
+        queries_cpu = queries.cpu().numpy()
+        for i in range(queries_cpu.shape[0]):
+            image = Image.fromarray(
+                        (255 * np.transpose(queries_cpu[i], (1, 2, 0))).astype('uint8'))
+            image.save("../visualize/query_views/" + str(i + 1) + ".png")
 
-    for m in models:
-        print(ch.mean(ch.sigmoid(m(queries)[:, 0])).cpu().detach())
+    model_scores = [m(queries)[:, 0].detach().cpu() for m in models] 
+    if method_type == 0:
+        for sc in model_scores:
+            print(ch.mean(ch.sigmoid(sc)))
+
+    elif method_type == 1:
+        clfs = []
+        model_scores = np.array([x.numpy() for x in model_scores])
+        idxs = [np.random.permutation(model_scores.shape[1])[:50] for i in range(10)]
+        num_each = model_scores.shape[0] // 2
+
+        for i in range(10):
+            x_tr, x_te, y_tr, y_te = train_test_split(model_scores[:, idxs[i]],
+                                                      [0] * num_each + [1] * num_each,
+                                                      test_size=0.25)
+
+            clf = MLPClassifier(hidden_layer_sizes=(32, 16))
+            clf.fit(x_tr, y_tr)
+            print("%.2f train, %.2f test" % (clf.score(x_tr, y_tr), clf.score(x_te, y_te)))
+            clfs.append(clf)
 
     # Test out on unseen models
     all_scores = []
@@ -146,11 +185,18 @@ if __name__ == "__main__":
             model = nn.DataParallel(model)
             model.load_state_dict(ch.load(path), strict=False)
             model.eval()
+            preds = model(queries)[:, 0].detach().cpu()
 
-            preds = ch.sigmoid(model(queries)[:, 0]).detach().cpu().numpy()
+            if method_type == 0:
+                preds = ch.sigmoid(preds).numpy()
+                print(np.mean(preds))
+
+            elif method_type == 1:
+                preds = [clf.predict_proba(np.expand_dims(preds[idx], 0))[0, 1] for idx, clf in zip(idxs, clfs)]
+                print(np.mean(preds), np.std(preds))
+
             ac.append(preds)
 
-            print(np.mean(preds))
         all_scores.append(ac)
 
     labels = ['Trained on $D_0$', 'Trained on $D_1$']

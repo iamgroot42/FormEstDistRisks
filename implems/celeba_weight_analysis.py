@@ -85,8 +85,23 @@ def get_features_for_model(dataloader, MODELPATH, weight_init, layers=[64, 16]):
 
 
 if __name__ == "__main__":
+    import argparse
+    methods = ['latent', 'align', 'query']
 
-    batch_size = 1024 #128 #512
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--bs', type=int, default=1024, help='batch size')
+    parser.add_argument('--all', type=bool, default=False, help='use all checkpoints (per model) for analysis?')
+    parser.add_argument('--method', type=str, default='latent', help='which method to use (%s)' % "/".join(methods))
+    args = parser.parse_args()
+    utils.flash_utils(args)
+
+    batch_size = args.bs
+    try:
+        method_type = methods.index(args.method)
+    except ValueError:
+        print("Method %s not implemented yet: Pick one of: %s" % (args.method, "/".join(methods)))
+        exit(0)
+
     constants = utils.Celeb()
     ds = constants.get_dataset()
 
@@ -121,22 +136,22 @@ if __name__ == "__main__":
         ]
     ]
 
-    if 1 == 2:
-        cropmodel = MTCNN(device='cuda')
+    # if 1 == 2:
+    #     cropmodel = MTCNN(device='cuda')
 
-        # Get all cropped images
-        x_cropped, y_cropped = [], []
-        _, dataloader = ds.make_loaders(
-            batch_size=batch_size, workers=8, shuffle_train=False, shuffle_val=False, only_val=True)
-        for x, y in tqdm(dataloader, total=len(dataloader)):
-            x_, indices = utils.get_cropped_faces(cropmodel, x)
-            x_cropped.append(x_.cpu())
-            y_cropped.append(y[indices])
+    #     # Get all cropped images
+    #     x_cropped, y_cropped = [], []
+    #     _, dataloader = ds.make_loaders(
+    #         batch_size=batch_size, workers=8, shuffle_train=False, shuffle_val=False, only_val=True)
+    #     for x, y in tqdm(dataloader, total=len(dataloader)):
+    #         x_, indices = utils.get_cropped_faces(cropmodel, x)
+    #         x_cropped.append(x_.cpu())
+    #         y_cropped.append(y[indices])
 
-        # Make dataloader out of this filtered data
-        x_cropped = ch.cat(x_cropped, 0)
-        y_cropped = ch.from_numpy(np.concatenate(y_cropped, 0))
-        td = TensorDataset(x_cropped, y_cropped)
+    #     # Make dataloader out of this filtered data
+    #     x_cropped = ch.cat(x_cropped, 0)
+    #     y_cropped = ch.from_numpy(np.concatenate(y_cropped, 0))
+    #     td = TensorDataset(x_cropped, y_cropped)
 
     # Use existing dataset instead
     transform = transforms.Compose(
@@ -154,7 +169,8 @@ if __name__ == "__main__":
 
         for pf in UPFOLDER:
             for MODELPATHSUFFIX in tqdm(os.listdir(pf)):
-                # if not("3_" in MODELPATHSUFFIX or "10_" in MODELPATHSUFFIX or "20_" in MODELPATHSUFFIX): continue
+                if not args.all:
+                    if not("3_" in MODELPATHSUFFIX or "10_" in MODELPATHSUFFIX or "20_" in MODELPATHSUFFIX): continue
                 # MODELPATH    = os.path.join(UPFOLDER, FOLDER, wanted_model)
 
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
@@ -175,29 +191,32 @@ if __name__ == "__main__":
 
     all_x = np.concatenate(np.array(all_x), 0)
     idxs = [np.random.permutation(all_x.shape[1])[:1000] for i in range(10)]
-    # Calibrate at this point
-    # cali, weights = calibration(all_x)
-    # Calibrate all_x (except baseline first)
-    # for i in range(weights.shape[0]): all_x[i+1] = np.matmul(all_x[i+1], weights[i])
+    if method_type == 1:
+        # Calibrate at this point
+        cali, weights = calibration(all_x)
+        # Calibrate all_x (except baseline first)
+        for i in range(weights.shape[0]): all_x[i+1] = np.matmul(all_x[i+1], weights[i])
     clfs = []
 
     # If using each point independently
-    # all_x = np.concatenate(all_x, 0)
-    # all_y = np.concatenate(all_y, 0)
+    if method_type in [0, 1]:
+        all_x = np.concatenate(all_x, 0)
+        all_y = np.concatenate(all_y, 0)
 
     # Train 10 classifiers on random samples
     for i in range(10):
         # haha don't go brrr
-        # x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=0.33)
+        if method_type in [0, 1]:
+            x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=0.33)
 
         # haha go brr
-        num_each = all_x.shape[0] // 2
-        x_tr, x_te, y_tr, y_te = train_test_split(all_x[:, idxs[i]], [0] * num_each + [1] * num_each, test_size=0.25)
+        if method_type == 2:
+            num_each = all_x.shape[0] // 2
+            x_tr, x_te, y_tr, y_te = train_test_split(all_x[:, idxs[i]], [0] * num_each + [1] * num_each, test_size=0.25)
 
         clf = MLPClassifier(hidden_layer_sizes=(128, 32))
         clf.fit(x_tr, y_tr)
         print("%.2f train, %.2f test" % (clf.score(x_tr, y_tr), clf.score(x_te, y_te)))
-
         clfs.append(clf)
 
     # Test out on unseen models
@@ -209,19 +228,24 @@ if __name__ == "__main__":
             latent, _ = get_features_for_model(
                 cropped_dataloader, path, weight_init=None)#"vggface2")
 
-            # Calibrate latent
-            # _, weights = calibration(np.expand_dims(latent, 0), use_ref=cali)
-            # latent = np.matmul(latent, weights[0])
+            if method_type == 1:
+                # Calibrate latent
+                _, weights = calibration(np.expand_dims(latent, 0), use_ref=cali)
+                latent = np.matmul(latent, weights[0])
 
-            # preds = [clf.predict_proba(latent[idx])[:, 1] for idx, clf in zip(idxs, clfs)]
-            # print("Prediction score means: ",
-            #       np.mean(np.mean(preds, 1)),
-            #       np.std(np.mean(preds, 1)),
-            #       np.mean(preds, 1))
-            preds = [clf.predict_proba(np.expand_dims(latent[idx], 0))[0, 1] for idx, clf in zip(idxs, clfs)]
-            print("Prediction score means: ",
-                  np.mean(preds),
-                  np.std(preds),)
+            if method_type in [0, 1]:
+                preds = [clf.predict_proba(latent[idx])[:, 1] for idx, clf in zip(idxs, clfs)]
+                print("Prediction score means: ",
+                      np.mean(np.mean(preds, 1)),
+                      np.std(np.mean(preds, 1)),
+                      np.mean(preds, 1))
+
+            elif method_type == 2:
+                preds = [clf.predict_proba(np.expand_dims(latent[idx], 0))[0, 1] for idx, clf in zip(idxs, clfs)]
+                print("Prediction score means: ",
+                      np.mean(preds),
+                      np.std(preds),)
+
             preds = np.mean(preds, 0)
             ac.append(preds)
         all_scores.append(ac)
@@ -241,15 +265,3 @@ if __name__ == "__main__":
     plt.xlabel("Meta-classifier $Pr$[trained on $D_1$]")
     plt.ylabel("Number of datapoints")
     plt.savefig("../visualize/score_distrs_celeba.png")
-
-    # yeslabel = np.nonzero(all_stats[:, target_prop] == 1)[0]
-    # nolabel  = np.nonzero(all_stats[:, target_prop] == 0)[0]
-
-    # Pick relevant samples
-    # label_attr     = attrs.index(inspect_these[1])
-    # label_prop     = np.nonzero(all_stats[yeslabel, label_attr] == 1)[0]
-    # label_noprop   = np.nonzero(all_stats[yeslabel, label_attr] == 0)[0]
-    # nolabel_prop   = np.nonzero(all_stats[nolabel, label_attr] == 1)[0]
-    # nolabel_noprop = np.nonzero(all_stats[nolabel, label_attr] == 0)[0]
-
-    # all_cfms = np.array(all_cfms)
