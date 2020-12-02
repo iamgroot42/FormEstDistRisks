@@ -66,6 +66,7 @@ if __name__ == "__main__":
 
     target_prop = attrs.index("Smiling")
     all_cfms = []
+    successes, failures = [], []
 
     for UPFOLDER in folder_paths:
         model_preds = []
@@ -95,6 +96,14 @@ if __name__ == "__main__":
 
         yeslabel = np.nonzero(all_stats[:, target_prop] == 1)[0]
         nolabel = np.nonzero(all_stats[:, target_prop] == 0)[0]
+
+        # Look at failure/success cases to identify any potential trends
+        success, fail = [], []
+        for mp in model_preds:
+            success.append(np.nonzero((mp >= 0.5) == all_stats[:, target_prop])[0])
+            fail.append(np.nonzero((mp >= 0.5) != all_stats[:, target_prop])[0])
+        successes.append(success)
+        failures.append(fail)
 
         # Look at loss
         lossfn = nn.BCEWithLogitsLoss(reduction='none')
@@ -132,6 +141,28 @@ if __name__ == "__main__":
                    * len(label_noprop)) / (len(label_prop) + len(label_noprop))
     noprop_losses = (all_cfms[:, :, 0, 1] * len(nolabel_prop) + all_cfms[:, :, 1, 1]
                      * len(nolabel_noprop)) / (len(nolabel_prop) + len(nolabel_noprop))
+
+    print(prop_losses)
+    print(noprop_losses)
+
+    # Compute overlap of success, failure cases across models
+    print("Success/Failure case analysis")
+    for i in range(len(successes)):
+        for k in range(len(successes[0])):
+            for j in range(len(successes)):
+                for l in range(len(successes[0])):
+                    # Skip same model type, same model
+                    if i == j and k == l:
+                        continue
+
+                    s1, s2 = set(successes[i][k]), set(successes[j][l])
+                    f1, f2 = set(successes[i][k]), set(successes[j][l])
+                    success_overlap = len(s1.intersection(s2)) / len(s1.union(s2))
+                    failure_overlap = len(f1.intersection(f2)) / len(f1.union(f2))
+
+                    # print("(%d,%d) (%d,%d) : Success Overlap: %f" % (i, k, j, l, success_overlap))
+                    print("(%d,%d) (%d,%d) : Failure Overlap: %f" % (i, k, j, l, failure_overlap))
+        print()
 
     def get_coeffs(X, Y):
         slope = (Y[0] - Y[1]) / (X[0] - X[1])
