@@ -179,5 +179,5 @@ def compute_metrics(dataset_true, dataset_pred,
     metrics["Average odds difference"] = classified_metric_pred.average_odds_difference()
     metrics["Equal opportunity difference"] = classified_metric_pred.equal_opportunity_difference()
     metrics["Theil index"] = classified_metric_pred.theil_index()
-    
+
     return metrics
