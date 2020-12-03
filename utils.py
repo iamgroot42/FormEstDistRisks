@@ -7,7 +7,7 @@ from robustness.model_utils import make_and_restore_model
 from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR, CelebA
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
-from facenet_pytorch import InceptionResnetV1, MTCNN
+from facenet_pytorch import InceptionResnetV1
 from torch.utils.data import Dataset
 from sklearn import preprocessing
 from PIL import Image
@@ -15,7 +15,6 @@ from PIL import Image
 from tqdm import tqdm
 import requests
 import pandas as pd
-import sys
 import os
 
 

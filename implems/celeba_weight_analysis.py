@@ -1,8 +1,11 @@
+import utils
+import implem_utils
+
 import numpy as np
 import torch as ch
 import torch.nn as nn
 import os
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import transforms
 from tqdm import tqdm
 
@@ -14,9 +17,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-import utils
-import implem_utils
 
 
 def get_features_for_model(dataloader, MODELPATH, weight_init,
@@ -129,10 +129,12 @@ if __name__ == "__main__":
                 # MODELPATH    = os.path.join(UPFOLDER, FOLDER, wanted_model)
 
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
-                cropped_dataloader = DataLoader(td, batch_size=batch_size, shuffle=False)
+                cropped_dataloader = DataLoader(td,
+                                                batch_size=batch_size,
+                                                shuffle=False)
 
                 # Get latent representations
-                latent, all_stats = get_features_for_model(
+                latent, all_stats = implem_utils.get_features_for_model(
                     cropped_dataloader, MODELPATH,
                     method_type=method_type,
                     weight_init=None)
@@ -184,7 +186,7 @@ if __name__ == "__main__":
         for path in pc:
             cropped_dataloader = DataLoader(td, batch_size=batch_size,
                                             shuffle=False)
-            latent, _ = get_features_for_model(
+            latent, _ = implem_utils.get_features_for_model(
                 cropped_dataloader, path,
                 method_type=method_type,
                 weight_init=None)  # "vggface2")
@@ -192,8 +194,8 @@ if __name__ == "__main__":
             if method_type == 1 or method_type == 4:
                 # Calibrate latent
                 _, weights = implem_utils.calibration(np.expand_dims(latent, 0),
-                                         use_ref=cali,
-                                         weighted_align=(method_type == 1))
+                                                      use_ref=cali,
+                                                      weighted_align=(method_type == 1))
                 latent = np.matmul(latent, weights[0])
 
             if method_type in [0, 1, 4]:
