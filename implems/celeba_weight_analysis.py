@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
 
 # from facenet_pytorch import MTCNN
 import matplotlib.pyplot as plt
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--all', type=bool, default=False, help='use all checkpoints (per model) for analysis?')
     parser.add_argument('--method', type=str, default='latent', help='which method to use (%s)' % "/".join(methods))
     parser.add_argument('--mlp_tr', type=float, default=0.33, help='test ratio for meta-classifier')
+    parser.add_argument('--pca', type=int, default=0, help='use PCA-based reduction?')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -59,54 +61,49 @@ if __name__ == "__main__":
     constants = utils.Celeb()
     ds = constants.get_dataset()
 
+    pca_dim = args.pca
     attrs = constants.attr_names
     inspect_these = ["Attractive", "Male", "Young"]
 
+    common_prefix = "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/"
     folder_paths = [
         [
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/",
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/",
+            common_prefix + "split_2/all/64_16/augment_none/",
+            common_prefix + "split_2/all/64_16/none/",
         ],
         [
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/augment_none/",
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/",
+            common_prefix + "split_2/male/64_16/augment_none/",
+            common_prefix + "split_2/male/64_16/none/",
+            # common_prefix + "split_2/attractive/64_16/augment_none/",
+            # common_prefix + "split_2/attractive/64_16/none/",
         ]
     ]
 
     blind_test_models = [
         [
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/augment_vggface/10_0.928498243559719.pth",
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/vggface/10_0.9093969555035128.pth",
+            # common_prefix + "split_1/all/augment_vggface/10_0.928498243559719.pth",
+            # common_prefix + "split_1/all/vggface/10_0.9093969555035128.pth",
 
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/20_0.9006555723651034.pth",
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/15_0.9073793914943687.pth",
+            common_prefix + "split_2/all/64_16/augment_vggface/20_0.9161203563624138.pth",
+            common_prefix + "split_2/all/64_16/augment_vggface/15_0.920658934274668.pth",
+
+            common_prefix + "split_1/all/vggface/15_0.9126902810304449.pth",
+            common_prefix + "split_1/all/vggface/20_0.9108606557377049.pth",
 
         ],
         [
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/augment_vggface/10_0.9240681998413958.pth",
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/vggface/10_0.8992862807295797.pth",
+            # common_prefix + "split_1/attractive/augment_vggface/10_0.9240681998413958.pth",
+            # common_prefix + "split_1/attractive/vggface/10_0.8992862807295797.pth",
 
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/20_0.8947974217311234.pth",
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/15_0.9120626151012892.pth",
+            common_prefix + "split_2/male/64_16/augment_vggface/20_0.9224071702944943.pth",
+            common_prefix + "split_2/male/64_16/augment_vggface/15_0.9014084507042254.pth",
+            # common_prefix + "split_2/attractive/64_16/none/20_0.8947974217311234.pth",
+            # common_prefix + "split_2/attractive/64_16/none/15_0.9120626151012892.pth",
+
+            common_prefix + "split_1/male/vggface/20_0.9088092076139885.pth",
+            common_prefix + "split_1/male/vggface/15_0.9060424966799469.pth",
         ]
     ]
-
-    # if 1 == 2:
-    #     cropmodel = MTCNN(device='cuda')
-
-    #     # Get all cropped images
-    #     x_cropped, y_cropped = [], []
-    #     _, dataloader = ds.make_loaders(
-    #         batch_size=batch_size, workers=8, shuffle_train=False, shuffle_val=False, only_val=True)
-    #     for x, y in tqdm(dataloader, total=len(dataloader)):
-    #         x_, indices = utils.get_cropped_faces(cropmodel, x)
-    #         x_cropped.append(x_.cpu())
-    #         y_cropped.append(y[indices])
-
-    #     # Make dataloader out of this filtered data
-    #     x_cropped = ch.cat(x_cropped, 0)
-    #     y_cropped = ch.from_numpy(np.concatenate(y_cropped, 0))
-    #     td = TensorDataset(x_cropped, y_cropped)
 
     # Use existing dataset instead
     transform = transforms.Compose(
@@ -123,10 +120,8 @@ if __name__ == "__main__":
         model_stats = []
 
         for pf in UPFOLDER:
-            for MODELPATHSUFFIX in tqdm(os.listdir(pf)):
-                if not args.all:
-                    if not("3_" in MODELPATHSUFFIX or "8_" in MODELPATHSUFFIX or "13_" in MODELPATHSUFFIX): continue
-                # MODELPATH    = os.path.join(UPFOLDER, FOLDER, wanted_model)
+            for j, MODELPATHSUFFIX in tqdm(enumerate(os.listdir(pf))):
+                if not args.all and j > 18: continue
 
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
                 cropped_dataloader = DataLoader(td,
@@ -153,9 +148,11 @@ if __name__ == "__main__":
     if method_type == 1 or method_type == 4:
         # Calibrate at this point
         cali, weights = implem_utils.calibration(all_x,
-                                    weighted_align=(method_type == 1))
+                                                 weighted_align=(method_type == 1))
         # Calibrate all_x (except baseline first)
-        for i in range(weights.shape[0]): all_x[i+1] = np.matmul(all_x[i+1], weights[i])
+        for i in range(weights.shape[0]):
+            all_x[i+1] = np.matmul(all_x[i+1], weights[i])
+
     clfs = []
 
     # If using each point independently
@@ -163,11 +160,17 @@ if __name__ == "__main__":
         all_x = np.concatenate(all_x, 0)
         all_y = np.concatenate(all_y, 0)
 
+        # Dimensionality reduction, if requested
+        if pca_dim > 0:
+            pca = PCA(n_components=pca_dim)
+            print("Fitting PCA")
+            all_x = pca.fit_transform(all_x)
+
     # Train 10 classifiers on random samples
     for i in range(args.numruns):
         # haha don't go brrr
         if method_type in [0, 1, 4]:
-            x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=0.4)
+            x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=args.mlp_tr)
 
         # haha go brr
         if method_type == 2:
@@ -198,6 +201,10 @@ if __name__ == "__main__":
                                                       weighted_align=(method_type == 1))
                 latent = np.matmul(latent, weights[0])
 
+                # Dimensionality reduction, if requested
+                if pca_dim > 0:
+                    latent = pca.transform(latent)
+
             if method_type in [0, 1, 4]:
                 preds = [clf.predict_proba(latent[idx])[:, 1] for idx, clf in zip(idxs, clfs)]
                 print("Prediction score means: ",
@@ -217,6 +224,7 @@ if __name__ == "__main__":
         print()
 
     labels = ['Models trained on $D_0$', 'Models trained on $D_1$']
+    labels = labels[::-1]
     colors = [
         ['gold', 'goldenrod', 'orange', 'darkorange'],
         ['lightsteelblue', 'cornflowerblue', 'royalblue', 'mediumblue']

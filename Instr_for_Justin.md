@@ -74,7 +74,7 @@ Note: You can use the mapping of column names [here](https://github.com/iamgroot
 4. Use `meta_classify.py` to train meta-classifiers using the models you trained above. This file takes as arguments paths to two folders, and takes models from them to train a meta classifier.
 Example:
 
-`python python meta_classify.py --path1 FOLDER1 --path2 FOLDER2 --sample SIZE`
+`python meta_classify.py --path1 FOLDER1 --path2 FOLDER2 --sample SIZE`
 
 Run these experiments for the following ratios:
 

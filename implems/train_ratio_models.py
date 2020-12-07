@@ -2,7 +2,7 @@ from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
 from joblib import dump
 import os
-
+import numpy as np
 import utils
 
 
@@ -17,6 +17,10 @@ if __name__ == "__main__":
                         help='what ratio of the new sampled dataset should be true')
     parser.add_argument('--num', type=int, default=20,
                         help='how many classifiers to train?')
+    parser.add_argument('--split_ratio', type=float, default=0.5,
+                        help='split original data into two (ratio for second)')
+    parser.add_argument('--on_first', type=bool, default=None,
+                        help='train on first split?')
     parser.add_argument('--verbose', type=bool, default=False,
                         help='print out per-classifier stats?')
     args = parser.parse_args()
@@ -43,10 +47,17 @@ if __name__ == "__main__":
     iterator = range(1, args.num + 1)
     if not args.verbose:
         iterator = tqdm(iterator)
+
     for i in iterator:
-        (x_tr, y_tr), (x_te, y_te), _ = ci.load_data(data_filter)
         if args.verbose:
             print("Training classifier %d" % i)
+
+        # Sample to qualify ratio, ultimately coming from fixed split
+        # Ensures non-overlapping data for target and adversary
+        # All the while allowing variations in dataset locally
+        (x_tr, y_tr), (x_te, y_te), cols = ci.load_data(data_filter,
+                                                    first=args.on_first,
+                                                    test_ratio=args.split_ratio)
         clf = MLPClassifier(hidden_layer_sizes=(60, 30, 30), max_iter=200)
         clf.fit(x_tr, y_tr.ravel())
         train_acc = 100 * clf.score(x_tr, y_tr.ravel())

@@ -11,7 +11,8 @@ from facenet_pytorch import InceptionResnetV1
 from torch.utils.data import Dataset
 from sklearn import preprocessing
 from PIL import Image
-
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
 import requests
 import pandas as pd
@@ -363,7 +364,11 @@ class CensusIncome:
             df = oneHotCatVars(df, colname)
         return df
 
-    def load_data(self, train_filter=None):
+    def load_data(self,
+                  train_filter=None,
+                  test_ratio=0.5,
+                  random_state=42,
+                  first=None):
         train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
                                  sep=' *, *', na_values='?', engine='python')
         test_data = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
@@ -373,14 +378,20 @@ class CensusIncome:
         train_data['is_train'] = 1
         test_data['is_train'] = 0
         df = pd.concat([train_data, test_data], axis=0)
-        # print(df.info())
         df = self.process_df(df)
 
         train_df, test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
 
-        # Apply filter to train data: efectively using different distribution to train it
-        if train_filter is not None:
-            train_df = train_filter(train_df)
+        def s_split(this_df):
+            sss = StratifiedShuffleSplit(n_splits=1,
+                                         test_size=test_ratio,
+                                         random_state=random_state)
+            splitter = sss.split(this_df, this_df[["sex:Female", "race:White", "income"]])
+            split_1, split_2 = next(splitter)
+            return this_df.iloc[split_1], this_df.iloc[split_2]
+
+        train_df_first, train_df_second = s_split(train_df)
+        test_df_first, test_df_second = s_split(test_df)
 
         def get_x_y(P):
             # Scale X values
@@ -390,14 +401,46 @@ class CensusIncome:
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
 
-        (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
-            train_df), get_x_y(test_df)
-        # Preprocess data (scale)
-        X = np.concatenate((x_tr, x_te), 0)
-        X = preprocessing.scale(X)
-        x_tr = X[:x_tr.shape[0]]
-        x_te = X[x_tr.shape[0]:]
-        return (x_tr, y_tr), (x_te, y_te), cols
+        def prepare_one_set(TRAIN_DF, TEST_DF):
+            # Apply filter to train data
+            # Efectively using different distribution to train it
+            if train_filter is not None:
+                TRAIN_DF = train_filter(TRAIN_DF)
+
+            (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
+                TRAIN_DF), get_x_y(test_df)
+            # Preprocess data (scale)
+            X = np.concatenate((x_tr, x_te), 0)
+            X = preprocessing.scale(X)
+            x_tr = X[:x_tr.shape[0]]
+            x_te = X[x_tr.shape[0]:]
+
+            return (x_tr, y_tr), (x_te, y_te), cols
+
+        if first is None:
+            return prepare_one_set(train_df, test_df)
+        if first is True:
+            return prepare_one_set(train_df_first, test_df_first)
+        return prepare_one_set(train_df_second, test_df_second)
+
+    def split_on_col(self, x, y, cols,
+                     second_ratio, seed=42, debug=False):
+        # Temporarily combine cols and y for stratification
+        y_ = np.concatenate((y, x[:, cols]), 1)
+        x_1, x_2, y_1, y_2 = train_test_split(x,
+                                              y_,
+                                              test_size=second_ratio,
+                                              random_state=seed)
+        # If debugging enabled, print ratios of col_index
+        # Before and after splits
+        if debug:
+            print("Before:", np.mean(x[:, cols], 0), np.mean(y)) 
+            print("After:", np.mean(x_1[:, cols], 0), np.mean(y_1[:, 0]))
+            print("After:", np.mean(x_2[:, cols], 0), np.mean(y_2[:, 0]))
+        # Get rid of extra column in y
+        y_1, y_2 = y_1[:, 0], y_2[:, 0]
+        # Return split data
+        return (x_1, y_1), (x_2, y_2)
 
 
 # Classifier on top of face features
@@ -488,15 +531,19 @@ def filter(df, condition, ratio, verbose=True):
     current_ratio = len(qualify) / (len(qualify) + len(notqualify))
     # If current ratio less than desired ratio, subsample from non-ratio
     if verbose:
-        print("Changed ratio from %.2f to %.2f" % (current_ratio, ratio))
+        print("Changing ratio from %.2f to %.2f" % (current_ratio, ratio))
     if current_ratio <= ratio:
         np.random.shuffle(notqualify)
-        nqi = notqualify[:int(((1-ratio) * len(qualify))/ratio)]
-        return pd.concat([df.iloc[qualify], df.iloc[nqi]])
+        if ratio < 1:
+            nqi = notqualify[:int(((1-ratio) * len(qualify))/ratio)]
+            return pd.concat([df.iloc[qualify], df.iloc[nqi]])
+        return df.iloc[qualify]
     else:
         np.random.shuffle(qualify)
-        qi = qualify[:int(((1-ratio) * len(notqualify))/ratio)]
-        return pd.concat([df.iloc[qi], df.iloc[notqualify]])
+        if ratio > 0:
+            qi = qualify[:int(((1-ratio) * len(notqualify))/ratio)]
+            return pd.concat([df.iloc[qi], df.iloc[notqualify]])
+        return df.iloc[notqualify]
 
 
 def get_cropped_faces(cropmodel, x):

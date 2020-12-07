@@ -34,10 +34,10 @@ def get_latents(mainmodel, dataloader, method_type):
     all_stats = np.concatenate(all_stats)
 
     # Normalize according to max entry?
-    # max_l, min_l = np.max(all_latent, 1, keepdims=True), np.min(all_latent, 1, keepdims=True)
+    all_latent /= np.max(all_latent, 1, keepdims=True)
     # [0, 1] scaling
+    # max_l, min_l = np.max(all_latent, 1, keepdims=True), np.min(all_latent, 1, keepdims=True)
     # all_latent = (all_latent - min_l) / (max_l - min_l)
-    # all_latent /= np.max(all_latent, 1, keepdims=True)
 
     return all_latent, all_stats
 
@@ -179,5 +179,7 @@ def compute_metrics(dataset_true, dataset_pred,
     metrics["Average odds difference"] = classified_metric_pred.average_odds_difference()
     metrics["Equal opportunity difference"] = classified_metric_pred.equal_opportunity_difference()
     metrics["Theil index"] = classified_metric_pred.theil_index()
+    metrics["False discovery rate difference"] = classified_metric_pred.false_discovery_rate_difference()
+    metrics["False omission rate difference"] = classified_metric_pred.false_omission_rate_difference()
 
     return metrics
