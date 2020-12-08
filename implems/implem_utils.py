@@ -2,12 +2,12 @@ import utils
 import numpy as np
 import torch as ch
 import torch.nn as nn
-
+from sympy import Matrix
 from collections import OrderedDict
 from aif360.metrics import ClassificationMetric
 
 
-def get_latents(mainmodel, dataloader, method_type):
+def get_latents(mainmodel, dataloader, method_type, normalize=False):
     all_stats = []
     all_latent = []
     for (x, y) in dataloader:
@@ -18,7 +18,7 @@ def get_latents(mainmodel, dataloader, method_type):
                                deep_latent=-method_type).detach()
             # latent = latent.view(latent.shape[0], -1)
         # Latent features needed
-        elif method_type == 0 or method_type == 1 or method_type == 4:
+        elif method_type in [0, 1, 4, 5]:
             latent = mainmodel(x.cuda(), only_latent=True).detach()
         # Use logit scores
         elif method_type == 2:
@@ -34,10 +34,11 @@ def get_latents(mainmodel, dataloader, method_type):
     all_stats = np.concatenate(all_stats)
 
     # Normalize according to max entry?
-    all_latent /= np.max(all_latent, 1, keepdims=True)
-    # [0, 1] scaling
-    # max_l, min_l = np.max(all_latent, 1, keepdims=True), np.min(all_latent, 1, keepdims=True)
-    # all_latent = (all_latent - min_l) / (max_l - min_l)
+    if normalize:
+        all_latent /= np.max(all_latent, 1, keepdims=True)
+
+    if method_type == 5:
+        all_latent = np.sort(all_latent, 1)
 
     return all_latent, all_stats
 
@@ -110,7 +111,8 @@ def calibration(latents, weighted_align=True, use_ref=None):
 
 
 def get_features_for_model(dataloader, MODELPATH, weight_init,
-                           method_type, layers=[64, 16]):
+                           method_type, layers=[64, 16],
+                           normalize_lat=False):
     # Load model
     model = utils.FaceModel(512,
                             train_feat=True,
@@ -122,8 +124,6 @@ def get_features_for_model(dataloader, MODELPATH, weight_init,
 
     # Get latent representations
     lat, sta = get_latents(model, dataloader, method_type)
-    # lat = np.sort(lat, 1)
-    # lat = np.array([np.std(lat, 1), np.mean(lat == 0, 1), np.mean(lat, 1), np.mean(lat ** 2, 1)]).T
     return (lat, sta)
 
 
@@ -183,3 +183,26 @@ def compute_metrics(dataset_true, dataset_pred,
     metrics["False omission rate difference"] = classified_metric_pred.false_omission_rate_difference()
 
     return metrics
+
+
+def extract_dl_model_weights(model):
+    # Get sequential-layer weights
+    attr_accessor = model.module
+    weights, biases = [], []
+    for layer in attr_accessor.dnn.modules():
+        if isinstance(layer, nn.Linear):
+            weights.append(layer.weight.detach().cpu().numpy())
+            biases.append(layer.bias.detach().cpu().numpy())
+
+    # Reduce to RREF form
+    for i, w in enumerate(weights):
+        w_rref = Matrix(w).rref()[0]
+        weights[i] = np.array(w_rref).flatten()
+
+    feature_vec = []
+    for w, b in zip(weights, biases):
+        feature_vec.append(w)
+        feature_vec.append(b)
+
+    feature_vec = np.concatenate(feature_vec)
+    return feature_vec

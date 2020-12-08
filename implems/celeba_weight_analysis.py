@@ -2,8 +2,6 @@ import utils
 import implem_utils
 
 import numpy as np
-import torch as ch
-import torch.nn as nn
 import os
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -20,25 +18,12 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-def get_features_for_model(dataloader, MODELPATH, weight_init,
-                           method_type, layers=[64, 16]):
-    # Load model
-    model = utils.FaceModel(512, train_feat=True,
-                            weight_init=weight_init, hidden=layers).cuda()
-    model = nn.DataParallel(model)
-    model.load_state_dict(ch.load(MODELPATH), strict=False)
-    model.eval()
-
-    # Get latent representations
-    lat, sta = implem_utils.get_latents(model, dataloader, method_type)
-    # lat = np.sort(lat, 1)
-    # lat = np.array([np.std(lat, 1), np.mean(lat == 0, 1), np.mean(lat, 1), np.mean(lat ** 2, 1)]).T
-    return (lat, sta)
-
-
 if __name__ == "__main__":
     import argparse
-    methods = ['latent', 'weightpermute', 'query', 'querysigmoid', 'permute']
+    methods = [
+        'latent', 'weightpermute', 'query',
+        'querysigmoid', 'permute', 'sortorder'
+    ]
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--bs', type=int, default=1024, help='batch size')
@@ -48,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--method', type=str, default='latent', help='which method to use (%s)' % "/".join(methods))
     parser.add_argument('--mlp_tr', type=float, default=0.33, help='test ratio for meta-classifier')
     parser.add_argument('--pca', type=int, default=0, help='use PCA-based reduction?')
+    parser.add_argument('--normalize_lat', type=bool, default=False, help='normalize latent-features (element-wise)?')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -74,34 +60,17 @@ if __name__ == "__main__":
         [
             common_prefix + "split_2/male/64_16/augment_none/",
             common_prefix + "split_2/male/64_16/none/",
-            # common_prefix + "split_2/attractive/64_16/augment_none/",
-            # common_prefix + "split_2/attractive/64_16/none/",
         ]
     ]
 
     blind_test_models = [
         [
-            # common_prefix + "split_1/all/augment_vggface/10_0.928498243559719.pth",
-            # common_prefix + "split_1/all/vggface/10_0.9093969555035128.pth",
-
-            common_prefix + "split_2/all/64_16/augment_vggface/20_0.9161203563624138.pth",
-            common_prefix + "split_2/all/64_16/augment_vggface/15_0.920658934274668.pth",
-
-            common_prefix + "split_1/all/vggface/15_0.9126902810304449.pth",
-            common_prefix + "split_1/all/vggface/20_0.9108606557377049.pth",
-
+            common_prefix + "split_2/all/64_16/augment_vggface/",
+            common_prefix + "split_1/all/vggface/"
         ],
         [
-            # common_prefix + "split_1/attractive/augment_vggface/10_0.9240681998413958.pth",
-            # common_prefix + "split_1/attractive/vggface/10_0.8992862807295797.pth",
-
-            common_prefix + "split_2/male/64_16/augment_vggface/20_0.9224071702944943.pth",
-            common_prefix + "split_2/male/64_16/augment_vggface/15_0.9014084507042254.pth",
-            # common_prefix + "split_2/attractive/64_16/none/20_0.8947974217311234.pth",
-            # common_prefix + "split_2/attractive/64_16/none/15_0.9120626151012892.pth",
-
-            common_prefix + "split_1/male/vggface/20_0.9088092076139885.pth",
-            common_prefix + "split_1/male/vggface/15_0.9060424966799469.pth",
+            common_prefix + "split_2/male/64_16/augment_vggface/",
+            common_prefix + "split_1/male/vggface/"
         ]
     ]
 
@@ -121,7 +90,8 @@ if __name__ == "__main__":
 
         for pf in UPFOLDER:
             for j, MODELPATHSUFFIX in tqdm(enumerate(os.listdir(pf))):
-                if not args.all and j > 18: continue
+                if not args.all and j % 3 != 0:
+                    continue
 
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
                 cropped_dataloader = DataLoader(td,
@@ -132,7 +102,8 @@ if __name__ == "__main__":
                 latent, all_stats = implem_utils.get_features_for_model(
                     cropped_dataloader, MODELPATH,
                     method_type=method_type,
-                    weight_init=None)
+                    weight_init=None,
+                    normalize_lat=args.normalize_lat)
                 model_stats.append(all_stats)
                 model_latents.append(latent)
 
@@ -156,7 +127,7 @@ if __name__ == "__main__":
     clfs = []
 
     # If using each point independently
-    if method_type in [0, 1, 4]:
+    if method_type in [0, 1, 4, 5]:
         all_x = np.concatenate(all_x, 0)
         all_y = np.concatenate(all_y, 0)
 
@@ -169,7 +140,7 @@ if __name__ == "__main__":
     # Train 10 classifiers on random samples
     for i in range(args.numruns):
         # haha don't go brrr
-        if method_type in [0, 1, 4]:
+        if method_type in [0, 1, 4, 5]:
             x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=args.mlp_tr)
 
         # haha go brr
@@ -187,41 +158,47 @@ if __name__ == "__main__":
     for pc in blind_test_models:
         ac = []
         for path in pc:
-            cropped_dataloader = DataLoader(td, batch_size=batch_size,
-                                            shuffle=False)
-            latent, _ = implem_utils.get_features_for_model(
-                cropped_dataloader, path,
-                method_type=method_type,
-                weight_init=None)  # "vggface2")
+            for j, MODELPATH in enumerate(os.listdir(path)):
+                # Look at only one model per test folder (for now)
+                if j != 15:
+                    continue
+                fullpath = os.path.join(path, MODELPATH)
+                cropped_dataloader = DataLoader(td, batch_size=batch_size,
+                                                shuffle=False)
+                latent, _ = implem_utils.get_features_for_model(
+                    cropped_dataloader, fullpath,
+                    method_type=method_type,
+                    weight_init=None,
+                    normalize_lat=args.normalize_lat)  # "vggface2")
 
-            if method_type == 1 or method_type == 4:
-                # Calibrate latent
-                _, weights = implem_utils.calibration(np.expand_dims(latent, 0),
-                                                      use_ref=cali,
-                                                      weighted_align=(method_type == 1))
-                latent = np.matmul(latent, weights[0])
+                if method_type == 1 or method_type == 4:
+                    # Calibrate latent
+                    _, weights = implem_utils.calibration(np.expand_dims(latent, 0),
+                                                          use_ref=cali,
+                                                          weighted_align=(method_type == 1))
+                    latent = np.matmul(latent, weights[0])
 
-                # Dimensionality reduction, if requested
-                if pca_dim > 0:
-                    latent = pca.transform(latent)
+                    # Dimensionality reduction, if requested
+                    if pca_dim > 0:
+                        latent = pca.transform(latent)
 
-            if method_type in [0, 1, 4]:
-                preds = [clf.predict_proba(latent[idx])[:, 1] for idx, clf in zip(idxs, clfs)]
-                print("Prediction score means: ",
-                      np.mean(np.mean(preds, 1)),
-                      np.std(np.mean(preds, 1)),
-                      np.mean(preds, 1))
+                if method_type in [0, 1, 4, 5]:
+                    preds = [clf.predict_proba(latent[idx])[:, 1] for idx, clf in zip(idxs, clfs)]
+                    print("Prediction score means: ",
+                          np.mean(np.mean(preds, 1)),
+                          np.std(np.mean(preds, 1)),
+                          np.mean(preds, 1))
 
-            elif method_type == 2:
-                preds = [clf.predict_proba(np.expand_dims(latent[idx], 0))[0, 1] for idx, clf in zip(idxs, clfs)]
-                print("Prediction score means: ",
-                      np.mean(preds),
-                      np.std(preds),)
+                elif method_type == 2:
+                    preds = [clf.predict_proba(np.expand_dims(latent[idx], 0))[0, 1] for idx, clf in zip(idxs, clfs)]
+                    print("Prediction score means: ",
+                          np.mean(preds),
+                          np.std(preds),)
 
-            preds = np.mean(preds, 0)
-            ac.append(preds)
-        all_scores.append(ac)
-        print()
+                preds = np.mean(preds, 0)
+                ac.append(preds)
+            all_scores.append(ac)
+            print()
 
     labels = ['Models trained on $D_0$', 'Models trained on $D_1$']
     labels = labels[::-1]
@@ -236,17 +213,17 @@ if __name__ == "__main__":
             hist, bin_edges = np.histogram(plot_x,
                                            bins=n_bins)
             bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
-            # plt.plot(bin_centres, hist,
-            #          '-o',
-            #          color=colors[i][j],
-            #          label=labels[i],
-            #          markersize=10)
-
-            plt.hist(plot_x,
-                     n_bins,
+            plt.plot(bin_centres, hist,
+                     '-o',
                      color=colors[i][j],
                      label=labels[i],
-                     alpha=0.9)
+                     markersize=9)
+
+            # plt.hist(plot_x,
+            #          n_bins,
+            #          color=colors[i][j],
+            #          label=labels[i],
+            #          alpha=0.9)
 
     patches = []
     for i in range(len(all_scores[0])):

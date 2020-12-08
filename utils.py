@@ -467,12 +467,6 @@ class FaceModel(nn.Module):
         # Last hidden -> binary classification layer
         layers.append(nn.Linear(hidden[-1], 1))
         self.dnn = nn.Sequential(*layers)
-        # self.dnn = nn.Sequential(
-        # 	nn.Linear(n_feat, 64),
-        # 	nn.ReLU(),
-        # 	nn.Linear(64, 16),
-        # 	nn.ReLU(),
-        # 	nn.Linear(16, 1))
 
     def forward(self, x, only_latent=False, deep_latent=None):
         if self.train_feat:

@@ -19,10 +19,14 @@ if __name__ == "__main__":
                         help='how many classifiers to train?')
     parser.add_argument('--split_ratio', type=float, default=0.5,
                         help='split original data into two (ratio for second)')
-    parser.add_argument('--on_first', type=bool, default=None,
+    parser.add_argument('--on_first', type=bool, default=False,
                         help='train on first split?')
+    parser.add_argument('--no_split', type=bool, default=False,
+                        help='don not split data at all?')
     parser.add_argument('--verbose', type=bool, default=False,
                         help='print out per-classifier stats?')
+    parser.add_argument('--max_iter', type=int, default=200,
+                        help='number of iterations to train MLP for')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -48,6 +52,10 @@ if __name__ == "__main__":
     if not args.verbose:
         iterator = tqdm(iterator)
 
+    on_first = args.on_first
+    if args.no_split:
+        on_first = None
+
     for i in iterator:
         if args.verbose:
             print("Training classifier %d" % i)
@@ -56,9 +64,10 @@ if __name__ == "__main__":
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
         (x_tr, y_tr), (x_te, y_te), cols = ci.load_data(data_filter,
-                                                    first=args.on_first,
-                                                    test_ratio=args.split_ratio)
-        clf = MLPClassifier(hidden_layer_sizes=(60, 30, 30), max_iter=200)
+                                                        first=on_first,
+                                                        test_ratio=args.split_ratio)
+        clf = MLPClassifier(hidden_layer_sizes=(60, 30, 30),
+                            max_iter=args.max_iter)
         clf.fit(x_tr, y_tr.ravel())
         train_acc = 100 * clf.score(x_tr, y_tr.ravel())
         test_acc = 100 * clf.score(x_te, y_te.ravel())
