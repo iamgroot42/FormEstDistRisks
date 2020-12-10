@@ -180,7 +180,13 @@ def compute_metrics(dataset_true, dataset_pred,
     metrics["Equal opportunity difference"] = classified_metric_pred.equal_opportunity_difference()
     metrics["Theil index"] = classified_metric_pred.theil_index()
     metrics["False discovery rate difference"] = classified_metric_pred.false_discovery_rate_difference()
+    metrics["False discovery rate ratio"] = classified_metric_pred.false_discovery_rate_ratio()
     metrics["False omission rate difference"] = classified_metric_pred.false_omission_rate_difference()
+    metrics["False omission rate ratio"] = classified_metric_pred.false_omission_rate_ratio()
+    metrics["False negative rate difference"] = classified_metric_pred.false_negative_rate_difference()
+    metrics["False negative rate ratio"] = classified_metric_pred.false_negative_rate_ratio()
+    metrics["False positive rate difference"] = classified_metric_pred.false_positive_rate_difference()
+    metrics["False positive rate ratio"] = classified_metric_pred.false_positive_rate_ratio()
 
     return metrics
 
