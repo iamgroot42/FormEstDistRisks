@@ -143,6 +143,9 @@ if __name__ == "__main__":
         if method_type in [0, 1, 4, 5]:
             x_tr, x_te, y_tr, y_te = train_test_split(all_x, all_y, test_size=args.mlp_tr)
 
+            # Augment training data with permutations/shuffles
+            # aug_factor = 5
+
         # haha go brr
         if method_type == 2:
             num_each = all_x.shape[0] // 2

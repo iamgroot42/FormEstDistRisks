@@ -12,7 +12,6 @@ from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split
 
-# from facenet_pytorch import MTCNN
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import matplotlib as mpl

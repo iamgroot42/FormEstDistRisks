@@ -2,12 +2,14 @@ import utils
 import numpy as np
 import torch as ch
 import torch.nn as nn
+import kornia as ki
 from sympy import Matrix
 from collections import OrderedDict
 from aif360.metrics import ClassificationMetric
+from sklearn.preprocessing import normalize
 
 
-def get_latents(mainmodel, dataloader, method_type, normalize=False):
+def get_latents(mainmodel, dataloader, method_type, to_normalize=False):
     all_stats = []
     all_latent = []
     for (x, y) in dataloader:
@@ -34,8 +36,9 @@ def get_latents(mainmodel, dataloader, method_type, normalize=False):
     all_stats = np.concatenate(all_stats)
 
     # Normalize according to max entry?
-    if normalize:
-        all_latent /= np.max(all_latent, 1, keepdims=True)
+    if to_normalize:
+        # all_latent /= np.max(all_latent, 1, keepdims=True)
+        all_latent = normalize(all_latent)
 
     if method_type == 5:
         all_latent = np.sort(all_latent, 1)
@@ -200,6 +203,11 @@ def extract_dl_model_weights(model):
             weights.append(layer.weight.detach().cpu().numpy())
             biases.append(layer.bias.detach().cpu().numpy())
 
+    # for w in weights:
+    #     print(w.shape)
+    # print("Yeet!")
+    # exit(0)
+
     # Reduce to RREF form
     for i, w in enumerate(weights):
         w_rref = Matrix(w).rref()[0]
@@ -212,3 +220,13 @@ def extract_dl_model_weights(model):
 
     feature_vec = np.concatenate(feature_vec)
     return feature_vec
+
+
+def augmentation_robustness(x, deg=30):
+    # Shift to [0, 1] space
+    x_ = (x * 0.5) + 0.5
+    rot = ki.augmentation.RandomRotation(degrees=deg,
+                                         p=1)
+    augmented = rot(x_)
+    # Shift back to [-1, 1] space
+    return (augmented - 0.5) / 0.5

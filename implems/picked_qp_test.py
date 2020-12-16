@@ -66,7 +66,7 @@ if __name__ == "__main__":
     plt.savefig("/u/as9rw/work/fnb/visualize/qp_scores_celeba.png")
 
 
-    # Take not of differences across different kind of models
+    # Take note of differences across different kind of models
     print(np.mean(np.abs(all_scores[0] - all_scores[1])), "all-all")
     print(np.mean(np.abs(all_scores[2] - all_scores[3])), "attractive-attractive")
     # Print agreement

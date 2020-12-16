@@ -1,14 +1,12 @@
 import utils
-import implem_utils
 import seaborn as sns
 import pandas as pd
 
 import numpy as np
-import torch as ch
-import torch.nn as nn
 from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network._base import ACTIVATIONS
 from joblib import load
 import os
 
@@ -17,10 +15,17 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-def extract_model_features(paths):
+def layer_output(data, MLP, layer=0):
+    L = data.copy()
+    for i in range(layer):
+        L = ACTIVATIONS['relu'](np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
+    return L
+
+
+def extract_model_features(paths, example_mode):
     w, b = [], []
     labels = []
-    for i, path_seg in enumerate(paths):
+    for i, path_seg in tqdm(enumerate(paths)):
         models_in_folder = os.listdir(path_seg)
         np.random.shuffle(models_in_folder)
         if not args.multimode:
@@ -28,12 +33,20 @@ def extract_model_features(paths):
         for path in models_in_folder:
             clf = load(os.path.join(path_seg, path))
             # Look at initial layer weights, biases
-            processed = clf.coefs_[0]
-            processed = np.concatenate(
-                (np.mean(processed, 1), np.mean(processed ** 2, 1)))
-            w.append(processed)
-            b.append(clf.intercepts_[0])
-            labels.append(i)
+
+            if example_mode is not None:
+                preds = layer_output(example_mode, clf, layer=3)
+                for pred in preds:
+                    w.append(pred)
+                    labels.append(i)
+            else:
+                processed = clf.coefs_[0]
+                processed = np.concatenate(
+                    (np.mean(processed, 1), np.mean(processed ** 2, 1)))
+                w.append(processed)
+                b.append(clf.intercepts_[0])
+                labels.append(i)
+
     w = np.array(w)
     b = np.array(w)
     labels = np.array(labels)
@@ -49,6 +62,8 @@ if __name__ == "__main__":
                         help='path to second folder of models')
     parser.add_argument('--sample', type=int, default=0,
                         help='how many models to use for meta-classifier')
+    parser.add_argument('--example_mode', type=bool, default=False,
+                        help='use examples (True) or model weights (True)')
     parser.add_argument('--multimode', type=bool, default=False,
                         help='experiment for multiple samples?')
     parser.add_argument('--ntimes', type=int, default=5,
@@ -67,8 +82,17 @@ if __name__ == "__main__":
 
     ci = utils.CensusIncome("./census_data/")
 
-    (X_train, _), y_train = extract_model_features([args.path1, args.path2])
-    (X_test, _), y_test = extract_model_features([args.test_path1, args.test_path2])
+    example_mode = None
+    if args.example_mode:
+        _, (example_mode, _), _ = ci.load_data(None,
+                                               first=False,
+                                               test_ratio=0.5)
+
+    (X_train, _), y_train = extract_model_features([args.path1, args.path2],
+                                                   example_mode)
+
+    (X_test, _), y_test = extract_model_features([args.test_path1, args.test_path2],
+                                                 example_mode)
 
     if args.multimode:
         columns = [
@@ -102,7 +126,11 @@ if __name__ == "__main__":
         sns_plot.figure.savefig("../visualize/census_meta_scores_unseen.png")
 
     else:
-        clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
+        if args.multimode:
+            clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
+        else:
+            clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=500)
+        print("Training meta-classifier")
         clf.fit(X_train, y_train)
         print("Meta-classifier performance on train data: %.2f" %
               clf.score(X_train, y_train))
@@ -119,8 +147,8 @@ if __name__ == "__main__":
 
         score_distrs = clf.predict_proba(X_test)[:, 1]
 
-        plt.hist(score_distrs[zeros], 20, label=labels[0], alpha=0.9)
-        plt.hist(score_distrs[ones], 20, label=labels[1], alpha=0.9)
+        plt.hist(score_distrs[zeros], 20, label=labels[0], alpha=0.7)
+        plt.hist(score_distrs[ones], 20, label=labels[1], alpha=0.7)
 
         plt.title("Metal-classifier score prediction distributions for unseen models")
         plt.xlabel("Meta-classifier $Pr$[trained on $D_1$]")

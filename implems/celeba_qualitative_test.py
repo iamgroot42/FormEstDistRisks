@@ -2,16 +2,15 @@ import numpy as np
 import utils
 import torch as ch
 import torch.nn as nn
-from torch.utils.data import TensorDataset, DataLoader
-from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms
 from tqdm import tqdm
 import os
 
-from facenet_pytorch import InceptionResnetV1, MTCNN
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+# import matplotlib.pyplot as plt
+# import matplotlib.patches as mpatches
+# import matplotlib as mpl
+# mpl.rcParams['figure.dpi'] = 200
 
 
 def get_stats(mainmodel, dataloader, target_prop, return_preds=False):
@@ -29,7 +28,11 @@ def get_stats(mainmodel, dataloader, target_prop, return_preds=False):
             all_preds.append(preds.cpu().numpy())
             all_stats.append(y.cpu().numpy())
 
-    return np.concatenate(stats), np.concatenate(all_preds), np.concatenate(all_stats)
+    stats = np.concatenate(stats)
+    all_preds = np.concatenate(all_preds)
+    all_stats = np.concatenate(all_stats)
+
+    return stats, all_preds, all_stats
 
 
 if __name__ == "__main__":
@@ -42,27 +45,14 @@ if __name__ == "__main__":
 
     folder_paths = [
         "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none",
         "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none"
     ]
 
-    cropmodel = MTCNN(device='cuda')
-
-    # Get all cropped images
-    x_cropped, y_cropped = [], []
-    _, dataloader = ds.make_loaders(
-        batch_size=512, workers=8, shuffle_train=False, shuffle_val=False, only_val=True)
-    for x, y in tqdm(dataloader, total=len(dataloader)):
-        x_, indices = utils.get_cropped_faces(cropmodel, x)
-        x_cropped.append(x_.cpu())
-        y_cropped.append(y[indices])
-
-    # Make dataloader out of this filtered data
-    x_cropped = ch.cat(x_cropped, 0)
-    y_cropped = ch.from_numpy(np.concatenate(y_cropped, 0))
-    td = TensorDataset(x_cropped, y_cropped)
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.5), (0.5))])
+    td = utils.CelebACustomBinary(
+        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
+        transform=transform)
 
     target_prop = attrs.index("Smiling")
     all_cfms = []
@@ -78,8 +68,10 @@ if __name__ == "__main__":
             MODELPATH = os.path.join(UPFOLDER, FOLDER, wanted_model)
 
             # Load model
-            model = utils.FaceModel(
-                512, train_feat=True, weight_init="none").cuda()
+            model = utils.FaceModel(512,
+                                    train_feat=True,
+                                    weight_init=None,
+                                    hidden=[64, 16]).cuda()
             model = nn.DataParallel(model)
             model.load_state_dict(ch.load(MODELPATH), strict=False)
             model.eval()
@@ -111,7 +103,6 @@ if __name__ == "__main__":
 
         # Pick relevant samples
         label_attr = attrs.index("Male")
-        # label_attr     = attrs.index("Attractive")
         label_prop = np.nonzero(all_stats[yeslabel, label_attr] == 1)[0]
         label_noprop = np.nonzero(all_stats[yeslabel, label_attr] == 0)[0]
         nolabel_prop = np.nonzero(all_stats[nolabel, label_attr] == 1)[0]
@@ -142,8 +133,9 @@ if __name__ == "__main__":
     noprop_losses = (all_cfms[:, :, 0, 1] * len(nolabel_prop) + all_cfms[:, :, 1, 1]
                      * len(nolabel_noprop)) / (len(nolabel_prop) + len(nolabel_noprop))
 
-    print(prop_losses)
-    print(noprop_losses)
+    print("Loss on data (P=1):", prop_losses)
+    print("Loss on data (P=0):", noprop_losses)
+    exit(0)
 
     # Compute overlap of success, failure cases across models
     print("Success/Failure case analysis")
@@ -163,50 +155,3 @@ if __name__ == "__main__":
                     # print("(%d,%d) (%d,%d) : Success Overlap: %f" % (i, k, j, l, success_overlap))
                     print("(%d,%d) (%d,%d) : Failure Overlap: %f" % (i, k, j, l, failure_overlap))
         print()
-
-    def get_coeffs(X, Y):
-        slope = (Y[0] - Y[1]) / (X[0] - X[1])
-        intercept = (Y[1] - X[1]) / (X[0] - X[1])
-        return (intercept, slope)
-
-    colors = [['C0', 'C1'], ['C1', 'C2']]
-    patches = []
-    patches.append(mpatches.Patch(color='C0', label='All v/s All'))
-    patches.append(mpatches.Patch(color='C1', label='All v/s Male'))
-    patches.append(mpatches.Patch(color='C2', label='Male v/s Male'))
-
-    # Scatter ,pde
-    # for i in range(all_cfms.shape[0]):
-    # 	scats_x, scats_y = [], []
-    # 	for j in range(all_cfms.shape[1]):
-    # 		scats_x.append(prop_losses[i][j])
-    # 		scats_y.append(noprop_losses[i][j])
-    # 	plt.scatter(scats_x, scats_y, c=colors[i][0])
-
-    # Line plot mode
-    # Per model type
-    for i in range(all_cfms.shape[0]):
-        # Per model
-        for j in range(all_cfms.shape[1]):
-            # Per model type
-            for k in range(i, all_cfms.shape[0]):
-                # Per model
-                for l in range(all_cfms.shape[1]):
-
-                    # Skip same model type, same model
-                    if i == k and j == l:
-                        continue
-
-                    # print(i, j, k, l)
-
-                    m, c = get_coeffs(
-                        (prop_losses[i][j], noprop_losses[i][j]), (prop_losses[k][l], noprop_losses[k][l]))
-
-                    plot_x = np.linspace(0, 1, 50)
-                    plot_y = m * plot_x + c
-
-                    plt.plot(plot_x, plot_y, c=colors[i][k])
-
-    plt.ylim(top=1, bottom=0)
-    plt.legend(handles=patches)
-    plt.savefig('../visualize/celeba_lines.png')

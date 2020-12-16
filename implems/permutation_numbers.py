@@ -84,8 +84,8 @@ if __name__ == "__main__":
         # Census Income dataset
         ci = utils.CensusIncome("./census_data/")
 
-        sex_filter    = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
-        race_filter   = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
+        sex_filter = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
+        race_filter = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
         income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
 
         num_cfs = 100
@@ -105,37 +105,51 @@ if __name__ == "__main__":
         # CelebA dataset
         hidden_layer_sizes = [int(x) for x in args.hidden.split(",")]
         model = utils.FaceModel(512,
-                weight_init=args.weightinit,
-                train_feat=True,
-                hidden=hidden_layer_sizes).cuda()
+                                weight_init=args.weightinit,
+                                train_feat=True,
+                                hidden=hidden_layer_sizes).cuda()
         model = nn.DataParallel(model)
 
         path = args.which
 
-        test_transforms  = [
+        test_transforms = [
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ]
         train_transforms = test_transforms[:]
         if args.augment:
             augment_transforms = [
-                transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), shear=0.2),
+                transforms.RandomAffine(degrees=20,
+                                        translate=(0.2, 0.2),
+                                        shear=0.2),
                 transforms.RandomHorizontalFlip()
                 ]
             train_transforms = augment_transforms + train_transforms
 
         train_transform = transforms.Compose(train_transforms)
-        test_transform  = transforms.Compose(test_transforms)
+        test_transform = transforms.Compose(test_transforms)
 
-        train_set = torchvision.datasets.ImageFolder(path + "/train", transform=train_transform)
-        test_set  = torchvision.datasets.ImageFolder(path+ "/test", transform=test_transform)
-        trainloader  = ch.utils.data.DataLoader(train_set, batch_size=args.bs, shuffle=True, pin_memory=True, num_workers=8)
-        testloader   = ch.utils.data.DataLoader(test_set, batch_size=args.bs, shuffle=True, num_workers=8)
+        train_set = torchvision.datasets.ImageFolder(path + "/train",
+                                                     transform=train_transform)
+        test_set = torchvision.datasets.ImageFolder(path + "/test",
+                                                    transform=test_transform)
+        trainloader = ch.utils.data.DataLoader(train_set,
+                                               batch_size=args.bs,
+                                               shuffle=True,
+                                               pin_memory=True,
+                                               num_workers=8)
+        testloader = ch.utils.data.DataLoader(test_set,
+                                              batch_size=args.bs,
+                                              shuffle=True,
+                                              num_workers=8)
 
         loss_fn = nn.BCEWithLogitsLoss(reduction='sum')
         acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
 
-        train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, args.savepath, epochs=args.epochs)
+        train_as_they_said(model, trainloader,
+                           testloader, loss_fn,
+                           acc_fn, args.savepath,
+                           epochs=args.epochs)
 
     elif args.dataset == 'mnist':
         # MNIST
