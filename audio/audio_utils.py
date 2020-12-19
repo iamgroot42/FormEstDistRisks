@@ -1,5 +1,6 @@
 from HTK import HTKFile
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
+
 import os
 import numpy as np
 
@@ -11,7 +12,6 @@ class VoxForge:
             "AGE RANGE:",
             "GENDER:",
             "SEX:",
-            # "LANGUAGE:",
             "PRONUNCIATION DIALECT:",
             "PRONUNICATION DIALECT:"
         ]
@@ -32,12 +32,12 @@ class VoxForge:
                 if len(wi_list) > 0:
                     info = wi_list[0].split(":", 1)[1].strip()
                     attrs.append(info.rstrip(';'))
-                elif i < 2:
-                    # If crucial attributes are not available for file
-                    # Do not use these recordings
-                    if log_errors:
-                        print("%s not found in file %s" % (attr, path))
-                    return None
+
+            if log_errors and len(attrs) != 3:
+                # If crucial attributes are not available for file
+                # Do not use these recordings
+                raise ValueError("Not all attributes were found!")
+                return None
 
         except Exception as e:
             print(e)
@@ -71,6 +71,42 @@ class VoxForge:
         return prompt_dict
 
     def get_speaker_data(self, path, log_errors=False):
+        if not os.path.exists(os.path.join(path, "etc")):
+            return None
+        fileList = os.listdir(os.path.join(path, "etc"))
+
+        def check_exists(L):
+            for l in L:
+                if l in fileList:
+                    return l
+            return None
+
+        # Make sure README file exists
+        readmeName = check_exists(["README", "readme"])
+        if readmeName is None:
+            return None
+
+        # Make sure PROMPTS file exists
+        promptName = check_exists(["PROMPTS", "prompts"])
+        if promptName is None:
+            return None
+
+        # Get speaker information
+        rpath = os.path.join(path, os.path.join("etc", readmeName))
+        aux = self.extract_readme_info(rpath, log_errors)
+        if aux is None:
+            print(path)
+            print("Yikes Aux")
+            return None
+
+        # Get prompts
+        ppath = os.path.join(path, os.path.join("etc", promptName))
+        Y = self.get_prompts(ppath)
+        if Y is None:
+            print(path)
+            print("Yikes Y")
+            return None
+
         # Get MFCC features for recordings
         X = {}
         mfc_dir = os.path.join(path, "mfc")
@@ -78,58 +114,62 @@ class VoxForge:
                            os.listdir(mfc_dir))
         for mfc_file in mfc_files:
             mfcc = self.parse_mfcc_file(os.path.join(mfc_dir, mfc_file))
-            X[mfc_file] = mfcc
+            X[mfc_file.rsplit(".", 1)[0]] = mfcc
 
-        # Get speaker information
-        rpath = os.path.join(path, os.path.join("etc", "README"))
-        aux = self.extract_readme_info(rpath, log_errors)
+        # Align audio files and prompts
+        X_act, Y_act = [], []
+        for y, yat in Y.items():
+            x_eff = y.split("/")[-1]
+            xat = X[x_eff]
+            if xat is not None:
+                X_act.append(xat)
+                Y_act.append(yat)
 
-        # If README is not a file, try readme
-        if aux is None:
-            rpath = os.path.join(path, os.path.join("etc", "readme"))
-            aux = self.extract_readme_info(rpath, log_errors)
-            # If even readme is not a file, flag it
-            if aux is None:
-                return None
+        X_act = np.array(X_act)
+        Y_act = np.array(Y_act)
 
-        # Get prompts
-        ppath = os.path.join(path, os.path.join("etc", "PROMPTS"))
-        Y = self.get_prompts(ppath)
+        return X_act, Y_act, aux
 
-        # If PROMPTS is not a file, try prompts
-        if Y is None:
-            ppath = os.path.join(path, os.path.join("etc", "prompts"))
-            Y = self.get_prompts(ppath)
-            # If even prompts is not a file, flag it
-            if Y is None:
-                return None
-
-        return X, Y, aux
-
-    def load_data(self,
-                  n_threads=8,
-                  log_errors=False):
-        data = []
-        from tqdm import tqdm
-        with ThreadPoolExecutor(n_threads) as executor:
-            futures = []
-
-            for identity in os.listdir(self.root):
-                identity_dir = os.path.join(self.root, identity)
-                futures.append(executor.submit(
-                    self.get_speaker_data,
-                    identity_dir,
-                    log_errors,))
-
-            for x in tqdm(as_completed(futures)):
-                datum = x.result()
-                if datum is not None:
-                    data.append(datum)
+    def load_data_raw(self,
+                      log_errors=False):
+        data = {}
+        speakers = os.listdir(self.root)
+        for sid in tqdm(speakers):
+            identity_dir = os.path.join(self.root, sid)
+            datum = self.get_speaker_data(identity_dir,
+                                          log_errors)
+            if datum is not None:
+                data[sid] = datum
 
         return data
 
+    def load_data_np(self):
+        data = []
+        speakers = os.listdir(self.root)
+        for sid in tqdm(speakers):
+            identity_file = os.path.join(self.root, sid)
+            datum = np.load(identity_file, allow_pickle=True)
+            data.append(datum)
+
+        return data
+
+    def dump_numpy(self, dest_dir):
+        data = self.load_data_raw()
+
+        for sid, datum in data.items():
+            np_datum = np.array(datum)
+            np.save(os.path.join(dest_dir, sid),
+                    np_datum)
+
+    def load_data(self, numpy=True, log_errors=False):
+        if numpy:
+            return self.load_data_np()
+        return self.load_data_raw()
+
 
 if __name__ == "__main__":
-    ds = VoxForge("data")
-    data = ds.load_data(n_threads=32)
+    # ds = VoxForge("./data")
+    # ds.dump_numpy("./data_np")
+    ds_ = VoxForge("./data_np")
+    data = ds_.load_data_np()
     print(len(data))
