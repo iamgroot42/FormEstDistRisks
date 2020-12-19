@@ -2,11 +2,12 @@ import utils
 import numpy as np
 import torch as ch
 import torch.nn as nn
-import kornia as ki
 from sympy import Matrix
 from collections import OrderedDict
 from aif360.metrics import ClassificationMetric
 from sklearn.preprocessing import normalize
+import kornia.augmentation as K
+from torchvision.transforms import GaussianBlur, RandomGrayscale
 
 
 def get_latents(mainmodel, dataloader, method_type, to_normalize=False):
@@ -222,11 +223,78 @@ def extract_dl_model_weights(model):
     return feature_vec
 
 
-def augmentation_robustness(x, deg=30):
+def augmentation_robustness(x,
+                            deg=0,
+                            jitter_tup=(0, 0, 0, 0),
+                            translate=(0, 0),
+                            erase_scale=(0, 0),
+                            grayscale=False):
     # Shift to [0, 1] space
     x_ = (x * 0.5) + 0.5
-    rot = ki.augmentation.RandomRotation(degrees=deg,
-                                         p=1)
-    augmented = rot(x_)
+    transforms = []
+    if erase_scale[1] > 0:
+        transforms.append(K.RandomErasing(scale=erase_scale,
+                                          p=1))
+
+    if translate[1] > 0 or deg > 0:
+        transforms.append(K.RandomAffine(degrees=deg,
+                                         translate=translate,
+                                         p=1))
+
+    # transforms.append(K.ColorJitter(*jitter_tup))
+    if jitter_tup[-1] > 0:
+        transforms.append(GaussianBlur(kernel_size=19,
+                                       sigma=jitter_tup[-1]))
+
+    # Grayscale-based check
+    if grayscale:
+        transforms.ppend(RandomGrayscale(p=1))
+    transform = nn.Sequential(*transforms)
+
+    augmented = transform(x_)
     # Shift back to [-1, 1] space
     return (augmented - 0.5) / 0.5
+
+
+def collect_augmented_data(loader,
+                           deg=0,
+                           jitter=(0, 0, 0, 0),
+                           translate=(0, 0)):
+    X, X_aug, Y = [], [], []
+    for x, y in loader:
+        X_aug.append(augmentation_robustness(x,
+                                             deg=deg,
+                                             jitter_tup=jitter,
+                                             translate=translate))
+        X.append(x)
+        Y.append(y)
+    return (X, X_aug, Y)
+
+
+def get_robustness_shifts(model_fn, augdata, target, prop_id):
+    counts = [0, 0]
+    noprop, prop = [0, 0], [0, 0]
+    for x, x_adv, y in zip(*augdata):
+        y_picked = y[:, target].cuda()
+        y_t = y[:, prop_id].numpy()
+
+        prop_idex = np.nonzero(y_t == 1)[0]
+        noprop_idex = np.nonzero(y_t == 0)[0]
+
+        before_preds = ((model_fn(x.cuda()) >= 0) == y_picked).cpu()
+        after_preds = ((model_fn(x_adv) >= 0) == y_picked).cpu()
+
+        noprop[0] += ch.sum(1.0 * before_preds[noprop_idex]).item()
+        noprop[1] += ch.sum(1.0 * after_preds[noprop_idex]).item()
+
+        prop[0] += ch.sum(1.0 * before_preds[prop_idex]).item()
+        prop[1] += ch.sum(1.0 * after_preds[prop_idex]).item()
+
+        counts[0] += prop_idex.shape[0]
+        counts[1] += noprop_idex.shape[0]
+
+    for i in range(2):
+        prop[i] /= counts[0]
+        noprop[i] /= counts[1]
+
+    return noprop, prop

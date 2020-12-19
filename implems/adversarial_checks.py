@@ -14,56 +14,19 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-def collect_augmented_data(loader, deg):
-    X, X_aug, Y = [], [], []
-    for x, y in loader:
-        X_aug.append(implem_utils.augmentation_robustness(x, deg))
-        X.append(x)
-        Y.append(y)
-    return (X, X_aug, Y)
-
-
-def get_robustness_shifts(model_fn, augdata, target, prop_id):
-    counts = [0, 0]
-    noprop, prop = [0, 0], [0, 0]
-    for x, x_adv, y in zip(*augdata):
-        y_picked = y[:, target].cuda()
-        y_t = y[:, prop_id].numpy()
-        # x_adv = implem_utils.augmentation_robustness(x).cuda()
-
-        prop_idex = np.nonzero(y_t == 1)[0]
-        noprop_idex = np.nonzero(y_t == 0)[0]
-
-        before_preds = ((model_fn(x.cuda()) >= 0) == y_picked).cpu()
-        after_preds = ((model_fn(x_adv) >= 0) == y_picked).cpu()
-
-        noprop[0] += ch.sum(1.0 * before_preds[noprop_idex]).item()
-        noprop[1] += ch.sum(1.0 * after_preds[noprop_idex]).item()
-
-        prop[0] += ch.sum(1.0 * before_preds[prop_idex]).item()
-        prop[1] += ch.sum(1.0 * after_preds[prop_idex]).item()
-
-        counts[0] += prop_idex.shape[0]
-        counts[1] += noprop_idex.shape[0]
-
-    for i in range(2):
-        prop[i] /= counts[0]
-        noprop[i] /= counts[1]
-
-    return noprop, prop
-
-
 if __name__ == "__main__":
-    eps = 10 # 30.0
+    eps = 10
     nb_iter = 200
     eps_iter = 2.5 * eps / nb_iter
     norm = 2
+    batch_size = 900
 
     paths = [
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/20_0.9235165574046058.pth",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/20_0.9006555723651034.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/10_0.9233484619263742.pth",
+        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth",
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_none/20_0.9065300896286812.pth",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth"
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/15_0.9120626151012892.pth"
     ]
 
     models = []
@@ -84,8 +47,8 @@ if __name__ == "__main__":
         "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
         transform=transform)
     dataloader = DataLoader(td,
-                            batch_size=512,
-                            shuffle=True)
+                            batch_size=batch_size,
+                            shuffle=False)
 
     attrs = constants.attr_names
     target_prop = attrs.index("Smiling")
@@ -97,18 +60,30 @@ if __name__ == "__main__":
         image = Image.fromarray((255 * np.transpose(x_.numpy(), (1, 2, 0))).astype('uint8'))
         image.save(path)
 
-    degrees = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]
+    degrees = [20, 30, 40, 50, 60, 70, 80]
+    jitter_vals = [0.5, 1, 2, 3, 4, 5, 6]
+    # in [-pi, pi]
     noprop_scores, prop_scores = [], []
-    for deg in tqdm(degrees):
+    # for deg in tqdm(degrees):
+    for jv in tqdm(jitter_vals):
         # Collecte augmented data
-        augdata = collect_augmented_data(dataloader, deg)
+        # augdata = implem_utils.collect_augmented_data(dataloader,
+                                                    #   translate=(tv, tv))
+        # augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
+        augdata = implem_utils.collect_augmented_data(dataloader,
+                                                      jitter=(0, 0, 0, jv))
+                                                    #   jitter=(jv, jv, jv, jv))
+        # saveimg(augdata[1][0][0], "../visualize/gauss_val_%f.png" % jv)
         npz, pz = [], []
         for j, model in enumerate(models):
-            model_fn = lambda z: model(z)[:, 0]
-            noprop, prop = get_robustness_shifts(model_fn,
-                                                 augdata,
-                                                 target_prop,
-                                                 attrs.index(inspect_these[1]))
+
+            def model_fn(z):
+                return model(z)[:, 0]
+
+            noprop, prop = implem_utils.get_robustness_shifts(model_fn,
+                                                              augdata,
+                                                              target_prop,
+                                                              attrs.index(inspect_these[0]))
 
             npz.append(noprop)
             pz.append(prop)
@@ -121,24 +96,28 @@ if __name__ == "__main__":
 
     diffs = []
     for x, y in zip(prop_scores, noprop_scores):
-        diff = (y[0][0] - y[0][1]) - (x[0][0] - x[0][1])
+        diff = ((y[0][0] - y[0][1]) / y[0][0]) - ((x[0][0] - x[0][1]) / x[0][0])
+        # diff = (y[0][0] - y[0][1]) - (x[0][0] - x[0][1])
         diffs.append(diff)
-    plt.plot(degrees,
+    plt.plot(jitter_vals,
              diffs,
              marker='o',
              label='all model')
 
     diffs = []
     for x, y in zip(prop_scores, noprop_scores):
-        diff = (y[1][0] - y[1][1]) - (x[1][0] - x[1][1])
+        diff = ((y[1][0] - y[1][1]) / y[1][0]) - ((x[1][0] - x[1][1]) / x[1][0])
+        # diff = (y[1][0] - y[1][1]) - (x[1][0] - x[1][1])
         diffs.append(diff)
-    plt.plot(degrees,
+    plt.plot(jitter_vals,
              diffs,
              marker='x',
              label='male model')
 
     plt.legend()
-    plt.savefig("../visualize/rotation_trends.png")
+    # plt.savefig("../visualize/rotation_trends.png")
+    plt.savefig("../visualize/jitter_trends.png")
+    # plt.savefig("../visualize/translate_trends.png")
     exit(0)
 
     x_advs = []
