@@ -1,11 +1,98 @@
 from HTK import HTKFile
 from tqdm import tqdm
-
 import os
 import numpy as np
 
 
-class VoxForge:
+class VoxForgeData:
+    def __init__(self):
+        self.age = {
+            0: [
+                'ADULT',
+                'ADULT (BORN IN 1983)',
+                'ADULTO',
+                '[ADULT]'
+                ],
+            1: [
+                'YOUTH',
+                '[YOUTH]'
+            ],
+            2: [
+                'SENIOR'
+            ]
+        }
+        self.sex = {
+            0: [
+                'FEMALE',
+                '[FEMALE]'
+            ],
+            1: [
+                'MALE',
+                'MAKE',
+                '[MALE]',
+            ]
+        }
+        self.property = ['INDIAN ENGLISH', '[INDIAN ENGLISH]']
+        self.property_reject = ['PLEASE SELECT', 'UNKNOWN']
+
+    def load_data(self, path):
+        self.X, self.Y, Z = np.load(path, allow_pickle=True)
+        age, sex, dialect = [], [], []
+        indices = []
+        for i, z in enumerate(Z):
+            matched = False
+            for k, v in self.age.items():
+                if z[0].upper() in v:
+                    age_ = k
+                    matched = True
+                    break
+
+            # Ignore if outlier
+            if not matched:
+                continue
+
+            matched = False
+            for k, v in self.sex.items():
+                if z[1].upper() in v:
+                    sex_ = k
+                    matched = True
+                    break
+
+            # Ignore if outlier
+            if not matched:
+                continue
+
+            dial = z[2].upper().rstrip(".")
+            # Do not consider datum if dialect not known
+            if dial in self.property_reject:
+                continue
+
+            age.append(age_)
+            sex.append(sex_)
+            dialect.append(1 * (dial in self.property))
+            indices.append(i)
+
+        self.X = self.X[indices]
+        self.Y = self.Y[indices]
+        self.Z = np.array([age, sex, dialect]).T
+
+    def flatten_data_all(self):
+        X, Y, Z = [], [], []
+
+        for (x, y, z) in zip(self.X, self.Y, self.Z):
+            for x_ in x:
+                X.append(x_)
+            for y_ in y:
+                Y.append(y_)
+            for _ in range(len(y)):
+                Z.append(z)
+
+        # Sanity check
+        assert len(X) == len(Y) and len(Y) == len(Z)
+        return X, Y, Z
+
+
+class VoxForgeReader:
     def __init__(self, root):
         self.root = root
         self.wanted_info = [
@@ -143,13 +230,31 @@ class VoxForge:
 
         return data
 
-    def load_data_np(self):
+    @staticmethod
+    def load_files(paths):
+        data = []
+        for path in paths:
+            data.append(np.load(path, allow_pickle=True))
+        return data
+
+    def load_data_np(self, dump_it_all=None):
         data = []
         speakers = os.listdir(self.root)
-        for sid in tqdm(speakers):
-            identity_file = os.path.join(self.root, sid)
+        speakers = list(map(lambda x: os.path.join(self.root, x), speakers))
+
+        for identity_file in tqdm(speakers):
             datum = np.load(identity_file, allow_pickle=True)
             data.append(datum)
+
+        X, Y, Z = [], [], []
+        for d in data:
+            X.append(d[0])
+            Y.append(d[1])
+            Z.append(np.array(d[2]))
+
+        if dump_it_all is not None:
+            print("Saving all data into one file")
+            np.save(dump_it_all, np.array([X, Y, Z]))
 
         return data
 
@@ -168,8 +273,9 @@ class VoxForge:
 
 
 if __name__ == "__main__":
-    # ds = VoxForge("./data")
-    # ds.dump_numpy("./data_np")
-    ds_ = VoxForge("./data_np")
-    data = ds_.load_data_np()
-    print(len(data))
+    ds = VoxForgeReader("./data_np")
+    # ds.load_data_np("./data_np_single")
+
+    d = VoxForgeData()
+    d.load_data("./data_np_single.npy")
+    d.flatten_data_all()

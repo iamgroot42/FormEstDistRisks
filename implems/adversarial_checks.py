@@ -19,7 +19,7 @@ if __name__ == "__main__":
     nb_iter = 200
     eps_iter = 2.5 * eps / nb_iter
     norm = 2
-    batch_size = 900
+    batch_size = 750 #900
 
     paths = [
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/20_0.9235165574046058.pth",
@@ -62,17 +62,20 @@ if __name__ == "__main__":
 
     degrees = [20, 30, 40, 50, 60, 70, 80]
     jitter_vals = [0.5, 1, 2, 3, 4, 5, 6]
-    # in [-pi, pi]
+    translate_vals = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
     noprop_scores, prop_scores = [], []
     # for deg in tqdm(degrees):
-    for jv in tqdm(jitter_vals):
+    # for jv in tqdm(jitter_vals):
+    for tv in tqdm(translate_vals):
         # Collecte augmented data
         # augdata = implem_utils.collect_augmented_data(dataloader,
                                                     #   translate=(tv, tv))
         # augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
-        augdata = implem_utils.collect_augmented_data(dataloader,
-                                                      jitter=(0, 0, 0, jv))
+        # augdata = implem_utils.collect_augmented_data(dataloader,
+                                                      # jitter=(0, 0, 0, jv))
                                                     #   jitter=(jv, jv, jv, jv))
+        augdata = implem_utils.collect_augmented_data(dataloader,
+                                                      translate=(0, tv))
         # saveimg(augdata[1][0][0], "../visualize/gauss_val_%f.png" % jv)
         npz, pz = [], []
         for j, model in enumerate(models):
@@ -90,16 +93,13 @@ if __name__ == "__main__":
 
         noprop_scores.append(npz)
         prop_scores.append(pz)
-        # print("[P=0] Before and after augmentation: %.2f, %.2f" % (noprop[0], noprop[1]))
-        # print("[P=1] Before and after augmentation: %.2f, %.2f" % (prop[0], prop[1]))
-        # print()
 
     diffs = []
     for x, y in zip(prop_scores, noprop_scores):
         diff = ((y[0][0] - y[0][1]) / y[0][0]) - ((x[0][0] - x[0][1]) / x[0][0])
         # diff = (y[0][0] - y[0][1]) - (x[0][0] - x[0][1])
         diffs.append(diff)
-    plt.plot(jitter_vals,
+    plt.plot(translate_vals,
              diffs,
              marker='o',
              label='all model')
@@ -109,15 +109,15 @@ if __name__ == "__main__":
         diff = ((y[1][0] - y[1][1]) / y[1][0]) - ((x[1][0] - x[1][1]) / x[1][0])
         # diff = (y[1][0] - y[1][1]) - (x[1][0] - x[1][1])
         diffs.append(diff)
-    plt.plot(jitter_vals,
+    plt.plot(translate_vals,
              diffs,
              marker='x',
              label='male model')
 
     plt.legend()
     # plt.savefig("../visualize/rotation_trends.png")
-    plt.savefig("../visualize/jitter_trends.png")
-    # plt.savefig("../visualize/translate_trends.png")
+    # plt.savefig("../visualize/jitter_trends.png")
+    plt.savefig("../visualize/translate_trends.png")
     exit(0)
 
     x_advs = []

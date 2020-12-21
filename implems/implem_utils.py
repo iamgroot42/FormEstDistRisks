@@ -204,11 +204,6 @@ def extract_dl_model_weights(model):
             weights.append(layer.weight.detach().cpu().numpy())
             biases.append(layer.bias.detach().cpu().numpy())
 
-    # for w in weights:
-    #     print(w.shape)
-    # print("Yeet!")
-    # exit(0)
-
     # Reduce to RREF form
     for i, w in enumerate(weights):
         w_rref = Matrix(w).rref()[0]
@@ -236,7 +231,7 @@ def augmentation_robustness(x,
         transforms.append(K.RandomErasing(scale=erase_scale,
                                           p=1))
 
-    if translate[1] > 0 or deg > 0:
+    if translate[0] > 0 or translate[1] > 0 or deg > 0:
         transforms.append(K.RandomAffine(degrees=deg,
                                          translate=translate,
                                          p=1))

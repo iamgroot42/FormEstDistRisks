@@ -56,7 +56,7 @@ def convert_for_meta_model(paths, all_augdata,
 
     if plotThem is not None:
         plt.legend()
-        plt.savefig("../visualize/all_models_jitter.png")
+        plt.savefig("../visualize/all_models_translate.png")
         print("Saved patterns for all model checkpoints")
     return np.array(drops), np.array(labels)
 
@@ -98,13 +98,16 @@ if __name__ == "__main__":
     # degrees = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]
     degrees = [20, 30, 40, 50, 60]
     jitter_vals = [0.5, 1, 2, 3, 4, 5, 6]
+    translate_vals = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
     noprop_scores, prop_scores = [], []
     all_augdata = []
     # for deg in degrees:
-    for jv in jitter_vals:
+    # for jv in jitter_vals:
+    for tv in translate_vals:
         # augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
         augdata = implem_utils.collect_augmented_data(dataloader,
-                                                      jitter=(0, 0, 0, jv))
+                                                      translate=(0, tv))
+                                                      # jitter=(0, 0, 0, jv))
         all_augdata.append(augdata)
 
     drops, labels = convert_for_meta_model(paths,
@@ -112,8 +115,7 @@ if __name__ == "__main__":
                                            target_prop,
                                         #    attrs.index(inspect_these[1]),
                                            attrs.index(inspect_these[0]),
-                                           plotThem=jitter_vals)
-                                        #    plotThem=degrees)
+                                           plotThem=translate_vals)
     exit(0)
 
     # Use siamese approach
