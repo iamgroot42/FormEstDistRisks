@@ -100,7 +100,8 @@ class VoxForgeReader:
             "GENDER:",
             "SEX:",
             "PRONUNCIATION DIALECT:",
-            "PRONUNICATION DIALECT:"
+            "PRONUNICATION DIALECT:",
+            "MICROPHONE TYPE:",
         ]
 
     def extract_readme_info(self, path, log_errors):
@@ -120,7 +121,8 @@ class VoxForgeReader:
                     info = wi_list[0].split(":", 1)[1].strip()
                     attrs.append(info.rstrip(';'))
 
-            if log_errors and len(attrs) != 3:
+            # if log_errors and len(attrs) != 3:
+            if log_errors and len(attrs) != 4:
                 # If crucial attributes are not available for file
                 # Do not use these recordings
                 raise ValueError("Not all attributes were found!")
@@ -230,13 +232,6 @@ class VoxForgeReader:
 
         return data
 
-    @staticmethod
-    def load_files(paths):
-        data = []
-        for path in paths:
-            data.append(np.load(path, allow_pickle=True))
-        return data
-
     def load_data_np(self, dump_it_all=None):
         data = []
         speakers = os.listdir(self.root)
@@ -273,9 +268,11 @@ class VoxForgeReader:
 
 
 if __name__ == "__main__":
-    ds = VoxForgeReader("./data_np")
+    # ds = VoxForgeReader("./data_np")
     # ds.load_data_np("./data_np_single")
-
     d = VoxForgeData()
     d.load_data("./data_np_single.npy")
-    d.flatten_data_all()
+    x, y, z = d.flatten_data_all()
+    print(x[0].shape)
+    print(y[0])
+    print(z[0])

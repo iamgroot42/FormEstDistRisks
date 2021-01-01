@@ -22,8 +22,13 @@ def convert_for_meta_model(paths, all_augdata,
     for i, mtype in enumerate(paths):
         for mdir in mtype:
             mlist = os.listdir(mdir)
-            # mlist = os.listdir(mdir)[:10]
             for path in tqdm(mlist):
+
+                # Don't consider sub-optimal models
+                model_acc = float(path.split("_")[1].rsplit(".", 1)[0])
+                if model_acc < 0.9:
+                    continue
+
                 MODELPATH = os.path.join(mdir, path)
                 model = utils.FaceModel(512,
                                         train_feat=True,
@@ -62,7 +67,7 @@ def convert_for_meta_model(paths, all_augdata,
 
 
 if __name__ == "__main__":
-    batch_size = 750
+    batch_size = 1000
 
     paths = [
         [
@@ -71,8 +76,8 @@ if __name__ == "__main__":
             # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/"
         ],
         [
-            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/",
-            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/",
+            "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/",
+            # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/",
             # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_vggface/",
             # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_none/"
         ]
@@ -99,23 +104,25 @@ if __name__ == "__main__":
     degrees = [20, 30, 40, 50, 60]
     jitter_vals = [0.5, 1, 2, 3, 4, 5, 6]
     translate_vals = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
+    erase_vals = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]
     noprop_scores, prop_scores = [], []
     all_augdata = []
-    # for deg in degrees:
+    for deg in degrees:
     # for jv in jitter_vals:
-    for tv in translate_vals:
-        # augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
-        augdata = implem_utils.collect_augmented_data(dataloader,
-                                                      translate=(0, tv))
+    # for tv in translate_vals:
+    # for ev in erase_vals:
+        augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
+        # augdata = implem_utils.collect_augmented_data(dataloader,
+                                                    #   erase_scale=(ev-0.01, ev))
+                                                    #   translate=(0, tv))
                                                       # jitter=(0, 0, 0, jv))
         all_augdata.append(augdata)
 
     drops, labels = convert_for_meta_model(paths,
                                            all_augdata,
                                            target_prop,
-                                        #    attrs.index(inspect_these[1]),
-                                           attrs.index(inspect_these[0]),
-                                           plotThem=translate_vals)
+                                           attrs.index(inspect_these[1]),
+                                           plotThem=degrees)
     exit(0)
 
     # Use siamese approach

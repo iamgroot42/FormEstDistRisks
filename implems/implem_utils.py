@@ -254,13 +254,15 @@ def augmentation_robustness(x,
 def collect_augmented_data(loader,
                            deg=0,
                            jitter=(0, 0, 0, 0),
-                           translate=(0, 0)):
+                           translate=(0, 0),
+                           erase_scale=(0, 0)):
     X, X_aug, Y = [], [], []
     for x, y in loader:
         X_aug.append(augmentation_robustness(x,
                                              deg=deg,
                                              jitter_tup=jitter,
-                                             translate=translate))
+                                             translate=translate,
+                                             erase_scale=erase_scale))
         X.append(x)
         Y.append(y)
     return (X, X_aug, Y)
