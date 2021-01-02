@@ -579,3 +579,75 @@ class CelebACustomBinary(Dataset):
         if self.transform:
             x = self.transform(x)
         return x, y
+
+
+def get_weight_layers(m):
+    dims, weights, biases = [], [], []
+    for name, param in m.named_parameters():
+        if "weight" in name:
+            weights.append(param.data.detach().cpu().T)
+            dims.append(weights[-1].shape[0])
+        if "bias" in name:
+            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
+
+    cctd = []
+    for w, b in zip(weights, biases):
+        cctd.append(ch.cat((w, b), 0).T)
+
+    return dims, cctd
+
+
+# Currently works with a batch size of 1
+# Shouldn't be that big a deal, since here's only a few
+# Couple hundred models
+
+class PermInvModel(nn.Module):
+    def __init__(self, dims):
+        super(PermInvModel, self).__init__()
+        self.dims = dims
+        self.layers = []
+        prev_layer = 0
+
+        def make_mini(y):
+            return nn.Sequential(
+                nn.Linear(y, 64),
+                nn.ReLU(),
+                nn.Linear(64, 8),
+                nn.ReLU(),
+                nn.Dropout()
+            )
+
+        for i, dim in enumerate(self.dims):
+            # 1 for bias
+            # prev_layer for previous layer
+            # input dimension per neuron
+            if i > 0:
+                prev_layer = 8 * dim
+            self.layers.append(make_mini(prev_layer + 1 + dim))
+
+        self.layers = nn.ModuleList(self.layers)
+        # Final network to combine them all together
+        self.rho = nn.Linear(8 * len(dims), 1)
+
+    def forward(self, params):
+        reps = []
+        prev_layer_rep = None
+
+        for param, layer in zip(params, self.layers):
+            # Process nodes in this layer
+            if prev_layer_rep is None:
+                processed = layer(param)
+            else:
+                # Include previous layer representation
+                prev_layer_rep = prev_layer_rep.repeat(param.shape[0], 1)
+                param_eff = ch.cat((param, prev_layer_rep), 1)
+                processed = layer(param_eff)
+
+            # Store this layer's representation
+            reps.append(ch.sum(processed, 0))
+
+            prev_layer_rep = processed.flatten()
+            prev_layer_rep = ch.unsqueeze(prev_layer_rep, 0)
+
+        reps_c = ch.unsqueeze(ch.cat(reps), 0)
+        return self.rho(reps_c)
