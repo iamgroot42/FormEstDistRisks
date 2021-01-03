@@ -76,22 +76,38 @@ def train_model(model, t_loader, v_loader, epochs=50, lr=0.01, verbose=True):
 
 if __name__ == "__main__":
     import sys
+    base_path = sys.argv[1]
+    data_path = sys.argv[2]
+    model_num = int(sys.argv[3])
+    want_prop = int(sys.argv[4]) != 0
 
     # Property filter
-    def dfilter(x):
-        return np.logical_and(x != 'home', x != 'home_improvement')
+    if want_prop:
+        def dfilter(x):
+            return np.logical_and(x != 'home', x != 'home_improvement')
+        prefix = "yes"
+    else:
+        dfilter = None
+        prefix = "no"
 
-    do = AmazonWrapper("./data/roberta-base", dfilter)
+    # Load dataset
+    do = AmazonWrapper("./data/roberta-base",
+                       indices_path=data_path,
+                       dfilter=dfilter)
     do.load_all_data()
     batch_size = 256
+    # Get loaders ready
     train_loader = do.get_train_loader(batch_size)
     val_loader = do.get_val_loader(5000)
     test_loader = do.get_test_loader(5000)
 
+    # Create model
     model = RatingModel(768, binary=True).cuda()
+    # Train model
     best_model, best_vacc = train_model(model, train_loader, val_loader,
                                         lr=0.001, epochs=30, verbose=False)
 
+    # Save model with best performance on validation data
     ch.save(best_model.state_dict(),
-            os.path.join("./data/models/Pno/%d_%.3f.pth" % (int(sys.argv[1]),
-                                                            best_vacc)))
+            os.path.join(base_path, prefix, "%d_%.3f.pth" % (model_num,
+                                                             best_vacc)))

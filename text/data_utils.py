@@ -5,16 +5,20 @@ from tqdm import tqdm
 import torch.nn as nn
 from datasets import load_dataset
 from torch.utils.data import Dataset, DataLoader
-from transformers import BertTokenizer, BertModel, RobertaTokenizer, \
-    RobertaModel, AlbertTokenizer, AlbertModel
+from transformers import AlbertTokenizer, AlbertModel
 
 
 class AmazonDataset(Dataset):
-    def __init__(self, data, path, dfilter=None):
+    def __init__(self, data, path, indices=None, dfilter=None):
         self.X = np.load(path)
         Y, P = data['stars'], data['product_category']
         self.Y = np.array(Y)
         self.P = np.array(P)
+
+        if indices is not None:
+            self.X = self.X[indices]
+            self.Y = self.Y[indices]
+            self.P = self.P[indices]
 
         # Get rid of neutral data
         wanted = (self.Y != 3)
@@ -36,13 +40,11 @@ class AmazonDataset(Dataset):
         return len(self.Y)
 
     def __getitem__(self, index):
-        # Shift down to [0-4] range for 0-indexing compatibility
-        # return (self.X[index], self.Y[index]-1, self.P[index])
         return (self.X[index], self.Y[index], self.P[index])
 
 
 class AmazonWrapper:
-    def __init__(self, path, dfilter=None):
+    def __init__(self, path, indices_path=None, dfilter=None):
         self.path = path
         self.do = load_dataset("amazon_reviews_multi", 'en')
         self.dfilter = dfilter
@@ -55,23 +57,32 @@ class AmazonWrapper:
             'office_product', 'other', 'pc', 'personal_care_appliances',
             'pet_products', 'shoes', 'sports', 'toy', 'video_games', 'watch',
             'wireless']
+        # If supplied with path to pick subset of indices, use them
+        self.indices_path = indices_path
+        self.tr, self.va, self.te = None, None, None
+        if indices_path is not None:
+            self.va = np.load(os.path.join(indices_path, "val.npy"))
+            self.te = np.load(os.path.join(indices_path, "test.npy"))
+            self.tr = np.load(os.path.join(indices_path, "train.npy"))
 
     def load_all_data(self):
-
         self.valdata = AmazonDataset(self.do['validation'],
                                      os.path.join(self.path,
                                                   "val", "features.npy"),
-                                     self.dfilter)
+                                     indices=self.va,
+                                     dfilter=self.dfilter)
 
         self.testdata = AmazonDataset(self.do['test'],
                                       os.path.join(self.path,
                                                    "test", "features.npy"),
-                                      self.dfilter)
+                                      indices=self.te,
+                                      dfilter=self.dfilter)
 
         self.traindata = AmazonDataset(self.do['train'],
                                        os.path.join(self.path,
                                                     "train", "features.npy"),
-                                       self.dfilter)
+                                       indices=self.tr,
+                                       dfilter=self.dfilter)
 
     def get_train_loader(self, batch_size):
         return DataLoader(self.traindata,
@@ -96,25 +107,6 @@ class RatingModel(nn.Module):
         if binary:
             last_num = 1
 
-        # self.layers = nn.Sequential(
-        #     nn.Linear(n_inp, 128),
-        #     nn.ReLU(),
-        #     nn.Linear(128, 64),
-        #     nn.ReLU(),
-        #     nn.Linear(64, 32),
-        #     nn.ReLU(),
-        #     nn.Linear(32, last_num)
-        # )
-        # 84, 86
-
-        # self.layers = nn.Sequential(
-        #     nn.Dropout(0.1),
-        #     nn.Linear(n_inp, 32),
-        #     nn.ReLU(),
-        #     nn.Linear(32, last_num)
-        # )
-        # 82, 85
-
         self.layers = nn.Sequential(
             nn.Linear(n_inp, 64),
             nn.ReLU(),
@@ -138,12 +130,8 @@ def get_features(data, model, batch_size=32):
                               max_length=512,
                               padding=True)
 
-        # print(tokenized)
         for k, v in tokenized.items():
             tokenized[k] = v.cuda()
-        # input_ids = tokenized['input_ids'].cuda()
-        # token_type_ids = tokenized['token_type_ids'].cuda()
-        # attention_mask = tokenized['attention_mask'].cuda()
 
         with ch.no_grad():
             _, output = model(**tokenized)
@@ -154,19 +142,92 @@ def get_features(data, model, batch_size=32):
     return all_outputs
 
 
+def prop_length_preserving_split(data, ratio=0.5,
+                                 batch_size=5000, verbose=False):
+    props, lens, stars = [], [], []
+    indices = np.arange(len(data))
+    for i in tqdm(range(0, len(data), batch_size)):
+        texts = data[i:i+batch_size]['review_body']
+        lens.append(list(map(lambda x: len(x.split(' ')), texts)))
+        props.append(data[i:i+batch_size]['product_category'])
+        stars.append(data[i:i+batch_size]['stars'])
+
+    # Do not consider 3-rating reviews
+    stars = np.concatenate(stars)
+    wanted = (stars != 3)
+    indices = indices[wanted]
+    props = np.concatenate(props)
+    lens = np.concatenate(lens)
+
+    # Convert ratings to binary
+    stars = 1 * (stars > 3)
+    parts = int(np.ceil(1 / ratio))
+
+    # Maintain same distribution across properties
+    uprops = np.unique(props[wanted])
+    first, second = [], []
+    for up in tqdm(uprops):
+        # And stars
+        for i in range(2):
+            # And lengths
+            current = np.logical_and(stars[wanted] == i, props[wanted] == up)
+            curr_lens = lens[wanted][current]
+            curr_indices = indices[current]
+
+            # Sort chosen lenghts
+            sorted_order = np.argsort(curr_lens)
+            curr_indices = curr_indices[sorted_order]
+
+            # Pick every 'parts' for first split
+            first_picked = curr_indices[::parts]
+            second_picked = list(set(curr_indices) - set(first_picked))
+
+            first.append(first_picked)
+            if len(second_picked) != 0:
+                second.append(second_picked)
+
+    first = np.concatenate(first)
+    second = np.concatenate(second)
+
+    if verbose:
+        # Print sizes of splits
+        print("Desired ratio: %.2f, wanted ratio: %.2f" % (
+            first.shape[0]/(first.shape[0] + second.shape[0]), ratio
+        ))
+        # Print property distribution (difference)
+        print("Distributionof items per product-category")
+        first_distr = np.unique(props[first], return_counts=True)[1]
+        second_distr = np.unique(props[second], return_counts=True)[1]
+        print(first_distr / len(props[first]))
+        print(second_distr / len(props[second]))
+        # Print length distribution statistics
+        print("Mean, median, min/max range for first split:")
+        print(np.mean(lens[first]), np.median(lens[first]),
+              np.min(lens[first]), np.max(lens[first]))
+        print("Mean, median, min/max range for second split:")
+        print(np.mean(lens[second]), np.median(lens[second]),
+              np.min(lens[second]), np.max(lens[second]))
+
+    return first, second
+
+
 if __name__ == "__main__":
-    # model = BertModel.from_pretrained("bert-base-uncased")
-    # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-
-    # model = RobertaModel.from_pretrained('roberta-base')
-    # tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
-
     model = AlbertModel.from_pretrained('albert-base-v2')
     tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
-
     model.eval()
     model.cuda()
 
+    base = "./data/albert/"
+    ratio = 0.5
+
     ad = load_dataset("amazon_reviews_multi", 'en')
-    features = get_features(ad['train'], model, 32)
-    np.save("./data/albert/train/features", features)
+    pick, save = ['train', 'validation', 'test'], ['train', 'val', 'test']
+    for p, s in zip(pick, save):
+        features = get_features(ad[p], model, 32)
+        np.save(os.path.join(base, s, "features"), features)
+
+    for p, s in zip(pick, save):
+        first, second = prop_length_preserving_split(
+            ad[p], ratio, verbose=False)
+        np.save(os.path.join("./data/splits", "first", s), first)
+        np.save(os.path.join("./data/splits", "second", s), second)

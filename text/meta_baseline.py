@@ -18,12 +18,11 @@ def load_models(path):
         model.eval()
         dims, param = get_weight_layers(model)
         params.append(param)
-        if len(params) == 240: break
     return params, dims
 
 
 def train_model(model, train_data, test_data,
-                eval_every=5, epochs=100, lr=0.001):
+                eval_every=5, epochs=200, lr=0.001):
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
     loss_fn = nn.BCEWithLogitsLoss()
 
@@ -87,11 +86,11 @@ if __name__ == "__main__":
     labels = ch.from_numpy(np.array(labels))
 
     X_train, X_test, y_train, y_test = train_test_split(data, labels,
-                                                        test_size=0.3)
+                                                        test_size=0.35)
 
     # Train metamodel
     metamodel = PermInvModel(dims)
     train_model(metamodel,
                 (X_train, y_train),
                 (X_test, y_test),
-                eval_every=5)
+                eval_every=10)
