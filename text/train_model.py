@@ -79,16 +79,16 @@ if __name__ == "__main__":
     base_path = sys.argv[1]
     data_path = sys.argv[2]
     model_num = int(sys.argv[3])
-    want_prop = int(sys.argv[4]) != 0
+    not_want_prop = int(sys.argv[4]) == 0
 
     # Property filter
-    if want_prop:
+    if not_want_prop:
         def dfilter(x):
             return np.logical_and(x != 'home', x != 'home_improvement')
-        prefix = "yes"
+        prefix = "no"
     else:
         dfilter = None
-        prefix = "no"
+        prefix = "yes"
 
     # Load dataset
     do = AmazonWrapper("./data/roberta-base",

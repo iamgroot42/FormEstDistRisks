@@ -19,6 +19,22 @@ import pandas as pd
 import os
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def log(x):
+    print(f"{bcolors.WARNING}%s{bcolors.ENDC}" % x)
+
+
 class DataPaths:
     def __init__(self, name, data_path, stats_path):
         self.name = name
@@ -651,3 +667,24 @@ class PermInvModel(nn.Module):
 
         reps_c = ch.unsqueeze(ch.cat(reps), 0)
         return self.rho(reps_c)
+
+
+class CustomBertModel(nn.Module):
+    def __init__(self, base_model):
+        super(CustomBertModel, self).__init__()
+        self.bert = base_model
+        self.dropout = nn.Dropout(0.1)
+        self.classifier = nn.Sequential(
+            nn.Linear(768, 64),
+            nn.ReLU(),
+            nn.Linear(64, 8),
+            nn.ReLU(),
+            nn.Linear(8, 1),
+        )
+
+    def forward(self, x):
+        outputs = self.bert(**x)
+        pooled_output = outputs[1]
+        pooled_output = self.dropout(pooled_output)
+        logits = self.classifier(pooled_output)
+        return logits
