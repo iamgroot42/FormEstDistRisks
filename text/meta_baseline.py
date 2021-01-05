@@ -16,7 +16,7 @@ def load_models(path):
         model = RatingModel(768, binary=True).cuda()
         model.load_state_dict(ch.load(fp))
         model.eval()
-        dims, param = get_weight_layers(model)
+        dims, param = get_weight_layers(model, normalize=True)
         params.append(param)
     return params, dims
 
@@ -32,11 +32,9 @@ def train_model(model, train_data, test_data,
     def acc_fn(x, y):
         return ch.sum((y == (x >= 0)))
 
-    # best_model, best_vacc = None, 0.0
-
     iterator = tqdm(range(epochs))
     for e in iterator:
-        # Train
+        # Training
         model.train()
 
         outputs = []
@@ -50,14 +48,16 @@ def train_model(model, train_data, test_data,
         loss.backward()
         optimizer.step()
 
-        loss = loss.item()
-        running_acc = acc_fn(outputs, y)
         num_samples = outputs.shape[0]
+        loss = loss.item() * num_samples
+        running_acc = acc_fn(outputs, y)
 
-        iterator.set_description("Epoch %d : [Train] Loss: %.5f Accuacy: %.2f" % (
-            e, loss / num_samples, 100 * running_acc / num_samples))
+        iterator.set_description("Epoch %d : [Train] Loss: %.5f "
+                                 "Accuacy: %.2f" % (
+                                    e, loss / num_samples,
+                                    100 * running_acc / num_samples))
 
-        if e % eval_every == 0:
+        if (e+1) % eval_every == 0:
             # Validation
             model.eval()
             outputs = []
@@ -65,9 +65,9 @@ def train_model(model, train_data, test_data,
                 outputs.append(model(param)[:, 0])
             outputs = ch.cat(outputs, 0)
             with ch.no_grad():
-                loss = loss_fn(outputs, y_test.float()).item()
-                running_acc = acc_fn(outputs, y_test)
                 num_samples = outputs.shape[0]
+                loss = loss_fn(outputs, y_test.float()).item() * num_samples
+                running_acc = acc_fn(outputs, y_test)
                 print("[Test] Loss: %.5f, Accuracy: %.2f" % (
                     loss / num_samples, 100 * running_acc / num_samples
                 ))
@@ -76,21 +76,30 @@ def train_model(model, train_data, test_data,
 
 
 if __name__ == "__main__":
-    positive_path = "./data/models/Pyes"
-    negative_path = "./data/models/Pno"
-    # Load models
-    pos_params, dims = load_models(positive_path)
-    neg_params, _ = load_models(negative_path)
-    data = pos_params + neg_params
-    labels = [1.] * len(pos_params) + [0.] * len(neg_params)
-    labels = ch.from_numpy(np.array(labels))
+    def get_data(pos_path, neg_path):
+        # Load models
+        pos_params, dims = load_models(pos_path)
+        neg_params, _ = load_models(neg_path)
+        data = pos_params + neg_params
+        labels = [1.] * len(pos_params) + [0.] * len(neg_params)
+        labels = ch.from_numpy(np.array(labels))
+        return data, labels, dims
 
-    X_train, X_test, y_train, y_test = train_test_split(data, labels,
-                                                        test_size=0.35)
+    # data, labels, dims = get_data("./data/models/Pyes", "./data/models/Pno")
+    # data, labels, dims = get_data(
+    #     "./data/models_split/second/yes", "./data/models_split/second/no")
+    # X_train, X_test, y_train, y_test = train_test_split(data, labels,
+    #                                                     test_size=0.35)
+
+    X_train, y_train, dims = get_data(
+        "./data/models_split/second/yes", "./data/models_split/second/no")
+    X_test, y_test, _ = get_data(
+        "./data/models_split/first/yes", "./data/models_split/first/no")
 
     # Train metamodel
     metamodel = PermInvModel(dims)
     train_model(metamodel,
                 (X_train, y_train),
                 (X_test, y_test),
+                epochs=150,
                 eval_every=10)

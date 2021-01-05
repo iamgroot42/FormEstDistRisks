@@ -44,7 +44,7 @@ class AmazonDataset(Dataset):
 
 
 class AmazonWrapper:
-    def __init__(self, path, indices_path=None, dfilter=None):
+    def __init__(self, path, indices_path=None, dfilter=None, secondary_indices_path=None, merge_ratio=0.5):
         self.path = path
         self.do = load_dataset("amazon_reviews_multi", 'en')
         self.dfilter = dfilter
@@ -61,9 +61,32 @@ class AmazonWrapper:
         self.indices_path = indices_path
         self.tr, self.va, self.te = None, None, None
         if indices_path is not None:
-            self.va = np.load(os.path.join(indices_path, "val.npy"))
-            self.te = np.load(os.path.join(indices_path, "test.npy"))
-            self.tr = np.load(os.path.join(indices_path, "train.npy"))
+            va = np.load(os.path.join(indices_path, "val.npy"))
+            te = np.load(os.path.join(indices_path, "test.npy"))
+            tr = np.load(os.path.join(indices_path, "train.npy"))
+        
+        # If second source of data provided
+        # Sample data from both sources according to given ratio
+        # Of overlap between two sources
+        if secondary_indices_path is not None:
+            va_2 = np.load(os.path.join(secondary_indices_path, "val.npy"))
+            te_2 = np.load(os.path.join(secondary_indices_path, "test.npy"))
+            tr_2 = np.load(os.path.join(secondary_indices_path, "train.npy"))
+
+            # Sample 'merge_ratio' data from second source
+            # And remaining data from original source
+            def merge(b, a):
+                numa = int(merge_ratio * len(a))
+                numb = b.shape[0] - numa
+                return np.concatenate((np.random.choice(a, numa, replace=False),
+                                       np.random.choice(b, numb, replace=False)))
+            
+            self.va, self.te, self.tr = merge(
+                va, va_2), merge(te, te_2), merge(tr, tr_2)
+            
+        else:
+            self.va, self.te, self.tr = va, te, tr
+
 
     def load_all_data(self):
         self.valdata = AmazonDataset(self.do['validation'],

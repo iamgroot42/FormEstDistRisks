@@ -97,3 +97,39 @@ Run these experiments for the following ratios:
 
 
 Repeat the above set of experiments for 'race' and 'income' instead of 'sex'. Also, for each experiment, vary `sample` in [10, 25, 50, 100, 150, 200, 300, 400, 500]
+
+
+## For 1/5
+
+### Task
+
+Given a product review on Amazon, caegorize the associated rating as positive or negative. The property that we will be focussing on for now will be: <i>does the dataset contain product reviews for home-improvement related products (1) or not (0)?</i>
+
+The dataset has been pre-processed with a <a href="https://huggingface.co/transformers/model_doc/roberta.html">RoBERT</a> model. Each product review corresponds to a n-dimensional feature vector, on top of which a 3-layer MLP is trained.
+
+For this experiment, we want to know if the performance of meta-classifiers is because of them capturing inherent properties of these datasets indirectly, or just differentiating between "exact" datasets (not caring even if they have different properties).
+
+Say M1 and M2 are trained on D1, D2 respectively (where D1 satisfies property, D2 does not). Currently, a meta-classifier can look at any model, say N, and tell if it was trained on a dataset that satisfied the property or not.
+
+Problem is, in current experimental settings, this N itself is either trained or D1/D2, or trained on some dataset D3 that is highly overlapping with D1/D2, which might not happen in the real world. We want to see how the performance of a meta-classifier varies as we control this level of "overlap".
+
+### Commands
+
+* Navigate to `text` folder
+* Make a folder to save trained models in
+* Run the following script
+
+  `bash in_line.sh <MODEL_PATH> <MERGE_RATIO> <0/1>`
+
+  where:
+  * first argument points to the folder where models will be saved
+  * second argument is a ratio in [0, 1] that determines how much of the second dataset split will be used while training the models
+  * the third argument determines if the dataset used will have the property (1) or not (0)
+
+  For instance, training a model that uses 70% of the second dataset, without the property, saved in a folder names `MODELS`, the command would be:
+
+  `bash in_line.sh MODELS/ 0.7 0`
+
+* Run the above set of experiments while varying `<MERGE_RATIO>`: 0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 0.9, for both `0` and `1` for the last argument. Don't forget to use different folders to save these models!
+
+* Note: these scripts will take quite a while to run (a few hours ), so it might be in your best interest to use a screen/tmux to run them in. Also, depending on which GPU is free, you can add the `CUDA_VISIBLE_DEVICES` prefix. That way, you can run multiple scripts on a machine simultaneously, each on a different GPU.

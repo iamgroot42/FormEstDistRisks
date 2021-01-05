@@ -3,27 +3,35 @@ from tqdm import tqdm
 import numpy as np
 import os
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 from utils import CustomBertModel, log
-from transformers import AlbertTokenizer, AlbertModel
+from transformers import RobertaTokenizer, RobertaModel, RobertaForSequenceClassification
 from transformers import AdamW
 
 
 def train_model(model, t_loader, v_loader, epochs, save_dir):
-    no_decay = ['bias', 'LayerNorm.weight']
-    optimizer_grouped_parameters = [
-        {'params': [p for n, p in model.named_parameters() if not any(
-            nd in n for nd in no_decay)], 'weight_decay': 0.01},
-        {'params': [p for n, p in model.named_parameters() if any(
-            nd in n for nd in no_decay)], 'weight_decay': 0.0}
-    ]
-    optimizer = AdamW(optimizer_grouped_parameters, lr=1e-4)
+    # no_decay = ['bias', 'LayerNorm.weight']
+    # optimizer_grouped_parameters = [
+    #     {'params': [p for n, p in model.named_parameters() if not any(
+    #         nd in n for nd in no_decay)], 'weight_decay': 0.01},
+    #     {'params': [p for n, p in model.named_parameters() if any(
+    #         nd in n for nd in no_decay)], 'weight_decay': 0.0}
+    # ]
+    # optimizer = AdamW(optimizer_grouped_parameters, lr=1e-2)
+    # optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=1e-5)
     loss_fn = nn.BCEWithLogitsLoss()
-    data_fields = ['input_ids', 'token_type_ids', 'attention_mask']
+    data_fields = ['input_ids', 'attention_mask']
 
     def acc_fn(x, y):
-        return ch.sum((y == (x >= 0)))
+        with ch.no_grad():
+            return ch.sum((y == (x >= 0)))
+
+    # def acc_fn(x, y):
+    #     with ch.no_grad():
+    #         return ch.sum((y == (x.argmax(1))))
 
     for e in range(epochs):
         # Train
@@ -41,6 +49,8 @@ def train_model(model, t_loader, v_loader, epochs, save_dir):
             # forward + backward + optimize
             outputs = model(x)[:, 0]
             loss = loss_fn(outputs, y.float())
+            # otps = model(**x, labels=y, return_dict=True)
+            # outputs, loss = otps.logits, otps.loss.mean()
             loss.backward()
             optimizer.step()
 
@@ -64,6 +74,8 @@ def train_model(model, t_loader, v_loader, epochs, save_dir):
             with ch.no_grad():
                 outputs = model(x)[:, 0]
                 loss = loss_fn(outputs, y.float())
+                # otps = model(**x, labels=y, return_dict=True)
+                # outputs, loss = otps.logits, otps.loss.mean()
                 running_loss += loss.item() * y.shape[0]
                 running_acc += acc_fn(outputs, y)
                 num_samples += y.shape[0]
@@ -80,19 +92,20 @@ if __name__ == "__main__":
     import sys
     model_dir = sys.argv[1]
     subpick = sys.argv[2]
+    batch_size = int(sys.argv[3])
     # data_path = sys.argv[2]
     # model_num = int(sys.argv[3])
     # not_want_prop = int(sys.argv[4]) == 0
+    not_want_prop = True
 
-    batch_size = 32
     train_indices = np.load("./data/splits/%s/train.npy" % subpick)
     val_indices = np.load("./data/splits/%s/val.npy" % subpick)
     test_indices = np.load("./data/splits/%s/test.npy" % subpick)
 
     # Property filter
     def dfilter(x):
-        return np.logical_and(x['product_category'] != 'home',
-                              x['product_category'] != 'home_improvement')
+        return x['product_category'] != 'home' and \
+             x['product_category'] != 'home_improvement'
 
     # Rating binarizer
     def rating_binarizer(x):
@@ -108,7 +121,7 @@ if __name__ == "__main__":
     log("[Loaded dataset]")
 
     # Load tokenizer
-    tokenizer = AlbertTokenizer.from_pretrained('albert-base-v2')
+    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 
     # Get rid of neutral ratings and
     # Map ratings to binary values
@@ -123,20 +136,26 @@ if __name__ == "__main__":
     log("[Tokenized sentences]")
 
     # Apply property on dataset if requested
-    # if not_want_prop:
-        # dataset = dataset.filter(dfilter)
+    if not_want_prop:
+        dataset = dataset.filter(dfilter)
+        log("[Filtered Data]")
 
     dataset.set_format(type='torch', columns=[
-        'input_ids', 'token_type_ids', 'attention_mask', 'stars'])
+        'input_ids', 'attention_mask', 'stars'])
 
-    train_loader = DataLoader(dataset['train'], batch_size=batch_size)
-    val_loader = DataLoader(dataset['validation'], batch_size=512)
+    train_loader = DataLoader(
+        dataset['train'], batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(
+        dataset['validation'], batch_size=512, shuffle=True)
 
     # Create model
-    bert_base = AlbertModel.from_pretrained('albert-base-v2')    
+    # model = RobertaForSequenceClassification.from_pretrained(
+    #     'roberta-base', num_labels=2).cuda()
+
+    bert_base = RobertaModel.from_pretrained('roberta-base')
     model = CustomBertModel(bert_base).cuda()
     model = nn.DataParallel(model)
     model.train()
 
     # Train model
-    train_model(model, train_loader, val_loader, epochs=10, save_dir=model_dir)
+    train_model(model, train_loader, val_loader, epochs=3, save_dir=model_dir)

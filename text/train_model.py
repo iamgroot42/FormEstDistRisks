@@ -2,9 +2,9 @@ import torch as ch
 from tqdm import tqdm
 import numpy as np
 import torch.optim as optim
-# from torch.optim.lr_scheduler import StepLR
 import os
 import copy
+import utils
 import torch.nn as nn
 from data_utils import AmazonWrapper, RatingModel
 
@@ -46,7 +46,7 @@ def train_model(model, t_loader, v_loader, epochs=50, lr=0.01, verbose=True):
             num_samples += x.shape[0]
 
             if verbose:
-                iterator.set_description("Epoch %d : [Train] Loss: %.5f Accuacy: %.2f" % (
+                iterator.set_description("Epoch %d : [Train] Loss: %.5f Accuracy: %.2f" % (
                     e, running_loss / num_samples, 100 * running_acc / num_samples))
 
         # Validation
@@ -75,14 +75,26 @@ def train_model(model, t_loader, v_loader, epochs=50, lr=0.01, verbose=True):
 
 
 if __name__ == "__main__":
-    import sys
-    base_path = sys.argv[1]
-    data_path = sys.argv[2]
-    model_num = int(sys.argv[3])
-    not_want_prop = int(sys.argv[4]) == 0
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--base_path', type=str,
+                        help='path to save models in')
+    parser.add_argument('--data_path', type=str,
+                        help='path to dataset')
+    parser.add_argument('--data_path_2', type=str,
+                        default=None, help='path to second dataset')
+    parser.add_argument('--merge_ratio', type=float,
+                        help='ratio of data to sample from second dataset')
+    parser.add_argument('--model_num', type=int, help='name for model')
+    parser.add_argument('--bs', type=int, default=512, help='batch size')
+    parser.add_argument('--epochs', type=int, default=30, help='number of epochs')
+    parser.add_argument('--not_want_prop', type=bool, default=False,
+                        help='whether property filter should be applied')
+    args = parser.parse_args()
+    utils.flash_utils(args)
 
     # Property filter
-    if not_want_prop:
+    if args.not_want_prop:
         def dfilter(x):
             return np.logical_and(x != 'home', x != 'home_improvement')
         prefix = "no"
@@ -92,7 +104,9 @@ if __name__ == "__main__":
 
     # Load dataset
     do = AmazonWrapper("./data/roberta-base",
-                       indices_path=data_path,
+                       indices_path=args.data_path,
+                       secondary_indices_path=args.data_path_2,
+                       merge_ratio=args.merge_ratio,
                        dfilter=dfilter)
     do.load_all_data()
     batch_size = 256
@@ -104,10 +118,16 @@ if __name__ == "__main__":
     # Create model
     model = RatingModel(768, binary=True).cuda()
     # Train model
-    best_model, best_vacc = train_model(model, train_loader, val_loader,
-                                        lr=0.001, epochs=30, verbose=False)
+    best_model, best_vacc = train_model(
+        model, train_loader, val_loader, lr=0.001,
+        epochs=args.epochs, verbose=False)
+
+    # Make model sub-folder, if does not exist already
+    if not os.path.exists(os.path.join(args.base_path, prefix)):
+        os.makedirs(os.path.join(args.base_path, prefix))
 
     # Save model with best performance on validation data
     ch.save(best_model.state_dict(),
-            os.path.join(base_path, prefix, "%d_%.3f.pth" % (model_num,
-                                                             best_vacc)))
+            os.path.join(args.base_path,
+                         prefix,
+                         "%d_%.3f.pth" % (args.model_num, best_vacc)))

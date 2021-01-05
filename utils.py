@@ -597,7 +597,7 @@ class CelebACustomBinary(Dataset):
         return x, y
 
 
-def get_weight_layers(m):
+def get_weight_layers(m, normalize=False):
     dims, weights, biases = [], [], []
     for name, param in m.named_parameters():
         if "weight" in name:
@@ -605,6 +605,12 @@ def get_weight_layers(m):
             dims.append(weights[-1].shape[0])
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
+
+    # if normalize:
+        # min_w = min([ch.min(x).item() for x in weights])
+        # max_w = max([ch.max(x).item() for x in weights])
+        # weights = [(w - min_w) / (max_w - min_w) for w in weights]
+        # weights = [w / max_w for w in weights]
 
     cctd = []
     for w, b in zip(weights, biases):
@@ -625,6 +631,17 @@ class PermInvModel(nn.Module):
         prev_layer = 0
 
         def make_mini(y):
+            # return nn.Sequential(
+            #     nn.Linear(y, 32),
+            #     nn.ReLU(),
+            #     nn.Dropout(0.1),
+            #     nn.Linear(32, 16),
+            #     nn.ReLU(),
+            #     nn.Dropout(0.1),
+            #     nn.Linear(16, 8),
+            #     nn.ReLU(),
+            #     nn.Dropout(0.1)
+            # )
             return nn.Sequential(
                 nn.Linear(y, 64),
                 nn.ReLU(),
@@ -634,7 +651,7 @@ class PermInvModel(nn.Module):
             )
 
         for i, dim in enumerate(self.dims):
-            # 1 for bias
+            # +1 for bias
             # prev_layer for previous layer
             # input dimension per neuron
             if i > 0:
@@ -679,7 +696,7 @@ class CustomBertModel(nn.Module):
             nn.ReLU(),
             nn.Linear(64, 8),
             nn.ReLU(),
-            nn.Linear(8, 1),
+            nn.Linear(8, 1)
         )
 
     def forward(self, x):
