@@ -1,11 +1,9 @@
 import numpy as np
 import utils
-import torch.nn as nn
 from PIL import Image
 from tqdm import tqdm
 import os
-
-from facenet_pytorch import InceptionResnetV1, MTCNN
+from facenet_pytorch import MTCNN
 
 
 def get_labels(dataloader):
@@ -48,6 +46,7 @@ def dump_files(path, model, dataloader, indices, target_prop):
     os.mkdir(os.path.join(path, "0"))
     os.mkdir(os.path.join(path, "1"))
     trace, start = 0, 0
+    done_with_loader = False
     for i, (x, y) in tqdm(enumerate(dataloader), total=len(dataloader)):
         y_ = y[:, target_prop]
 
@@ -57,9 +56,14 @@ def dump_files(path, model, dataloader, indices, target_prop):
         cropped_faces = (cropped_faces * 0.5) + 0.5
 
         for idx, j in enumerate(indices_):
-            # If current index not found, skip until you're not above and beyond
+            # If current index not found
+            # Skip until you're not above and beyond
             if start + j > indices[trace]:
                 trace += 1
+                # If run through all indices there are in data, stop processing
+                if trace == len(indices):
+                    done_with_loader = True
+                    break
                 continue
             if start + j == indices[trace]:
                 image = Image.fromarray(
@@ -75,141 +79,174 @@ def dump_files(path, model, dataloader, indices, target_prop):
                 trace += 1
                 # If run through all indices there are in data, stop processing
                 if trace == len(indices):
-                    return
+                    done_with_loader = True
+                    break
 
         start += y.shape[0]
-
-        # for j in range(y_.shape[0]):
-        # 	if start + j == indices[trace]:
-        # 		if y_[j] == 0:
-        # 			image = Image.fromarray((255 * np.transpose(x_[j], (1, 2, 0))).astype('uint8'))
-        # 			try:
-        # 				model(image, save_path=os.path.join(path, "0", str(trace)) + ".png")
-        # 			except:
-        # 				# Side view, no face to look at
-        # 				print("Class 0: Problematic image!")
-        # 		else:
-        # 			image = Image.fromarray((255 * np.transpose(x_[j], (1, 2, 0))).astype('uint8'))
-        # 			try:
-        # 				model(image, save_path=os.path.join(path, "1", str(trace)) + ".png")
-        # 			except:
-        # 				# Side view, no face to look at
-        # 				print("Class 1: Problematic image!")
-        # 			# image.save(os.path.join(path, "1", str(trace)) + ".png")
-        # 		trace += 1
-        # 		# If run through all indices there are in data, stop processing
-        # 		if trace == len(indices): return
-        # start += y.shape[0]
+        if done_with_loader:
+            break
 
 
 if __name__ == "__main__":
-
+    import sys
     constants = utils.Celeb()
     ds = constants.get_dataset()
 
-    trainloader, testloader = ds.make_loaders(
-        batch_size=256, workers=8, shuffle_train=False, shuffle_val=False)
     attrs = constants.attr_names
+    target_prop = attrs.index("Smiling")
     print(attrs)
 
-    care_about = ['Attractive', 'Male', 'Young', 'Smiling']
-    care_about = [attrs.index(x) for x in care_about]
-    # prop = attrs.index("Male")
-    # prop = attrs.index("Young")
-
-    target_prop = attrs.index("Smiling")
-    # target_prop = attrs.index("Male")
+    trainloader, testloader = ds.make_loaders(
+            batch_size=256, workers=8, shuffle_train=False, shuffle_val=False)
     labels_tr = get_labels(trainloader)
     labels_te = get_labels(testloader)
 
-    # Perform first time, load from memory next time
-    # splits_tr = balanced_split(labels_tr, care_about, 0.7)
-    # splits_te = balanced_split(labels_te, care_about, 0.7)
+    savemode = False
+    indices_basepath = sys.argv[1]
 
-    # Save these splits
-    # np.save("splits_tr_1", splits_tr[0])
-    # np.save("splits_tr_2", splits_tr[1])
-    # np.save("splits_te_1", splits_te[0])
-    # np.save("splits_te_2", splits_te[1])
-    # print("Dumped indices into numpy arrays!")
-    # exit(0)
+    if savemode:
+        first_split_ratio = float(sys.argv[2])
 
-    # Load from memory
-    basepath = "/u/as9rw/work/fnb/implems/"
-    splits_tr = [np.load(basepath + "splits_tr_1.npy"),
-                 np.load(basepath + "splits_tr_2.npy")]
-    splits_te = [np.load(basepath + "splits_te_1.npy"),
-                 np.load(basepath + "splits_te_2.npy")]
-    print("Loaded split information from memory")
+        care_about = ['Attractive', 'Male', 'Young', 'Smiling']
+        care_about = [attrs.index(x) for x in care_about]
 
-    # Write these splits to numpy file and read later
-    # To maintain consistency for shared/non-shared data
+        # Perform first time, load from memory next time
+        splits_tr = balanced_split(labels_tr, care_about, first_split_ratio)
+        splits_te = balanced_split(labels_te, care_about, first_split_ratio)
 
-    # Load cropping model
-    model = MTCNN(device='cuda')
-    paths = [
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/attractive/split_1",
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/attractive/split_2"
+        # Save these splits
+        np.save(os.path.join(indices_basepath, "splits_tr_1"), splits_tr[0])
+        np.save(os.path.join(indices_basepath, "splits_tr_2"), splits_tr[1])
+        np.save(os.path.join(indices_basepath, "splits_te_1"), splits_te[0])
+        np.save(os.path.join(indices_basepath, "splits_te_2"), splits_te[1])
+        print("Dumped indices into numpy arrays!")
 
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_1",
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2"
+    else:
+        # Save processed images here
+        dataset_basepath = sys.argv[2]
+        given_prop = sys.argv[3]
 
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/male/split_1",
-        # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/male/split_2"
+        # Load from memory
+        splits_tr = [np.load(os.path.join(indices_basepath,
+                                          "splits_tr_1.npy")),
+                     np.load(os.path.join(indices_basepath,
+                                          "splits_tr_2.npy"))]
+        splits_te = [np.load(os.path.join(indices_basepath,
+                                          "splits_te_1.npy")),
+                     np.load(os.path.join(indices_basepath,
+                                          "splits_te_2.npy"))]
+        print("Loaded split information from memory")
 
-        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/old/split_1",
-        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/old/split_2"
-    ]
+        # Write these splits to numpy file and read later
+        # To maintain consistency for shared/non-shared data
 
-    for i in range(2):
+        # Load cropping model
+        model = MTCNN(device='cuda')
+        paths = [
+            os.path.join(dataset_basepath, "split_1"),
+            os.path.join(dataset_basepath, "split_2")
+        ]
 
-        # print("Original label balance:", np.mean(labels_tr[:, target_prop]))
-        print("Original label balance:", np.mean(
-            labels_tr[splits_tr[i], target_prop]))
+        for i in range(2):
+            print("Original label balance:", np.mean(
+                labels_tr[splits_tr[i], target_prop]))
 
-        # tags_tr = labels_tr[:, prop]
-        # tags_te = labels_te[:, prop]
+            if given_prop == "none":
+                # No filter (all data)
+                picked_indices_tr = np.arange(splits_tr[i].shape[0])
+                picked_indices_te = np.arange(splits_te[i].shape[0])
 
-        prop = attrs.index("Young")
-        tags_tr = labels_tr[splits_tr[i], prop]
-        tags_te = labels_te[splits_te[i], prop]
+                actual_picked_indices_tr = picked_indices_tr
+                actual_picked_indices_te = picked_indices_te
+            else:
+                prop = attrs.index(given_prop)
+                tags_tr = labels_tr[splits_tr[i], prop]
+                tags_te = labels_te[splits_te[i], prop]
+                clabels_tr = labels_tr[splits_tr[i], target_prop]
+                clabels_te = labels_te[splits_te[i], target_prop]
 
-        print("Original property ratio:", np.mean(tags_tr))
+                print("Original property ratio:", np.mean(tags_tr))
 
-        # No filter (all data)
-        # picked_indices_tr = np.arange(labels_tr.shape[0])
-        # picked_indices_te = np.arange(labels_te.shape[0])
+                # Use 23000 per class for train
+                # And 3000 per class for test
+                # At this stage, care only about label
+                # Balance and preserving property
 
-        # No filter (all data)
-        # picked_indices_tr = np.arange(splits_tr[i].shape[0])
-        # picked_indices_te = np.arange(splits_te[i].shape[0])
-        # Attractive
-        # picked_indices_tr = filter(tags_tr, 1, 0.68)
-        # picked_indices_te = filter(tags_te, 1, 0.68)
-        # Male
-        # picked_indices_tr = filter(tags_tr, 1, 0.59)
-        # picked_indices_te = filter(tags_te, 1, 0.59)
-        # Old
-        picked_indices_tr = filter(tags_tr, 0, 0.37)
-        picked_indices_te = filter(tags_te, 0, 0.37)
-        print("Filtered property ratio:", np.mean(tags_tr[picked_indices_tr]))
-        actual_picked_indices_tr = sorted(splits_tr[i][picked_indices_tr])
-        actual_picked_indices_te = sorted(splits_te[i][picked_indices_te])
-        print("Filtered data label balance:", np.mean(
-            labels_tr[actual_picked_indices_tr, target_prop]))
+                def heuristic(tgs, foc, fil, gt_labels,
+                              cwise_sample, n_tries=1000):
+                    vals, pckds = [], []
+                    fill_comp = fil
+                    if foc == 0:
+                        fill_comp = 1 - fill_comp
+                    iterator = tqdm(range(n_tries))
+                    for _ in iterator:
+                        pckd = filter(tgs, foc, fil)
+                        # Class-balanced sampling
+                        zero_ids = np.nonzero(gt_labels[pckd] == 0)[0]
+                        one_ids = np.nonzero(gt_labels[pckd] == 1)[0]
+                        zero_ids = np.random.permutation(
+                            pckd[zero_ids])[:cwise_sample]
+                        one_ids = np.random.permutation(
+                            pckd[one_ids])[:cwise_sample]
+                        # Combine them together
+                        pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
+                        vals.append(np.mean(tgs[pckd]))
+                        pckds.append(pckd)
 
-        # print("Filtered data label balance:", np.mean(labels_tr[picked_indices_tr, target_prop]))
+                        # Print best ratio so far in descripton
+                        iterator.set_description(
+                            "%.4f" % (fill_comp + np.min([np.abs(zz-fill_comp) for zz in vals])))
 
-        # Get loaders again
-        trainloader, testloader = ds.make_loaders(
-            batch_size=512, workers=8, shuffle_train=False, shuffle_val=False, data_aug=False)
-        # Save test data
-        os.mkdir(os.path.join(paths[i],   "test"))
-        dump_files(os.path.join(paths[i], "test"),  model,
-                   testloader,  actual_picked_indices_te, target_prop)
-        # dump_files(os.path.join(paths[i], "test"),  model, testloader,  picked_indices_te, target_prop)
-        # Save train data
-        os.mkdir(os.path.join(paths[i],   "train"))
-        dump_files(os.path.join(paths[i], "train"), model,
-                   trainloader, actual_picked_indices_tr, target_prop)
-        # dump_files(os.path.join(path[i], "train"), model, trainloader, picked_indices_tr, target_prop)
+                    vals = np.abs(np.array(vals) - fill_comp)
+                    # Pick the one closest to desired ratio
+                    return pckds[np.argmin(vals)]
+
+                if given_prop == "Attractive":
+                    # Attractive
+                    picked_indices_tr = heuristic(
+                        tags_tr, 1, 0.68, clabels_tr, 23000)
+                    picked_indices_te = heuristic(
+                        tags_te, 1, 0.68, clabels_te, 3000)
+                elif given_prop == "Male":
+                    # Male
+                    picked_indices_tr = heuristic(
+                        tags_tr, 1, 0.59, clabels_tr, 23000)
+                    picked_indices_te = heuristic(
+                        tags_te, 1, 0.59, clabels_te, 3000)
+                elif given_prop == "Young":
+                    # Old
+                    picked_indices_tr = heuristic(
+                        tags_tr, 0, 0.37, clabels_tr, 23000)
+                    picked_indices_te = heuristic(
+                        tags_te, 0, 0.37, clabels_te, 3000)
+                else:
+                    raise ValueError("Ratio for this property not defined yet")
+
+                actual_picked_indices_tr = sorted(
+                    splits_tr[i][picked_indices_tr])
+                actual_picked_indices_te = sorted(
+                    splits_te[i][picked_indices_te])
+
+                print("Filtered property ratio:",
+                      np.mean(tags_tr[picked_indices_tr]))
+
+            print("Filtered data label balance:", np.mean(
+                labels_tr[actual_picked_indices_tr, target_prop]))
+
+            # Get loaders again
+            trainloader, testloader = ds.make_loaders(
+                batch_size=512, workers=4, shuffle_train=False,
+                shuffle_val=False, data_aug=False)
+            # Save test data
+            os.mkdir(os.path.join(paths[i],   "test"))
+            dump_files(os.path.join(paths[i], "test"),  model,
+                       testloader,  actual_picked_indices_te, target_prop)
+
+            # Get loaders again
+            trainloader, testloader = ds.make_loaders(
+                batch_size=512, workers=4, shuffle_train=False,
+                shuffle_val=False, data_aug=False)
+            # Save train data
+            os.mkdir(os.path.join(paths[i],   "train"))
+            dump_files(os.path.join(paths[i], "train"), model,
+                       trainloader, actual_picked_indices_tr, target_prop)

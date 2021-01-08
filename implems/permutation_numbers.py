@@ -5,8 +5,6 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.lr_scheduler import StepLR
 import numpy as np
 from tqdm import tqdm
-from sklearn.ensemble import RandomForestClassifier
-import pandas as pd
 import torchvision
 from torchvision import transforms
 from sklearn.neural_network import MLPClassifier
@@ -17,7 +15,8 @@ import os
 import utils
 
 
-def train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_save_path, epochs=40):
+def train_as_they_said(model, trainloader, testloader, loss_fn,
+                       acc_fn, base_save_path, epochs=40):
     # optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.01)
     # optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.01)
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01)
@@ -41,27 +40,31 @@ def train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_sav
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            running_acc  += acc_fn(outputs, y)
+            running_loss += loss.item() * x.shape[0]
+            running_acc += acc_fn(outputs, y)
             num_samples += x.shape[0]
 
-            iterator.set_description("Epoch %d : [Train] Loss: %.5f Accuacy: %.2f" % (e, running_loss / num_samples, 100 * running_acc / num_samples))
+            iterator.set_description("Epoch %d : [Train] Loss: %.5f Accuacy: %.2f" % (
+                e, running_loss / num_samples, 100 * running_acc / num_samples))
 
         # Validation
         model.eval()
         running_loss, running_acc = 0.0, 0.0
         num_samples = 0
-        for (x, y) in testloader:
-            x, y = x.cuda(), y.cuda()
+        with ch.no_grad():
+            for (x, y) in testloader:
+                x, y = x.cuda(), y.cuda()
 
-            outputs = model(x)[:, 0]
-            loss = loss_fn(outputs, y.float())
-            running_loss += loss.item()
-            running_acc  += acc_fn(outputs, y)
-            num_samples += x.shape[0]
+                outputs = model(x)[:, 0]
+                loss = loss_fn(outputs, y.float())
+                running_loss += loss.item() * x.shape[0]
+                running_acc += acc_fn(outputs, y)
+                num_samples += x.shape[0]
 
-        print("[Val] Loss: %.5f Accuacy: %.2f\n" % (running_loss / num_samples, 100 * running_acc / num_samples))
-        ch.save(model.state_dict(), os.path.join(base_save_path, str(e+1) + "_" + str(running_acc.item() / num_samples)) + ".pth")
+        print("[Val] Loss: %.5f Accuacy: %.2f\n" %
+              (running_loss / num_samples, 100 * running_acc / num_samples))
+        ch.save(model.state_dict(), os.path.join(base_save_path, str(
+            e+1) + "_" + str(running_acc.item() / num_samples)) + ".pth")
 
         # scheduler.step()
 
@@ -69,14 +72,20 @@ def train_as_they_said(model, trainloader, testloader, loss_fn, acc_fn, base_sav
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='none', help='which dataset to work on (census/mnist/celeba/processed)')
+    parser.add_argument('--dataset', type=str, default='none',
+                        help='which dataset to work on (census/mnist/celeba/processed)')
     parser.add_argument('--which', type=str, default='', help='patho to data')
-    parser.add_argument('--savepath', type=str, default='', help='folder where trained model(s) should be saved')
-    parser.add_argument('--epochs', type=int, default=20, help='number of epochs to train model for')
+    parser.add_argument('--savepath', type=str, default='',
+                        help='folder where trained model(s) should be saved')
+    parser.add_argument('--epochs', type=int, default=20,
+                        help='number of epochs to train model for')
     parser.add_argument('--bs', type=int, default=512, help='batch size')
-    parser.add_argument('--weightinit', type=str, default='vggface2', help='which weight initialization to use: vggface2, casia-webface, or none')
-    parser.add_argument('--augment', type=bool, default=False, help='use data augmentations when training models?')
-    parser.add_argument('--hidden', type=str, default="64,16", help='comma-separated dimensions for hidden layers for models classification layer')
+    parser.add_argument('--weightinit', type=str, default='vggface2',
+                        help='which weight initialization to use: vggface2, casia-webface, or none')
+    parser.add_argument('--augment', type=bool, default=False,
+                        help='use data augmentations when training models?')
+    parser.add_argument('--hidden', type=str, default="64,16",
+                        help='comma-separated dimensions for hidden layers for models classification layer')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -84,9 +93,14 @@ if __name__ == "__main__":
         # Census Income dataset
         ci = utils.CensusIncome("./census_data/")
 
-        sex_filter = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
-        race_filter = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
-        income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
+        def sex_filter(df): return utils.filter(
+            df, lambda x: x['sex:Female'] == 1, 0.65)
+
+        def race_filter(df): return utils.filter(
+            df, lambda x: x['race:White'] == 0,  1.0)
+
+        def income_filter(df): return utils.filter(
+            df, lambda x: x['income'] == 1, 0.5)
 
         num_cfs = 100
         for i in range(1, num_cfs + 1):
@@ -143,8 +157,8 @@ if __name__ == "__main__":
                                               shuffle=True,
                                               num_workers=8)
 
-        loss_fn = nn.BCEWithLogitsLoss(reduction='sum')
-        acc_fn = lambda outputs, y: ch.sum((y == (outputs >= 0)))
+        loss_fn = nn.BCEWithLogitsLoss(reduction='mean')
+        def acc_fn(outputs, y): return ch.sum((y == (outputs >= 0)))
 
         train_as_they_said(model, trainloader,
                            testloader, loss_fn,
@@ -158,7 +172,7 @@ if __name__ == "__main__":
         x_te = x_te.astype("float32") / 255
 
         x_tr = x_tr.reshape(x_tr.shape[0], -1)
-        x_te  = x_te.reshape(x_te.shape[0], -1)
+        x_te = x_te.reshape(x_te.shape[0], -1)
 
         # Brightness Jitter
         brightness = np.random.uniform(0.1, 0.5, size=(x_tr.shape[0],))

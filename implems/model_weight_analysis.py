@@ -19,9 +19,14 @@ if __name__ == "__main__":
         paths = ['original', 'income', 'sex', 'race']
         ci = utils.CensusIncome("./census_data/")
 
-        sex_filter = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
-        race_filter = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
-        income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
+        def sex_filter(df): return utils.filter(
+            df, lambda x: x['sex:Female'] == 1, 0.65)
+
+        def race_filter(df): return utils.filter(
+            df, lambda x: x['race:White'] == 0,  1.0)
+
+        def income_filter(df): return utils.filter(
+            df, lambda x: x['income'] == 1, 0.5)
 
         _, (x_te, y_te), cols = ci.load_data()
         cols = list(cols)
@@ -42,7 +47,8 @@ if __name__ == "__main__":
         def layer_output(data, MLP, layer=0):
             L = data.copy()
             for i in range(layer):
-                L = ACTIVATIONS['relu'](np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
+                L = ACTIVATIONS['relu'](
+                    np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
             return L
 
         print(cols)
@@ -55,14 +61,18 @@ if __name__ == "__main__":
                 clf = load(os.path.join(base_path, path_seg, path))
 
                 # Look at initial layer weights, biases
-                v, c = np.unique(np.argsort(-np.abs(clf.coefs_[0]), 0)[:5, :], return_counts=True)
+                v, c = np.unique(
+                    np.argsort(-np.abs(clf.coefs_[0]), 0)[:5, :],
+                    return_counts=True)
                 print((v[np.argsort(-c)[:10]]))
 
                 # w_.append(clf.coefs_[0][focus_feature])
                 # w_.append(np.sum(clf.coefs_[0][focus_feature]))
                 # w_.append(np.argmax(clf.coefs_[0], 0))
                 # w_.append(np.sum(clf.coefs_[0][focus_feature] <= 0))
-                w_.append(np.abs(clf.coefs_[0][focus_feature]) / np.sum(np.abs(clf.coefs_[0]), 0))
+                w_.append(
+                    np.abs(clf.coefs_[0][focus_feature]) /
+                    np.sum(np.abs(clf.coefs_[0]), 0))
                 # print(sorted(w_[-1], reverse=True)[:3])
                 # w_.append(np.sum(np.abs(clf.coefs_[0][focus_feature])))
                 b_.append(clf.intercepts_[0][focus_feature])

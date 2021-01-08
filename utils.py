@@ -574,7 +574,7 @@ def get_cropped_faces(cropmodel, x):
 
 
 class CelebACustomBinary(Dataset):
-    def __init__(self, root_dir, transform=None):
+    def __init__(self, root_dir, shuffle=False, transform=None):
         self.root_dir = root_dir
         self.transform = transform
         # Get filenames
@@ -583,6 +583,8 @@ class CelebACustomBinary(Dataset):
         filenames_0 = [os.path.join(path_0, x) for x in os.listdir(path_0)]
         filenames_1 = [os.path.join(path_1, x) for x in os.listdir(path_1)]
         self.filenames = filenames_0 + filenames_1
+        if shuffle:
+            np.random.shuffle(self.filenames)
 
     def __len__(self):
         return len(self.filenames)
