@@ -28,8 +28,8 @@ def collect_data_for_models(folder_paths,
                             census=False,
                             plot_metric=None,
                             sample=None):
+    all_metrics = []
     for index, UPFOLDER in enumerate(folder_paths):
-        all_metrics = []
         for pf in UPFOLDER:
             modelList = os.listdir(pf)
             if sample:
@@ -53,7 +53,8 @@ def collect_data_for_models(folder_paths,
                 if census:
                     preds = model.predict_proba(all_x)[:, 1]
                 else:
-                    preds = implem_utils.get_predictions(model, all_x, batch_size)
+                    preds = implem_utils.get_predictions(
+                        model, all_x, batch_size)
                     preds = ch.sigmoid(preds).numpy()
 
                 # Get model's predictions
@@ -180,7 +181,8 @@ if __name__ == "__main__":
                                                    aif_dataset,
                                                    sample=args.sample)
         x_meta_test = [list(mm.values()) for mm in all_metrics_test]
-        y_meta_test = np.array([0] * (len(x_meta_test) // 2) + [1] * (len(x_meta_test) // 2))
+        y_meta_test = np.array(
+            [0] * (len(x_meta_test) // 2) + [1] * (len(x_meta_test) // 2))
         scores = clf.predict_proba(x_meta_test)[:, 1]
         print(clf.score(x_meta_test, y_meta_test))
 

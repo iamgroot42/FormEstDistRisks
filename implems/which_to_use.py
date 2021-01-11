@@ -103,13 +103,11 @@ if __name__ == "__main__":
 
     savemode = False
     indices_basepath = sys.argv[1]
+    care_about = ['Attractive', 'Male', 'Young', 'Smiling']
+    care_about = [attrs.index(x) for x in care_about]
 
     if savemode:
-        first_split_ratio = float(sys.argv[2])
-
-        care_about = ['Attractive', 'Male', 'Young', 'Smiling']
-        care_about = [attrs.index(x) for x in care_about]
-
+        first_split_ratio = float(sys.argv[2])    
         # Perform first time, load from memory next time
         splits_tr = balanced_split(labels_tr, care_about, first_split_ratio)
         splits_te = balanced_split(labels_te, care_about, first_split_ratio)
@@ -125,6 +123,11 @@ if __name__ == "__main__":
         # Save processed images here
         dataset_basepath = sys.argv[2]
         given_prop = sys.argv[3]
+
+        # Use 23000 per class for train
+        # And 3000 per class for test
+        num_per_class_train = 23000
+        num_per_class_test = 3000
 
         # Load from memory
         splits_tr = [np.load(os.path.join(indices_basepath,
@@ -151,24 +154,64 @@ if __name__ == "__main__":
             print("Original label balance:", np.mean(
                 labels_tr[splits_tr[i], target_prop]))
 
+            # Class labels
+            clabels_tr = labels_tr[splits_tr[i], target_prop]
+            clabels_te = labels_te[splits_te[i], target_prop]
+
             if given_prop == "none":
                 # No filter (all data)
                 picked_indices_tr = np.arange(splits_tr[i].shape[0])
                 picked_indices_te = np.arange(splits_te[i].shape[0])
 
-                actual_picked_indices_tr = picked_indices_tr
-                actual_picked_indices_te = picked_indices_te
+                # Heuristic: generate samples, pick the one that is closest
+                # In terms of preserving ratios that we care about
+                # Across all experiments
+                def heuristic(idcs, lbls, gt_labels,
+                              cwise_sample, n_tries=1000):
+                    # Get original ratio values
+                    og_vals = np.array(
+                        [np.mean(lbls[idcs, co]) for co in care_about])
+                    vals, pckds = [], []
+                    iterator = tqdm(range(n_tries))
+                    cur_best_val = np.inf
+                    for _ in iterator:
+                        # Class-balanced sampling
+                        zero_ids = np.nonzero(gt_labels == 0)[0]
+                        one_ids = np.nonzero(gt_labels == 1)[0]
+                        zero_ids = np.random.permutation(
+                            zero_ids)[:cwise_sample]
+                        one_ids = np.random.permutation(
+                            one_ids)[:cwise_sample]
+                        # Combine them together
+                        pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
+                        vals.append(
+                            np.array([np.mean(
+                                lbls[pckd, co]) for co in care_about]))
+                        pckds.append(pckd)
+
+                        cur_best_val = np.minimum(
+                            cur_best_val, np.sum((vals[-1] - og_vals)**2))
+
+                        # Print best ratio so far in descripton
+                        iterator.set_description(
+                            "Ratios L-2 dist: %.4f" % cur_best_val)
+
+                    vals = [np.sum((x - og_vals)**2) for x in vals]
+                    # Pick the one closest to desired ratio
+                    return pckds[np.argmin(vals)]
+
+                picked_indices_tr = heuristic(
+                    picked_indices_tr, labels_tr,
+                    clabels_tr, num_per_class_train)
+                picked_indices_te = heuristic(
+                    picked_indices_te, labels_te,
+                    clabels_te, num_per_class_test)
             else:
                 prop = attrs.index(given_prop)
                 tags_tr = labels_tr[splits_tr[i], prop]
                 tags_te = labels_te[splits_te[i], prop]
-                clabels_tr = labels_tr[splits_tr[i], target_prop]
-                clabels_te = labels_te[splits_te[i], target_prop]
 
                 print("Original property ratio:", np.mean(tags_tr))
-
-                # Use 23000 per class for train
-                # And 3000 per class for test
                 # At this stage, care only about label
                 # Balance and preserving property
 
@@ -204,31 +247,31 @@ if __name__ == "__main__":
                 if given_prop == "Attractive":
                     # Attractive
                     picked_indices_tr = heuristic(
-                        tags_tr, 1, 0.68, clabels_tr, 23000)
+                        tags_tr, 1, 0.68, clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 1, 0.68, clabels_te, 3000)
+                        tags_te, 1, 0.68, clabels_te, num_per_class_test)
                 elif given_prop == "Male":
                     # Male
                     picked_indices_tr = heuristic(
-                        tags_tr, 1, 0.59, clabels_tr, 23000)
+                        tags_tr, 1, 0.59, clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 1, 0.59, clabels_te, 3000)
+                        tags_te, 1, 0.59, clabels_te, num_per_class_test)
                 elif given_prop == "Young":
                     # Old
                     picked_indices_tr = heuristic(
-                        tags_tr, 0, 0.37, clabels_tr, 23000)
+                        tags_tr, 0, 0.37, clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 0, 0.37, clabels_te, 3000)
+                        tags_te, 0, 0.37, clabels_te, num_per_class_test)
                 else:
                     raise ValueError("Ratio for this property not defined yet")
 
-                actual_picked_indices_tr = sorted(
-                    splits_tr[i][picked_indices_tr])
-                actual_picked_indices_te = sorted(
-                    splits_te[i][picked_indices_te])
-
                 print("Filtered property ratio:",
                       np.mean(tags_tr[picked_indices_tr]))
+
+            actual_picked_indices_tr = sorted(
+                splits_tr[i][picked_indices_tr])
+            actual_picked_indices_te = sorted(
+                splits_te[i][picked_indices_te])
 
             print("Filtered data label balance:", np.mean(
                 labels_tr[actual_picked_indices_tr, target_prop]))

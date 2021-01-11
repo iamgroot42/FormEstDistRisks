@@ -44,14 +44,17 @@ if __name__ == "__main__":
     inspect_these = ["Attractive", "Male", "Young"]
 
     folder_paths = [
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2"
+        "/all/64_16/",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2"
+        "/male/64_16/",
     ]
 
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5), (0.5))])
     td = utils.CelebACustomBinary(
-        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
+        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all"
+        "/split_2/test",
         transform=transform)
 
     target_prop = attrs.index("Smiling")
@@ -63,6 +66,7 @@ if __name__ == "__main__":
         model_stats = []
 
         for FOLDER in tqdm(os.listdir(UPFOLDER)):
+            print(FOLDER)
             wanted_model = [x for x in os.listdir(
                 os.path.join(UPFOLDER, FOLDER))if x.startswith("20_")][0]
             MODELPATH = os.path.join(UPFOLDER, FOLDER, wanted_model)
@@ -76,7 +80,7 @@ if __name__ == "__main__":
             model.load_state_dict(ch.load(MODELPATH), strict=False)
             model.eval()
 
-            cropped_dataloader = DataLoader(td, batch_size=512, shuffle=False)
+            cropped_dataloader = DataLoader(td, batch_size=256, shuffle=False)
 
             stats, preds, all_stats = get_stats(
                 model, cropped_dataloader, target_prop, return_preds=True)
@@ -92,17 +96,27 @@ if __name__ == "__main__":
         # Look at failure/success cases to identify any potential trends
         success, fail = [], []
         for mp in model_preds:
-            success.append(np.nonzero((mp >= 0.5) == all_stats[:, target_prop])[0])
-            fail.append(np.nonzero((mp >= 0.5) != all_stats[:, target_prop])[0])
+            success.append(np.nonzero((mp >= 0) == all_stats[:, target_prop])[0])
+            fail.append(np.nonzero((mp >= 0) != all_stats[:, target_prop])[0])
         successes.append(success)
         failures.append(fail)
+
+        # Print accuracies
+        label_attr = attrs.index("Male")
+        prop_ones = np.nonzero(all_stats[:, label_attr] == 1)[0]
+        noprop_ones = np.nonzero(all_stats[:, label_attr] == 0)[0]
+        accuracies_prop = [np.mean(((mp >= 0) == all_stats[:, target_prop])[
+                                   prop_ones]) for mp in model_preds]
+        accuracies_noprop = [np.mean(((mp >= 0) == all_stats[:, target_prop])[
+                                     noprop_ones]) for mp in model_preds]
+        print("Accuracy on data (P=1):", accuracies_prop)
+        print("Accuracy on data (P=0):", accuracies_noprop)
 
         # Look at loss
         lossfn = nn.BCEWithLogitsLoss(reduction='none')
         cfms = []
 
         # Pick relevant samples
-        label_attr = attrs.index("Male")
         label_prop = np.nonzero(all_stats[yeslabel, label_attr] == 1)[0]
         label_noprop = np.nonzero(all_stats[yeslabel, label_attr] == 0)[0]
         nolabel_prop = np.nonzero(all_stats[nolabel, label_attr] == 1)[0]
@@ -149,9 +163,12 @@ if __name__ == "__main__":
 
                     s1, s2 = set(successes[i][k]), set(successes[j][l])
                     f1, f2 = set(successes[i][k]), set(successes[j][l])
-                    success_overlap = len(s1.intersection(s2)) / len(s1.union(s2))
-                    failure_overlap = len(f1.intersection(f2)) / len(f1.union(f2))
+                    success_overlap = len(
+                        s1.intersection(s2)) / len(s1.union(s2))
+                    failure_overlap = len(
+                        f1.intersection(f2)) / len(f1.union(f2))
 
                     # print("(%d,%d) (%d,%d) : Success Overlap: %f" % (i, k, j, l, success_overlap))
-                    print("(%d,%d) (%d,%d) : Failure Overlap: %f" % (i, k, j, l, failure_overlap))
+                    print("(%d,%d) (%d,%d) : Failure Overlap: %f" %
+                          (i, k, j, l, failure_overlap))
         print()

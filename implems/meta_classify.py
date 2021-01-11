@@ -112,7 +112,7 @@ if __name__ == "__main__":
                                    y="Accuracy on unseen models",
                                    data=df)
             plt.ylim(0.45, 1.0)
-            plt.title(" ".join(args.plot_title.split('_')))
+            # plt.title(" ".join(args.plot_title.split('_')))
             sns_plot.figure.savefig("../visualize/census_meta_scores.png")
 
         else:

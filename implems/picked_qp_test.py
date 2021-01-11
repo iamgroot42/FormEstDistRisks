@@ -1,3 +1,4 @@
+import utils
 import numpy as np
 import torch as ch
 import torch.nn as nn
@@ -7,13 +8,12 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
-import utils
-
 
 def get_these_images(folder):
     images = []
     for file in os.listdir(folder):
-        im = np.asarray(Image.open(os.path.join(folder, file))).astype(np.float32) / 255.
+        im = np.asarray(Image.open(os.path.join(folder, file))
+                        ).astype(np.float32) / 255.
         images.append(im)
     images = np.array(images).transpose(0, 3, 1, 2)
     # Normalize to [-1, 1]
@@ -31,13 +31,17 @@ if __name__ == "__main__":
 
     blind_test_models = [
 
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/augment_vggface/20_0.9151053864168618.pth",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/augment_vggface/10_0.928498243559719.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/"
+        "augment_vggface/20_0.9151053864168618.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/"
+        "augment_vggface/10_0.928498243559719.pth",
 
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/male/augment_vggface/20_0.9246347941567065.pth",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/male/augment_vggface/10_0.9243027888446215.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/male/"
+        "augment_vggface/20_0.9246347941567065.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/male/"
+        "augment_vggface/10_0.9243027888446215.pth",
 
-		# "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/augment_vggface/20_0.9259516256938938.pth",
+        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/augment_vggface/20_0.9259516256938938.pth",
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/augment_vggface/10_0.9240681998413958.pth",
     ]
 
@@ -57,7 +61,8 @@ if __name__ == "__main__":
         preds = model(qp_data.cuda())
         preds = ch.sigmoid(preds.detach().cpu())
         x = preds.numpy()[:, 0]
-        if i == 0: sorted_order = np.argsort(x)
+        if i == 0:
+            sorted_order = np.argsort(x)
         plt.plot(np.arange(x.shape[0]), x[sorted_order], label=labels[i])
 
         all_scores.append(x)
@@ -65,20 +70,25 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("/u/as9rw/work/fnb/visualize/qp_scores_celeba.png")
 
-
     # Take note of differences across different kind of models
     print(np.mean(np.abs(all_scores[0] - all_scores[1])), "all-all")
-    print(np.mean(np.abs(all_scores[2] - all_scores[3])), "attractive-attractive")
+    print(
+        np.mean(np.abs(all_scores[2] - all_scores[3])), "attractive-attractive")
     # Print agreement
     print(np.sum((all_scores[0] >= 0.5) == (all_scores[1] >= 0.5)), "all-all")
-    print(np.sum((all_scores[2] >= 0.5) == (all_scores[3] >= 0.5)), "attractive-attractive")
+    print(np.sum((all_scores[2] >= 0.5) == (
+        all_scores[3] >= 0.5)), "attractive-attractive")
     print()
     print(np.mean(np.abs(all_scores[0] - all_scores[2])), "all-attractive")
     print(np.mean(np.abs(all_scores[0] - all_scores[3])), "all-attractive")
     print(np.mean(np.abs(all_scores[1] - all_scores[2])), "all-attractive")
     print(np.mean(np.abs(all_scores[1] - all_scores[3])), "all-attractive")
     # Print agreement
-    print(np.sum((all_scores[0] >= 0.5) == (all_scores[2] >= 0.5)), "all-attractive")
-    print(np.sum((all_scores[0] >= 0.5) == (all_scores[3] >= 0.5)), "all-attractive")
-    print(np.sum((all_scores[1] >= 0.5) == (all_scores[2] >= 0.5)), "all-attractive")
-    print(np.sum((all_scores[1] >= 0.5) == (all_scores[3] >= 0.5)), "all-attractive")
+    print(np.sum((all_scores[0] >= 0.5) == (
+        all_scores[2] >= 0.5)), "all-attractive")
+    print(np.sum((all_scores[0] >= 0.5) == (
+        all_scores[3] >= 0.5)), "all-attractive")
+    print(np.sum((all_scores[1] >= 0.5) == (
+        all_scores[2] >= 0.5)), "all-attractive")
+    print(np.sum((all_scores[1] >= 0.5) == (
+        all_scores[3] >= 0.5)), "all-attractive")

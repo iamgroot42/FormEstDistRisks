@@ -5,3 +5,8 @@ census_models_mlp_many/*
 mnist_models/*
 celeba_models/*
 celeba_models_split/*
+
+LOWINCOME_NOW/*
+OG_NOW/*
+WHITE_NOW/*
+WOMEN_NOW/*
