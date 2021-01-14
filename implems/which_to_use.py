@@ -123,6 +123,10 @@ if __name__ == "__main__":
         # Save processed images here
         dataset_basepath = sys.argv[2]
         given_prop = sys.argv[3]
+        ratio_wanted = float(sys.argv[4])
+        assert ratio_wanted <= 1 and ratio_wanted >= 0, "Provide valid ratio in [0, 1]"
+
+        # 0.68 for attractive, 0.59 for male, 0.37 for young
 
         # Use 23000 per class for train
         # And 3000 per class for test
@@ -247,21 +251,27 @@ if __name__ == "__main__":
                 if given_prop == "Attractive":
                     # Attractive
                     picked_indices_tr = heuristic(
-                        tags_tr, 1, 0.68, clabels_tr, num_per_class_train)
+                        tags_tr, 1, ratio_wanted,
+                        clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 1, 0.68, clabels_te, num_per_class_test)
+                        tags_te, 1, ratio_wanted,
+                        clabels_te, num_per_class_test)
                 elif given_prop == "Male":
                     # Male
                     picked_indices_tr = heuristic(
-                        tags_tr, 1, 0.59, clabels_tr, num_per_class_train)
+                        tags_tr, 1, ratio_wanted,
+                        clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 1, 0.59, clabels_te, num_per_class_test)
+                        tags_te, 1, ratio_wanted,
+                        clabels_te, num_per_class_test)
                 elif given_prop == "Young":
                     # Old
                     picked_indices_tr = heuristic(
-                        tags_tr, 0, 0.37, clabels_tr, num_per_class_train)
+                        tags_tr, 0, ratio_wanted,
+                        clabels_tr, num_per_class_train)
                     picked_indices_te = heuristic(
-                        tags_te, 0, 0.37, clabels_te, num_per_class_test)
+                        tags_te, 0, ratio_wanted,
+                        clabels_te, num_per_class_test)
                 else:
                     raise ValueError("Ratio for this property not defined yet")
 

@@ -16,11 +16,8 @@ import utils
 
 
 def train_as_they_said(model, trainloader, testloader, loss_fn,
-                       acc_fn, base_save_path, epochs=40):
-    # optimizer = optim.SGD(model.parameters(), lr=0.1, weight_decay=0.01)
-    # optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=0.01)
-    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=0.01)
-    # scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+                       acc_fn, base_save_path, lr=1e-4, epochs=15):
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
 
     for e in range(epochs):
         # Train
@@ -66,20 +63,19 @@ def train_as_they_said(model, trainloader, testloader, loss_fn,
         ch.save(model.state_dict(), os.path.join(base_save_path, str(
             e+1) + "_" + str(running_acc.item() / num_samples)) + ".pth")
 
-        # scheduler.step()
-
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='none',
                         help='which dataset to work on (census/mnist/celeba/processed)')
-    parser.add_argument('--which', type=str, default='', help='patho to data')
+    parser.add_argument('--which', type=str, default='', help='path to data')
     parser.add_argument('--savepath', type=str, default='',
                         help='folder where trained model(s) should be saved')
-    parser.add_argument('--epochs', type=int, default=20,
+    parser.add_argument('--epochs', type=int, default=15,
                         help='number of epochs to train model for')
     parser.add_argument('--bs', type=int, default=512, help='batch size')
+    parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--weightinit', type=str, default='vggface2',
                         help='which weight initialization to use: vggface2, casia-webface, or none')
     parser.add_argument('--augment', type=bool, default=False,
@@ -163,6 +159,7 @@ if __name__ == "__main__":
         train_as_they_said(model, trainloader,
                            testloader, loss_fn,
                            acc_fn, args.savepath,
+                           lr=args.lr,
                            epochs=args.epochs)
 
     elif args.dataset == 'mnist':

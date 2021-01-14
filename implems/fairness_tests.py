@@ -36,6 +36,9 @@ def collect_data_for_models(folder_paths,
                 modelList = np.random.permutation(modelList)[:sample]
             for MODELPATHSUFFIX in tqdm(modelList):
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
+                # Only consider last three models per folder
+                if not ("13_" in MODELPATHSUFFIX or "14_" in MODELPATHSUFFIX or "15_" in MODELPATHSUFFIX):
+                    continue
 
                 # Load model
                 if census:
@@ -75,8 +78,8 @@ def collect_data_for_models(folder_paths,
                 else:
                     metrics = implem_utils.compute_metrics(aif_dataset,
                                                         clasf_dataset,
-                                                        unprivileged_groups=[{"Attractive": 0}],
-                                                        privileged_groups=[{"Attractive": 1}])
+                                                        unprivileged_groups=[{"Male": 0}],
+                                                        privileged_groups=[{"Male": 1}])
 
                 all_metrics.append(metrics)
 
@@ -113,26 +116,55 @@ if __name__ == "__main__":
 
         attrs = constants.attr_names
         inspect_these = ["Attractive", "Male", "Young"]
+        common_prefix = "/p/adversarialml/as9rw/celeb_models/50_50"
 
         folder_paths = [
             [
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/",
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/",
+                common_prefix + "/split_2/all/casia/1/",
+                common_prefix + "/split_2/all/casia/2/",
+                common_prefix + "/split_2/all/casia/3/",
+                common_prefix + "/split_2/all/none/1/",
+                common_prefix + "/split_2/all/none/2/",
+                common_prefix + "/split_2/all/none/3/",
+                common_prefix + "/split_2/all/vggface/1/",
+                common_prefix + "/split_2/all/vggface/2/",
+                common_prefix + "/split_2/all/vggface/3/",
             ],
             [
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/augment_none/",
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/",
+                common_prefix + "/split_2/male/casia/1/",
+                common_prefix + "/split_2/male/casia/2/",
+                common_prefix + "/split_2/male/casia/3/",
+                common_prefix + "/split_2/male/none/1/",
+                common_prefix + "/split_2/male/none/2/",
+                common_prefix + "/split_2/male/none/3/",
+                common_prefix + "/split_2/male/vggface/1/",
+                common_prefix + "/split_2/male/vggface/2/",
+                common_prefix + "/split_2/male/vggface/3/",
             ]
         ]
 
         blind_test_models = [
             [
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/augment_vggface/",
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/all/vggface/",
+                common_prefix + "/split_1/all/casia/1/",
+                common_prefix + "/split_1/all/casia/2/",
+                common_prefix + "/split_1/all/casia/3/",
+                common_prefix + "/split_1/all/none/1/",
+                common_prefix + "/split_1/all/none/2/",
+                common_prefix + "/split_1/all/none/3/",
+                common_prefix + "/split_1/all/vggface/1/",
+                common_prefix + "/split_1/all/vggface/2/",
+                common_prefix + "/split_1/all/vggface/3/",
             ],
             [
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/augment_vggface/",
-                "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_1/attractive/vggface/"
+                common_prefix + "/split_1/male/casia/1/",
+                common_prefix + "/split_1/male/casia/2/",
+                common_prefix + "/split_1/male/casia/3/",
+                common_prefix + "/split_1/male/none/1/",
+                common_prefix + "/split_1/male/none/2/",
+                common_prefix + "/split_1/male/none/3/",
+                common_prefix + "/split_1/male/vggface/1/",
+                common_prefix + "/split_1/male/vggface/2/",
+                common_prefix + "/split_1/male/vggface/3/",
             ]
         ]
 
@@ -140,7 +172,8 @@ if __name__ == "__main__":
         transform = transforms.Compose(
             [transforms.ToTensor(), transforms.Normalize((0.5), (0.5))])
         td = utils.CelebACustomBinary(
-            "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
+            # "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
+            "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/50_50/all/split_2/test",
             transform=transform)
 
         # Read all data and get ready to store as df
@@ -156,7 +189,7 @@ if __name__ == "__main__":
         df = pd.DataFrame(data=data)
         aif_dataset = BinaryLabelDataset(df=df,
                                          label_names=["Smiling"],
-                                         protected_attribute_names=["Attractive"])
+                                         protected_attribute_names=["Male"])
 
         # Collect all metrics for given folders
         all_metrics = collect_data_for_models(folder_paths,

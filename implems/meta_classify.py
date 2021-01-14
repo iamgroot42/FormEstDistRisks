@@ -66,6 +66,7 @@ if __name__ == "__main__":
 
                 # Look at initial layer weights, biases
                 processed = clf.coefs_[0]
+
                 processed = np.concatenate(
                     (np.mean(processed, 1), np.mean(processed ** 2, 1)))
                 w.append(processed)

@@ -476,6 +476,7 @@ class FaceModel(nn.Module):
         # Input features -> hidden layer
         layers.append(nn.Linear(n_feat, hidden[0]))
         layers.append(nn.ReLU())
+        # layers.append(nn.Dropout())
         for i in range(len(hidden)-1):
             layers.append(nn.Linear(hidden[i], hidden[i+1]))
             layers.append(nn.ReLU())
@@ -484,12 +485,17 @@ class FaceModel(nn.Module):
         layers.append(nn.Linear(hidden[-1], 1))
         self.dnn = nn.Sequential(*layers)
 
-    def forward(self, x, only_latent=False, deep_latent=None):
+    def forward(self, x, only_latent=False,
+                deep_latent=None, within_block=None):
         if self.train_feat:
-            x_ = self.feature_model(x, with_latent=deep_latent)
+            x_ = self.feature_model(
+                # x, with_latent=deep_latent)
+                x, with_latent=deep_latent, within_block=within_block)
         else:
             with ch.no_grad():
-                x_ = self.feature_model(x, with_latent=deep_latent)
+                x_ = self.feature_model(
+                    # x, with_latent=deep_latent)
+                    x, with_latent=deep_latent, within_block=within_block)
 
         # Check if Tuple
         if type(x_) is tuple and x_[1] is not None:
@@ -633,17 +639,6 @@ class PermInvModel(nn.Module):
         prev_layer = 0
 
         def make_mini(y):
-            # return nn.Sequential(
-            #     nn.Linear(y, 32),
-            #     nn.ReLU(),
-            #     nn.Dropout(0.1),
-            #     nn.Linear(32, 16),
-            #     nn.ReLU(),
-            #     nn.Dropout(0.1),
-            #     nn.Linear(16, 8),
-            #     nn.ReLU(),
-            #     nn.Dropout(0.1)
-            # )
             return nn.Sequential(
                 nn.Linear(y, 64),
                 nn.ReLU(),
@@ -707,3 +702,20 @@ class CustomBertModel(nn.Module):
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
         return logits
+
+
+class AverageMeter(object):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count

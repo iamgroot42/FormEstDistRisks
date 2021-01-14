@@ -2,7 +2,6 @@ from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
 from joblib import dump
 import os
-import numpy as np
 import utils
 
 
@@ -22,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('--on_first', type=bool, default=False,
                         help='train on first split?')
     parser.add_argument('--no_split', type=bool, default=False,
-                        help='don not split data at all?')
+                        help='do not split data at all?')
     parser.add_argument('--verbose', type=bool, default=False,
                         help='print out per-classifier stats?')
     parser.add_argument('--max_iter', type=int, default=200,
