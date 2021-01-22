@@ -384,7 +384,8 @@ class CensusIncome:
                   train_filter=None,
                   test_ratio=0.5,
                   random_state=42,
-                  first=None):
+                  first=None,
+                  sample_ratio=1.):
         train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
                                  sep=' *, *', na_values='?', engine='python')
         test_data = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
@@ -398,16 +399,26 @@ class CensusIncome:
 
         train_df, test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
 
-        def s_split(this_df):
+        def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
                                          test_size=test_ratio,
-                                         random_state=random_state)
-            splitter = sss.split(this_df, this_df[["sex:Female", "race:White", "income"]])
+                                         random_state=rs)
+            splitter = sss.split(
+                this_df, this_df[["sex:Female", "race:White", "income"]])
             split_1, split_2 = next(splitter)
             return this_df.iloc[split_1], this_df.iloc[split_2]
 
         train_df_first, train_df_second = s_split(train_df)
         test_df_first, test_df_second = s_split(test_df)
+
+        # Further sample data, if requested
+        if sample_ratio < 1:
+            # Don't fixed random seed (random sampling wanted)
+            # In this mode, train and test data are combined
+            train_df_first = pd.concat([train_df_first, test_df_first])
+            train_df_second = pd.concat([train_df_second, test_df_second])
+            _, train_df_first = s_split(train_df_first, None)
+            _, train_df_second = s_split(train_df_second, None)
 
         def get_x_y(P):
             # Scale X values
@@ -424,7 +435,7 @@ class CensusIncome:
                 TRAIN_DF = train_filter(TRAIN_DF)
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
-                TRAIN_DF), get_x_y(test_df)
+                TRAIN_DF), get_x_y(TEST_DF)
             # Preprocess data (scale)
             X = np.concatenate((x_tr, x_te), 0)
             X = preprocessing.scale(X)

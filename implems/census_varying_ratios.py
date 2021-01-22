@@ -16,11 +16,16 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
+def params_to_gpu(params):
+    for i in range(len(params)):
+        params[i] = [x.clone().cuda() for x in params[i]]
+
+
 def acc_fn(x, y):
     return ch.sum((y == (x >= 0)))
 
 
-def get_outputs(model, X, no_grad=False):
+def get_outputs(model, X, no_grad=False, gpu=False):
     outputs = []
     for x in X:
         if no_grad:
@@ -32,10 +37,13 @@ def get_outputs(model, X, no_grad=False):
     return outputs
 
 
-def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=False):
-    model = utils.PermInvModel([90, 60, 30, 30])
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
+def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
+    model = utils.PermInvModel([90, 32, 16, 8])
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     loss_fn = nn.BCEWithLogitsLoss()
+    if gpu:
+        model = model.cuda()
+        loss_fn = loss_fn.cuda()
 
     params, y = train_data
     iterator = range(epochs)
@@ -45,7 +53,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=False):
     # Start training
     model.train()
     for e in iterator:
-        outputs = get_outputs(model, params)
+        outputs = get_outputs(model, params, gpu=gpu)
         optimizer.zero_grad()
         loss = loss_fn(outputs, y.float())
 
@@ -68,7 +76,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=False):
 
 
 def get_models(folder_path, label, collect_all=False):
-    models_in_folder = os.listdir(folder_path) #[:50]
+    models_in_folder = os.listdir(folder_path)
     # np.random.shuffle(models_in_folder)
     w, labels = [], []
     for path in tqdm(models_in_folder):
@@ -109,6 +117,15 @@ def get_models(folder_path, label, collect_all=False):
     return w, labels
 
 
+def conditional_load(path1, path2):
+    if os.path.exists(path1) and os.path.exists(path2):
+        w = np.load(path1, allow_pickle=True)
+        labels = np.load(path2)
+        return w, labels
+    else:
+        return None
+
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -117,32 +134,60 @@ if __name__ == "__main__":
     parser.add_argument('--test_path', type=str, default='',
                         help='path to folder of models')
     parser.add_argument('--sample', type=int, default=0,
-                        help='how many models to use for meta-classifier')
+                        help='# models (per label) to use for meta-classifier')
     parser.add_argument('--ntimes', type=int, default=5,
                         help='number of repetitions for multimode')
-    parser.add_argument('--plot_title', type=str, default="",
+    parser.add_argument('--filename', type=str, default="graph",
                         help='desired title for plot, sep by _')
-    parser.add_argument('--collect_all', type=bool, default=False,
+    parser.add_argument('--collect_all', action="store_true",
                         help='use all layer weights, like PIN?')
+    parser.add_argument('--save_prefix', default="./loaded_census_models/",
+                        help='default basepath to store loaded model weights in')
+    parser.add_argument('--filter', choices=["sex", "race"],
+                        help='name for subfolder to save/load data from')
+    parser.add_argument('--gpu', action="store_true",
+                        help='use GPU for training PIM?')
     args = parser.parse_args()
     utils.flash_utils(args)
 
     # Census Income dataset
+    prefix = os.path.join(args.save_prefix, args.filter)
     ci = utils.CensusIncome("./census_data/")
 
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
     d_0 = "0.5"
     targets = filter(lambda x: x != "0.5", os.listdir(args.path))
-    # targets = list(targets)[:1]
-
-    # Load up positive-label train data
-    pos_w, pos_labels = get_models(os.path.join(
-        args.test_path, "0.5"), 1, collect_all=args.collect_all)
 
     # Load up positive-label test data
-    pos_w_test, pos_labels_test = get_models(os.path.join(
-        args.path, "0.5"), 1, collect_all=args.collect_all)
+    tup = conditional_load(os.path.join(
+        prefix, "test_0.5_W.npy"),
+        os.path.join(prefix, "test_0.5_labels.npy"))
+    if tup is not None:
+        pos_w_test, pos_labels_test = tup
+        pos_labels_test = ch.tensor(pos_labels_test)
+        print("Loaded from memory!")
+    else:
+        pos_w_test, pos_labels_test = get_models(os.path.join(
+            args.test_path, "0.5"), 1, collect_all=args.collect_all)
+        # Save for later use
+        np.save(os.path.join(prefix, "test_0.5_W"), pos_w_test)
+        np.save(os.path.join(prefix, "test_0.5_labels"), pos_labels_test)
+
+    # Load up positive-label train data
+    tup = conditional_load(os.path.join(
+        prefix, "train_0.5_W.npy"),
+        os.path.join(prefix, "train_0.5_labels.npy"))
+    if tup is not None:
+        pos_w, pos_labels = tup
+        pos_labels = ch.tensor(pos_labels)
+        print("Loaded from memory!")
+    else:
+        pos_w, pos_labels = get_models(os.path.join(
+            args.path, "0.5"), 1, collect_all=args.collect_all)
+        # Save for later use
+        np.save(os.path.join(prefix, "train_0.5_W"), pos_w)
+        np.save(os.path.join(prefix, "train_0.5_labels"), pos_labels)
 
     data = []
     columns = [
@@ -150,18 +195,45 @@ if __name__ == "__main__":
         "Accuracy on unseen models"
     ]
     for tg in targets:
+
         # Load up negative-label train data
-        neg_w, neg_labels = get_models(os.path.join(
-            args.path, tg), 0, collect_all=args.collect_all)
+        tup = conditional_load(os.path.join(
+            prefix, "train_%s_W.npy" % tg),
+            os.path.join(prefix, "train_%s_labels.npy" % tg))
+        if tup is not None:
+            neg_w, neg_labels = tup
+            neg_labels = ch.tensor(neg_labels)
+            print("Loaded from memory!")
+        else:
+            neg_w, neg_labels = get_models(os.path.join(
+                args.path, tg), 0, collect_all=args.collect_all)
+            # Save for later use
+            np.save(os.path.join(prefix, "train_%s_W" % tg), neg_w)
+            np.save(os.path.join(prefix, "train_%s_labels" %
+                                 tg), neg_labels)
 
         # Load up negative-label test data
-        neg_w_test, neg_labels_test = get_models(os.path.join(
-            args.test_path, tg), 0, collect_all=args.collect_all)
+        tup = conditional_load(os.path.join(
+            prefix, "test_%s_W.npy" % tg),
+            os.path.join(prefix, "test_%s_labels.npy" % tg))
+        if tup is not None:
+            neg_w_test, neg_labels_test = tup
+            neg_labels_test = ch.tensor(neg_labels_test)
+            print("Loaded from memory!")
+        else:
+            neg_w_test, neg_labels_test = get_models(os.path.join(
+                args.test_path, tg), 0, collect_all=args.collect_all)
+            # Save for later use
+            np.save(os.path.join(prefix, "test_%s_W" % tg), neg_w_test)
+            np.save(os.path.join(prefix, "test_%s_labels" %
+                                 tg), neg_labels_test)
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
         if args.collect_all:
             Y_te = ch.cat((pos_labels_test, neg_labels_test))
+            if args.gpu:
+                Y_te = Y_te.cuda()
         else:
             Y_te = np.concatenate((pos_labels_test, neg_labels_test))
 
@@ -177,15 +249,23 @@ if __name__ == "__main__":
             X_tr = np.concatenate((pp_x, np_x))
             if args.collect_all:
                 Y_tr = ch.cat((pp_y, np_y))
+                if args.gpu:
+                    Y_tr = Y_tr.cuda()
             else:
                 Y_tr = np.concatenate((pp_y, np_y))
+
+            if args.gpu:
+                params_to_gpu(X_tr)
+                params_to_gpu(X_te)
 
             # Train meta-classifier on this
             # Record performance on test data
             if args.collect_all:
-                clf = train_meta_pin((X_tr, Y_tr), lr=1e-3, epochs=50)
-                acc = acc_fn(get_outputs(clf, X_te, no_grad=True),
-                             Y_te).numpy() / len(Y_te)
+                clf = train_meta_pin((X_tr, Y_tr), lr=1e-3,
+                                     epochs=70, gpu=args.gpu)
+                acc = acc_fn(get_outputs(clf, X_te, no_grad=True,
+                                         gpu=args.gpu), Y_te).numpy()
+                acc /= len(Y_te)
                 data.append([float(tg), acc])
             else:
                 clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=1000)
@@ -201,4 +281,4 @@ if __name__ == "__main__":
 
     # plt.ylim(0.45, 1.0)
     # plt.title(" ".join(args.plot_title.split('_')))
-    sns_plot.figure.savefig("../visualize/alpha_varying_census_meta.png")
+    sns_plot.figure.savefig("../visualize/%s.png" % args.filename)

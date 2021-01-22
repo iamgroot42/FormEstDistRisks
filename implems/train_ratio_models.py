@@ -18,14 +18,16 @@ if __name__ == "__main__":
                         help='how many classifiers to train?')
     parser.add_argument('--split_ratio', type=float, default=0.5,
                         help='split original data into two (ratio for second)')
-    parser.add_argument('--on_first', type=bool, default=False,
+    parser.add_argument('--on_first', action="store_true",
                         help='train on first split?')
-    parser.add_argument('--no_split', type=bool, default=False,
+    parser.add_argument('--no_split', action="store_true",
                         help='do not split data at all?')
-    parser.add_argument('--verbose', type=bool, default=False,
+    parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')
-    parser.add_argument('--max_iter', type=int, default=200,
+    parser.add_argument('--max_iter', type=int, default=100,
                         help='number of iterations to train MLP for')
+    parser.add_argument('--subsample_ratio', type=float, default=1.,
+                        help='use sample of data')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -62,14 +64,18 @@ if __name__ == "__main__":
         # Sample to qualify ratio, ultimately coming from fixed split
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
-        (x_tr, y_tr), (x_te, y_te), cols = ci.load_data(data_filter,
-                                                        first=on_first,
-                                                        test_ratio=args.split_ratio)
-        clf = MLPClassifier(hidden_layer_sizes=(60, 30, 30),
-                            max_iter=args.max_iter)
-        clf.fit(x_tr, y_tr.ravel())
-        train_acc = 100 * clf.score(x_tr, y_tr.ravel())
-        test_acc = 100 * clf.score(x_te, y_te.ravel())
+        (x, y), _, cols = ci.load_data(data_filter,
+                                       first=on_first,
+                                       test_ratio=args.split_ratio,
+                                       sample_ratio=args.subsample_ratio)
+
+        clf = MLPClassifier(hidden_layer_sizes=(32, 16, 8),
+                            max_iter=args.max_iter,
+                            early_stopping=True,
+                            validation_fraction=0.25)
+        clf.fit(x, y.ravel())
+        train_acc = 100 * clf.score(x, y.ravel())
+        test_acc = 100 * clf.best_validation_score_
         if args.verbose:
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
