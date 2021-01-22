@@ -22,19 +22,26 @@ def params_to_gpu(params):
 
 
 def acc_fn(x, y):
-    return ch.sum((y == (x >= 0)))
+    with ch.no_grad():
+        return ch.sum((y == (x >= 0)))
 
 
-def get_outputs(model, X, no_grad=False, gpu=False):
-    outputs = []
+def prepare_batched_data(X):
+    inputs = [[] for _ in range(len(X[0]))]
     for x in X:
-        if no_grad:
-            with ch.no_grad():
-                outputs.append(model(x)[:, 0])
-        else:
-            outputs.append(model(x)[:, 0])
-    outputs = ch.cat(outputs, 0)
-    return outputs
+        for i, l in enumerate(x):
+            inputs[i].append(l)
+
+    inputs = [ch.stack(x, 0) for x in inputs]
+    return inputs
+
+
+def get_outputs(model, X, no_grad=False):
+
+    with ch.set_grad_enabled(not no_grad):
+        outputs = model(X)
+
+    return outputs[:, 0]
 
 
 def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
@@ -44,6 +51,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
     if gpu:
         model = model.cuda()
         loss_fn = loss_fn.cuda()
+        model = nn.DataParallel(model.cuda())
 
     params, y = train_data
     iterator = range(epochs)
@@ -53,7 +61,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
     # Start training
     model.train()
     for e in iterator:
-        outputs = get_outputs(model, params, gpu=gpu)
+        outputs = get_outputs(model, params)
         optimizer.zero_grad()
         loss = loss_fn(outputs, y.float())
 
@@ -67,7 +75,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
         if verbose:
             iterator.set_description("Epoch %d : [Train] Loss: %.5f "
                                      "Accuacy: %.2f" % (
-                                         e, loss / num_samples,
+                                         e + 1, loss / num_samples,
                                          100 * running_acc / num_samples))
 
     # Set back to evaluation mode and return
@@ -230,6 +238,13 @@ if __name__ == "__main__":
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
+
+        if args.gpu:
+            params_to_gpu(X_te)
+            # Batch layer-wise inputs
+        print("Batching data: hold on")
+        X_te = prepare_batched_data(X_te)
+
         if args.collect_all:
             Y_te = ch.cat((pos_labels_test, neg_labels_test))
             if args.gpu:
@@ -256,17 +271,22 @@ if __name__ == "__main__":
 
             if args.gpu:
                 params_to_gpu(X_tr)
-                params_to_gpu(X_te)
+
+            # Batch layer-wise inputs
+            print("Batching data: hold on")
+            X_tr = prepare_batched_data(X_tr)
 
             # Train meta-classifier on this
             # Record performance on test data
             if args.collect_all:
                 clf = train_meta_pin((X_tr, Y_tr), lr=1e-3,
-                                     epochs=70, gpu=args.gpu)
-                acc = acc_fn(get_outputs(clf, X_te, no_grad=True,
-                                         gpu=args.gpu), Y_te).numpy()
-                acc /= len(Y_te)
-                data.append([float(tg), acc])
+                                     epochs=500, gpu=args.gpu)
+                acc = acc_fn(get_outputs(clf, X_te, no_grad=True), Y_te)
+                if args.gpu:
+                    acc = acc.cpu()
+                acc = acc.numpy()
+                data.append([float(tg), acc / len(Y_te)])
+                print("Test accuracy: %.3f" % data[-1][1])
             else:
                 clf = MLPClassifier(hidden_layer_sizes=(30, 30), max_iter=1000)
                 clf.fit(X_tr, Y_tr)
