@@ -672,26 +672,54 @@ class PermInvModel(nn.Module):
 
     def forward(self, params):
         reps = []
-        prev_layer_rep = None
+        prev_layer_reps = None
+        is_batched = len(params[0].shape) > 2
 
         for param, layer in zip(params, self.layers):
             # Process nodes in this layer
-            if prev_layer_rep is None:
-                processed = layer(param)
+            if prev_layer_reps is None:
+                if is_batched:
+                    prev_shape = param.shape
+                    processed = layer(param.view(-1, param.shape[-1]))
+                    processed = processed.view(
+                        prev_shape[0], prev_shape[1], -1)
+                else:
+                    processed = layer(param)
             else:
+                # Handle per-data/batched-data case together
+                if is_batched:
+                    prev_layer_reps = prev_layer_reps.repeat(
+                        1, param.shape[1], 1)
+                else:
+                    prev_layer_reps = prev_layer_reps.repeat(param.shape[0], 1)
+
                 # Include previous layer representation
-                prev_layer_rep = prev_layer_rep.repeat(param.shape[0], 1)
-                param_eff = ch.cat((param, prev_layer_rep), 1)
-                processed = layer(param_eff)
+                param_eff = ch.cat((param, prev_layer_reps), -1)
+                if is_batched:
+                    prev_shape = param_eff.shape
+                    processed = layer(param_eff.view(-1, param_eff.shape[-1]))
+                    processed = processed.view(
+                        prev_shape[0], prev_shape[1], -1)
+                else:
+                    processed = layer(param_eff)
 
             # Store this layer's representation
-            reps.append(ch.sum(processed, 0))
+            reps.append(ch.sum(processed, -2))
 
-            prev_layer_rep = processed.flatten()
-            prev_layer_rep = ch.unsqueeze(prev_layer_rep, 0)
+            # Handle per-data/batched-data case together
+            if is_batched:
+                prev_layer_reps = processed.view(processed.shape[0], -1)
+            else:
+                prev_layer_reps = processed.view(-1)
+            prev_layer_reps = ch.unsqueeze(prev_layer_reps, -2)
 
-        reps_c = ch.unsqueeze(ch.cat(reps), 0)
-        return self.rho(reps_c)
+        if is_batched:
+            reps_c = ch.cat(reps, 1)
+        else:
+            reps_c = ch.unsqueeze(ch.cat(reps), 0)
+
+        logits = self.rho(reps_c)
+        return logits
 
 
 class CustomBertModel(nn.Module):
