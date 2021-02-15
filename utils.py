@@ -568,7 +568,7 @@ def filter(df, condition, ratio, verbose=True):
     else:
         np.random.shuffle(qualify)
         if ratio > 0:
-            qi = qualify[:int(((1-ratio) * len(notqualify))/ratio)]
+            qi = qualify[:int((ratio * len(notqualify))/(1 - ratio))]
             return pd.concat([df.iloc[qi], df.iloc[notqualify]])
         return df.iloc[notqualify]
 
@@ -758,3 +758,8 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+def ensure_dir_exists(dir):
+    if not os.path.exists(dir):
+        os.makedirs(dir)

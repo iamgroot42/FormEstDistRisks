@@ -6,7 +6,6 @@ import torch.nn as nn
 from torchvision import transforms, models
 from PIL import Image
 from glob import glob
-from datasets import load_dataset
 from torch.utils.data import Dataset, DataLoader
 import utils
 from sklearn.model_selection import train_test_split
@@ -14,9 +13,18 @@ import pandas as pd
 
 
 def stratified_df_split(df, second_ratio):
+    # Get new column for stratification purposes
+    def fn(row): return str(row.sex) + str(row.age) + str(row.label)
+    col = df.apply(fn, axis=1)
+    df = df.assign(stratify=col.values)
+
     stratify = df['stratify']
     df_1, df_2 = train_test_split(
-        df, test_size=second_ratio, stratify=stratify)
+        df, test_size=second_ratio,
+        stratify=stratify)
+
+    # Delete remporary stratification column
+    df.drop(columns=['stratify'])
     return df_1.reset_index(), df_2.reset_index()
 
 
@@ -56,16 +64,8 @@ def process_data(path, split_second_ratio=0.5):
     # Binarize label
     df['label'] = df['label'].map(binary_task_map.get)
 
-    # Get new column for stratification purposes
-    df['stratify'] = df.apply(lambda row: str(
-        row.sex) + str(row.age) + str(row.label), axis=1)
-
-    stratify = df['stratify']
-    df_1, df_2 = train_test_split(
-        df, test_size=split_second_ratio,
-        stratify=stratify)
-
-    return df_1.reset_index(), df_2.reset_index()
+    # Return stratified split
+    return stratified_df_split(df, split_second_ratio)
 
 
 class HamDataset(Dataset):
@@ -98,26 +98,30 @@ class HamDataset(Dataset):
 
 
 class HamWrapper:
-    def __init__(self, df_train, df_val, dfilter=None):
-        self.df_train = df_train
-        self.df_val = df_val
-        self.do = load_dataset("amazon_reviews_multi", 'en')
-        self.dfilter = dfilter
+    def __init__(self, train_path, val_path):
+        self.df_train = pd.read_csv(train_path)
+        self.df_val = pd.read_csv(val_path)
+        self.input_size = 224
+        self.data_transform = transforms.Compose([
+            transforms.Resize((self.input_size, self.input_size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
 
-        # Apply data filter, if filter provided
-        if dfilter:
-            wanted_tr = dfilter(self.df_train)
-            wanted_te = dfilter(self.df_val)
-            self.df_train = self.df_train[wanted_tr]
-            self.df_val = self.df_val[wanted_te]
-            self.df_train.reset_index()
-            self.df_val.reset_index()
+        self.ds_train = HamDataset(self.df_train, self.data_transform)
+        self.ds_val = HamDataset(self.df_val, self.data_transform)
 
+    def get_loaders(self, batch_size):
+        train_loader = DataLoader(
+            self.ds_train, batch_size=batch_size,
+            shuffle=False, num_workers=8)
+        # If train mode can handle BS (weight + gradient)
+        # No-grad mode can surely hadle 2 * BS?
+        val_loader = DataLoader(
+            self.ds_val, batch_size=batch_size * 2,
+            shuffle=False, num_workers=8)
 
-def property_splits(data, ratio=0.5,  verbose=False):
-    # Construct temporary column for staratification
-    # Based on all columns except the one to be modified
-    pass
+        return train_loader, val_loader
 
 
 def set_parameter_requires_grad(model, fe):
@@ -225,106 +229,73 @@ def train(model, loaders, lr=1e-3, epoch_num=10):
         validate_epoch(val_loader, model, criterion, optimizer, epoch)
 
 
+def useful_stats(df):
+    print("%d | %.2f | %.2f | %.2f" % (
+        len(df),
+        df["label"].mean(),
+        df["age"].mean(),
+        df["sex"].mean()))
+
+
 if __name__ == "__main__":
     base = "/p/adversarialml/as9rw/datasets/ham10000/"
-    ratio = 0.5
-    input_size = 224
-    # batch_size = 128 * 4
-    batch_size = 100 * 4
 
-    # Define augmentations
-    train_transform = transforms.Compose([
-        transforms.Resize((input_size, input_size)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(20),
-        transforms.ColorJitter(
-            brightness=0.1, contrast=0.1, hue=0.1),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])])
+    # First split of data, only visible to victim
+    # Second split of data, only visible to adversary
+    # For the sake of varying property ratios, both use
+    # Samples from their respective splits
+    # Same goes for train-val splits
+    # For current experiments, fix these splits for each ratio
+    # To control sources of randomness
+    # Ultimately, we will rerun experiments without this sed fixed
+    df_victim, df_adv = process_data(base)
 
-    val_transform = transforms.Compose([
-        transforms.Resize((input_size, input_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])])
+    # Split each into train-test
+    filters = [
+        # No filter
+        ("original", None, None),
+        # Sex-based filter
+        ("sex_0.25", lambda x: x['sex'] == 1, 0.25),
+        ("sex_0.4", lambda x: x['sex'] == 1, 0.4),
+        ("sex_0.5", lambda x: x['sex'] == 1, 0.5),
+        ("sex_0.6", lambda x: x['sex'] == 1, 0.6),
+        ("sex_0.75", lambda x: x['sex'] == 1, 0.75),
+        # Age-based filter
+        ("age_0.25", lambda x: x['age'] == 1, 0.25),
+        ("age_0.4", lambda x: x['age'] == 1, 0.4),
+        ("age_0.5", lambda x: x['age'] == 1, 0.5),
+        ("age_0.6", lambda x: x['age'] == 1, 0.6),
+        ("age_0.75", lambda x: x['age'] == 1, 0.75),
+    ]
 
-    model = make_feature_extractor()
-    # Process datasets and get features
-    df_1 = pd.read_csv("./data/split_1/original.csv")
-    df_2 = pd.read_csv("./data/split_2/original.csv")
-    ds_1 = HamDataset(df_1, val_transform)
-    ds_2 = HamDataset(df_2, val_transform)
-    train_loader = DataLoader(
-        ds_1, batch_size=batch_size, shuffle=False, num_workers=8)
-    val_loader = DataLoader(ds_2, batch_size=batch_size,
-                            shuffle=False, num_workers=8)
-    train(model, (train_loader, val_loader), lr=1e-3, epoch_num=20)
-    exit(0)
+    # Save these splits for victim
+    for i, df in enumerate([df_victim, df_adv]):
+        for (prefix, lbd, ratio) in filters:
+            # Apply filter to data
+            if lbd is not None:
+                while True:
+                    df_processed = utils.filter(df, lbd, ratio, verbose=False)
+                    # break
+                    # Only accept a split that does not vary
+                    # label ratio too much
+                    if (np.abs(df["label"].mean() - 0.33) <= 0.05):
+                        break
+            else:
+                df_processed = df
 
-    csv_available = False
-    if csv_available:
-        # Load DF data
-        df_1 = pd.read_csv("./data/split_1/original.csv")
-        df_2 = pd.read_csv("./data/split_2/original.csv")
-        # Load pre-computed features
-        features_1 = np.load("./data/split_1/features.npy")
-        features_2 = np.load("./data/split_2/features.npy")
-    else:
-        # Get data splits (model trainer and adversary)
-        df_1, df_2 = process_data(base)
+            # Print ratios for different properties and labels
+            # As a sanity check
+            utils.log_statement(prefix)
+            useful_stats(df_processed)
+            print()
 
-        # Get feature extractor
-        fe = make_feature_extractor()
+            # Get train-val splits
+            train_df, val_df = stratified_df_split(df_processed, 0.2)
 
-        # Process datasets and get features
-        ds_1 = HamDataset(df_1, val_transform)
-        ds_2 = HamDataset(df_2, val_transform)
-        loader_1 = DataLoader(ds_1, batch_size=batch_size,
-                              shuffle=False, num_workers=8)
-        loader_2 = DataLoader(ds_2, batch_size=batch_size,
-                              shuffle=False, num_workers=8)
-        # Get features for this data
-        features_1 = get_features(fe, loader_1)
-        features_2 = get_features(fe, loader_2)
+            # Ensure directory exists
+            dir_prefix = "./data/split_%d/%s/" % (i+1, prefix)
+            utils.ensure_dir_exists(dir_prefix)
 
-        # Save DF file splits for later use
-        df_1.to_csv("./data/split_1/original.csv")
-        df_2.to_csv("./data/split_2/original.csv")
-        # Save features in npy files
-        np.save("./data/split_1/features", features_1)
-        np.save("./data/split_2/features", features_2)
-
-    # Stratified split for adversary/local data training
-    train_df, val_df = stratified_df_split(df_1, 0.2)
-
-    # hd_train = HamDataset(train_df, transform=train_transform)
-    hd_train = HamDataset(train_df, features_1, processed=True)
-    hd_val = HamDataset(val_df, features_2, processed=True)
-
-    # Define loaders
-    train_loader = DataLoader(hd_train, batch_size=batch_size,
-                              shuffle=True, num_workers=8)
-    val_loader = DataLoader(hd_val, batch_size=batch_size,
-                            shuffle=False, num_workers=8)
-
-    # Make model
-    model = HamModel(1024)
-    model = model.cuda()
-    model = nn.DataParallel(model)
-
-    # Train model
-    train(model, (train_loader, val_loader), lr=1e-3, epoch_num=20)
-
-    # ad = load_dataset("amazon_reviews_multi", 'en')
-    # pick, save = ['train', 'validation', 'test'], ['train', 'val', 'test']
-    # for p, s in zip(pick, save):
-    #     features = get_features(ad[p], model, 32)
-    #     np.save(os.path.join(base, s, "features"), features)
-
-    # for p, s in zip(pick, save):
-    #     first, second = prop_length_preserving_split(
-    #         ad[p], ratio, verbose=False)
-    #     np.save(os.path.join("./data/splits", "first", s), first)
-    #     np.save(os.path.join("./data/splits", "second", s), second)
+            # Save train-test splits
+            train_df.to_csv(os.path.join(dir_prefix, "train.csv"))
+            val_df.to_csv(os.path.join(dir_prefix, "val.csv"))

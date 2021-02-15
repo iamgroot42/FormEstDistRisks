@@ -1,0 +1,1003 @@
+,level_0,index,lesion_id,image_id,dx,dx_type,age,sex,localization,path,label,stratify
+0,4498,7816,HAM_0006628,ISIC_0033742,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033742.jpg,0,000
+1,4223,9740,HAM_0003161,ISIC_0030191,akiec,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030191.jpg,1,111
+2,3949,6343,HAM_0006319,ISIC_0028348,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028348.jpg,0,010
+3,2903,1594,HAM_0005581,ISIC_0033337,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033337.jpg,1,001
+4,422,7427,HAM_0004615,ISIC_0033162,nv,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033162.jpg,0,000
+5,4231,257,HAM_0007402,ISIC_0034003,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034003.jpg,1,111
+6,4102,7637,HAM_0004882,ISIC_0034282,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034282.jpg,0,000
+7,2030,1013,HAM_0000685,ISIC_0026291,bkl,consensus,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026291.jpg,1,011
+8,1645,2332,HAM_0004765,ISIC_0031217,vasc,histo,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031217.jpg,1,001
+9,988,7286,HAM_0007350,ISIC_0031202,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031202.jpg,0,000
+10,2714,4956,HAM_0004758,ISIC_0028491,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028491.jpg,0,100
+11,2424,3438,HAM_0007618,ISIC_0030293,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030293.jpg,0,010
+12,2297,2900,HAM_0006053,ISIC_0028147,bcc,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028147.jpg,1,111
+13,1066,6545,HAM_0002020,ISIC_0032301,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032301.jpg,0,000
+14,3751,5533,HAM_0005957,ISIC_0030727,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030727.jpg,0,100
+15,3187,7248,HAM_0002797,ISIC_0026883,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026883.jpg,0,100
+16,3542,5286,HAM_0004785,ISIC_0030788,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030788.jpg,0,010
+17,2668,9536,HAM_0003810,ISIC_0034309,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034309.jpg,0,000
+18,4291,7333,HAM_0002574,ISIC_0032666,nv,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032666.jpg,0,010
+19,1619,7890,HAM_0005594,ISIC_0034245,nv,histo,0,1,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034245.jpg,0,100
+20,1777,1971,HAM_0000201,ISIC_0031408,mel,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031408.jpg,1,011
+21,1031,1989,HAM_0000917,ISIC_0024701,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024701.jpg,1,111
+22,3307,7203,HAM_0000268,ISIC_0033389,nv,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033389.jpg,0,100
+23,3408,5050,HAM_0006892,ISIC_0031444,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031444.jpg,0,010
+24,3887,9,HAM_0005132,ISIC_0025209,bkl,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025209.jpg,1,111
+25,2395,2676,HAM_0003373,ISIC_0024515,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024515.jpg,1,011
+26,2189,6880,HAM_0004663,ISIC_0025809,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025809.jpg,0,010
+27,4837,5787,HAM_0005041,ISIC_0028019,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028019.jpg,0,000
+28,3139,7751,HAM_0006550,ISIC_0033406,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033406.jpg,0,100
+29,662,1735,HAM_0004687,ISIC_0032938,mel,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032938.jpg,1,011
+30,121,1320,HAM_0000531,ISIC_0025674,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025674.jpg,1,011
+31,2398,4173,HAM_0000426,ISIC_0028182,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028182.jpg,0,000
+32,3965,4016,HAM_0000577,ISIC_0026385,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026385.jpg,0,110
+33,3790,8496,HAM_0002738,ISIC_0029438,nv,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029438.jpg,0,110
+34,3306,8585,HAM_0005987,ISIC_0029993,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029993.jpg,0,110
+35,1183,8453,HAM_0006470,ISIC_0027978,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027978.jpg,0,010
+36,3678,3734,HAM_0007441,ISIC_0024548,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024548.jpg,0,010
+37,433,9841,HAM_0002615,ISIC_0033413,akiec,histo,1,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033413.jpg,1,011
+38,763,9876,HAM_0003401,ISIC_0029598,akiec,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029598.jpg,1,011
+39,128,3861,HAM_0007285,ISIC_0026718,nv,follow_up,1,1,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026718.jpg,0,110
+40,2789,1070,HAM_0003691,ISIC_0027428,bkl,consensus,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027428.jpg,1,111
+41,1676,2276,HAM_0003167,ISIC_0024864,mel,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024864.jpg,1,101
+42,3966,1220,HAM_0004476,ISIC_0030417,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030417.jpg,1,011
+43,519,2631,HAM_0007471,ISIC_0032536,bcc,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032536.jpg,1,001
+44,824,2520,HAM_0003229,ISIC_0031140,bcc,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031140.jpg,1,011
+45,2670,9621,HAM_0001366,ISIC_0032814,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032814.jpg,0,000
+46,3204,221,HAM_0003050,ISIC_0033744,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033744.jpg,1,011
+47,1459,9214,HAM_0000505,ISIC_0024902,nv,consensus,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024902.jpg,0,000
+48,2511,8255,HAM_0000342,ISIC_0027226,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027226.jpg,0,110
+49,4348,2211,HAM_0006955,ISIC_0025105,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025105.jpg,1,011
+50,4147,1349,HAM_0001202,ISIC_0028022,mel,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028022.jpg,1,111
+51,2659,1668,HAM_0003421,ISIC_0033470,mel,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033470.jpg,1,111
+52,1458,2740,HAM_0005410,ISIC_0025433,bcc,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025433.jpg,1,001
+53,4695,8639,HAM_0000362,ISIC_0026043,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026043.jpg,0,000
+54,1729,2974,HAM_0005026,ISIC_0028978,bcc,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028978.jpg,1,101
+55,435,3103,HAM_0000408,ISIC_0027000,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027000.jpg,0,100
+56,4513,2068,HAM_0000624,ISIC_0029089,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029089.jpg,1,011
+57,4157,4028,HAM_0000010,ISIC_0027730,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027730.jpg,0,110
+58,2015,8045,HAM_0002607,ISIC_0032744,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032744.jpg,0,000
+59,3378,8177,HAM_0000752,ISIC_0026419,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026419.jpg,0,000
+60,2542,9110,HAM_0002490,ISIC_0030694,nv,histo,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030694.jpg,0,110
+61,1618,3348,HAM_0000812,ISIC_0032442,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032442.jpg,0,100
+62,4156,3478,HAM_0006569,ISIC_0030483,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030483.jpg,0,000
+63,3974,9817,HAM_0000552,ISIC_0028872,akiec,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028872.jpg,1,011
+64,2751,7336,HAM_0005106,ISIC_0034131,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034131.jpg,0,000
+65,3014,3448,HAM_0006817,ISIC_0030269,nv,follow_up,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030269.jpg,0,110
+66,140,7466,HAM_0004145,ISIC_0034091,nv,histo,0,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034091.jpg,0,100
+67,4467,8854,HAM_0000759,ISIC_0030792,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030792.jpg,0,010
+68,2490,5280,HAM_0005277,ISIC_0030750,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030750.jpg,0,000
+69,49,9013,HAM_0000104,ISIC_0032186,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032186.jpg,0,010
+70,2891,8626,HAM_0001318,ISIC_0028305,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028305.jpg,0,100
+71,1885,9187,HAM_0000000,ISIC_0028498,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028498.jpg,0,010
+72,729,4710,HAM_0000334,ISIC_0026860,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026860.jpg,0,100
+73,252,2365,HAM_0003862,ISIC_0033458,vasc,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033458.jpg,1,001
+74,4900,7485,HAM_0005383,ISIC_0032893,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032893.jpg,0,100
+75,3767,7266,HAM_0005107,ISIC_0032082,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032082.jpg,0,110
+76,3858,2302,HAM_0003504,ISIC_0028075,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028075.jpg,1,011
+77,238,5145,HAM_0005416,ISIC_0029136,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029136.jpg,0,010
+78,4475,5886,HAM_0001382,ISIC_0028922,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028922.jpg,0,010
+79,4990,3461,HAM_0000427,ISIC_0025444,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025444.jpg,0,100
+80,759,4858,HAM_0006356,ISIC_0029732,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029732.jpg,0,110
+81,1760,4087,HAM_0002583,ISIC_0026572,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026572.jpg,0,000
+82,2666,7825,HAM_0003003,ISIC_0033343,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033343.jpg,0,100
+83,742,4606,HAM_0003942,ISIC_0029024,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029024.jpg,0,000
+84,4101,4806,HAM_0005343,ISIC_0027380,nv,follow_up,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027380.jpg,0,110
+85,4251,4778,HAM_0000586,ISIC_0029649,nv,follow_up,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029649.jpg,0,010
+86,4064,3817,HAM_0004625,ISIC_0029346,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029346.jpg,0,000
+87,3876,4412,HAM_0004394,ISIC_0025060,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025060.jpg,0,000
+88,1756,4822,HAM_0004032,ISIC_0032403,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032403.jpg,0,000
+89,4508,4123,HAM_0007388,ISIC_0031693,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031693.jpg,0,010
+90,3693,4689,HAM_0004969,ISIC_0025521,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025521.jpg,0,110
+91,2152,3934,HAM_0004725,ISIC_0032507,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032507.jpg,0,100
+92,4494,382,HAM_0000933,ISIC_0024358,bkl,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024358.jpg,1,111
+93,1046,9091,HAM_0000798,ISIC_0027538,nv,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027538.jpg,0,010
+94,732,7282,HAM_0005879,ISIC_0026084,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026084.jpg,0,010
+95,3451,1196,HAM_0005112,ISIC_0024386,df,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024386.jpg,1,101
+96,1346,1915,HAM_0000880,ISIC_0033562,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033562.jpg,1,011
+97,2602,5216,HAM_0001873,ISIC_0029283,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029283.jpg,0,100
+98,756,2924,HAM_0000352,ISIC_0032132,bcc,histo,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032132.jpg,1,111
+99,3214,6548,HAM_0001191,ISIC_0028452,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028452.jpg,0,000
+100,294,4229,HAM_0005875,ISIC_0032250,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032250.jpg,0,000
+101,1079,6896,HAM_0006711,ISIC_0029986,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029986.jpg,0,010
+102,3079,9371,HAM_0005365,ISIC_0025253,nv,consensus,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025253.jpg,0,000
+103,3343,6094,HAM_0007292,ISIC_0031626,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031626.jpg,0,000
+104,2285,265,HAM_0004406,ISIC_0033060,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033060.jpg,1,011
+105,1674,7503,HAM_0001358,ISIC_0033674,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033674.jpg,0,100
+106,3412,2697,HAM_0002818,ISIC_0028570,bcc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028570.jpg,1,111
+107,2774,8573,HAM_0006245,ISIC_0030733,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030733.jpg,0,010
+108,2784,7494,HAM_0003824,ISIC_0034138,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034138.jpg,0,100
+109,3503,2037,HAM_0003608,ISIC_0028228,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028228.jpg,1,111
+110,1903,8564,HAM_0001508,ISIC_0029298,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029298.jpg,0,110
+111,297,2187,HAM_0000593,ISIC_0024679,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024679.jpg,1,001
+112,794,6763,HAM_0000930,ISIC_0027848,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027848.jpg,0,100
+113,2350,7757,HAM_0003424,ISIC_0033552,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033552.jpg,0,000
+114,1861,7125,HAM_0002494,ISIC_0033686,nv,histo,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033686.jpg,0,110
+115,1995,7656,HAM_0004773,ISIC_0034148,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034148.jpg,0,100
+116,3676,605,HAM_0002548,ISIC_0027470,bkl,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027470.jpg,1,101
+117,0,492,HAM_0001605,ISIC_0024422,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024422.jpg,1,011
+118,3081,5831,HAM_0001092,ISIC_0031962,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031962.jpg,0,000
+119,4107,6841,HAM_0003933,ISIC_0031515,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031515.jpg,0,110
+120,1882,7382,HAM_0004167,ISIC_0033753,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033753.jpg,0,100
+121,921,3472,HAM_0006661,ISIC_0026465,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026465.jpg,0,000
+122,2400,7358,HAM_0002016,ISIC_0032805,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032805.jpg,0,010
+123,3893,4343,HAM_0003842,ISIC_0027217,nv,follow_up,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027217.jpg,0,110
+124,1132,5996,HAM_0005202,ISIC_0028974,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028974.jpg,0,010
+125,4084,6216,HAM_0003756,ISIC_0030832,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030832.jpg,0,000
+126,1890,7655,HAM_0004773,ISIC_0032853,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032853.jpg,0,100
+127,1893,3785,HAM_0006370,ISIC_0026032,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026032.jpg,0,000
+128,3808,2842,HAM_0005371,ISIC_0028168,bcc,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028168.jpg,1,111
+129,4643,6351,HAM_0001324,ISIC_0028435,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028435.jpg,0,100
+130,1150,608,HAM_0000238,ISIC_0024910,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024910.jpg,1,111
+131,42,5736,HAM_0006570,ISIC_0030343,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030343.jpg,0,000
+132,1828,3318,HAM_0005454,ISIC_0029184,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029184.jpg,0,100
+133,76,5370,HAM_0004339,ISIC_0026332,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026332.jpg,0,010
+134,1869,7006,HAM_0005519,ISIC_0032029,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032029.jpg,0,110
+135,4105,436,HAM_0006123,ISIC_0025986,bkl,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025986.jpg,1,111
+136,4294,3855,HAM_0002640,ISIC_0030337,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030337.jpg,0,100
+137,2354,5459,HAM_0002137,ISIC_0030217,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030217.jpg,0,000
+138,3103,6936,HAM_0004869,ISIC_0025370,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025370.jpg,0,100
+139,2875,6239,HAM_0002318,ISIC_0026797,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026797.jpg,0,000
+140,37,7310,HAM_0003507,ISIC_0033459,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033459.jpg,0,000
+141,3089,2160,HAM_0002772,ISIC_0031908,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031908.jpg,1,011
+142,1432,6109,HAM_0000156,ISIC_0025643,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025643.jpg,0,100
+143,2046,6215,HAM_0007501,ISIC_0030780,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030780.jpg,0,000
+144,1527,2462,HAM_0000781,ISIC_0028155,bcc,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028155.jpg,1,001
+145,2531,2179,HAM_0006380,ISIC_0031417,mel,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031417.jpg,1,101
+146,397,1273,HAM_0004813,ISIC_0032331,mel,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032331.jpg,1,011
+147,2211,1415,HAM_0001703,ISIC_0029660,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029660.jpg,1,111
+148,4997,509,HAM_0003766,ISIC_0026538,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026538.jpg,1,011
+149,4480,6212,HAM_0006718,ISIC_0026763,nv,follow_up,0,1,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026763.jpg,0,100
+150,4321,1481,HAM_0004405,ISIC_0032532,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032532.jpg,1,011
+151,603,2626,HAM_0003046,ISIC_0034119,bcc,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034119.jpg,1,011
+152,134,4604,HAM_0000450,ISIC_0025059,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025059.jpg,0,100
+153,216,260,HAM_0001309,ISIC_0034037,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034037.jpg,1,111
+154,3902,3662,HAM_0002250,ISIC_0029426,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029426.jpg,0,100
+155,3780,2604,HAM_0000823,ISIC_0032894,bcc,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032894.jpg,1,111
+156,1283,7979,HAM_0004587,ISIC_0034181,nv,consensus,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034181.jpg,0,010
+157,2348,6156,HAM_0002212,ISIC_0029988,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029988.jpg,0,000
+158,761,5758,HAM_0007576,ISIC_0027115,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027115.jpg,0,000
+159,3958,876,HAM_0001011,ISIC_0027202,bkl,consensus,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027202.jpg,1,011
+160,2352,892,HAM_0004556,ISIC_0028123,bkl,consensus,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028123.jpg,1,111
+161,1999,1454,HAM_0001734,ISIC_0024865,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024865.jpg,1,011
+162,1836,3076,HAM_0006362,ISIC_0030523,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030523.jpg,0,010
+163,2383,9546,HAM_0003807,ISIC_0032655,bkl,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032655.jpg,1,001
+164,4387,3458,HAM_0005295,ISIC_0024690,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024690.jpg,0,100
+165,4282,2297,HAM_0004428,ISIC_0026420,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026420.jpg,1,011
+166,3461,52,HAM_0007125,ISIC_0029147,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029147.jpg,1,011
+167,4953,8836,HAM_0001455,ISIC_0031933,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031933.jpg,0,100
+168,2212,9196,HAM_0003650,ISIC_0024995,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024995.jpg,0,010
+169,24,5835,HAM_0000980,ISIC_0028627,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028627.jpg,0,000
+170,107,9336,HAM_0002832,ISIC_0029091,nv,consensus,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029091.jpg,0,000
+171,3992,9190,HAM_0005329,ISIC_0028686,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028686.jpg,0,100
+172,1117,7070,HAM_0006221,ISIC_0028195,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028195.jpg,0,100
+173,212,8229,HAM_0000924,ISIC_0026804,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026804.jpg,0,000
+174,2709,1856,HAM_0004914,ISIC_0034062,mel,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034062.jpg,1,111
+175,2076,5567,HAM_0004633,ISIC_0025772,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025772.jpg,0,000
+176,1799,3392,HAM_0004819,ISIC_0028975,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028975.jpg,0,100
+177,2695,9316,HAM_0005829,ISIC_0030091,nv,consensus,0,1,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030091.jpg,0,100
+178,1611,21,HAM_0003301,ISIC_0025033,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025033.jpg,1,011
+179,4072,6336,HAM_0002917,ISIC_0032506,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032506.jpg,0,010
+180,306,151,HAM_0007101,ISIC_0032618,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032618.jpg,1,011
+181,4078,8906,HAM_0001381,ISIC_0029174,nv,histo,1,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029174.jpg,0,010
+182,215,650,HAM_0006267,ISIC_0031200,bkl,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031200.jpg,1,101
+183,1092,9432,HAM_0001930,ISIC_0032600,nv,consensus,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032600.jpg,0,100
+184,4476,1854,HAM_0005953,ISIC_0033534,mel,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033534.jpg,1,101
+185,4306,7833,HAM_0002476,ISIC_0027837,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027837.jpg,0,000
+186,3641,65,HAM_0004569,ISIC_0031495,bkl,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031495.jpg,1,001
+187,4036,5938,HAM_0000248,ISIC_0024667,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024667.jpg,0,100
+188,1956,7348,HAM_0004296,ISIC_0034152,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034152.jpg,0,100
+189,2008,9592,HAM_0003236,ISIC_0033053,nv,consensus,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033053.jpg,0,100
+190,547,2318,HAM_0000910,ISIC_0027797,mel,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027797.jpg,1,101
+191,4896,8749,HAM_0000896,ISIC_0025051,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025051.jpg,0,100
+192,862,6018,HAM_0001044,ISIC_0027322,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027322.jpg,0,110
+193,989,1968,HAM_0004850,ISIC_0028126,mel,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028126.jpg,1,101
+194,1157,5376,HAM_0005796,ISIC_0030078,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030078.jpg,0,100
+195,4645,7174,HAM_0005374,ISIC_0033327,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033327.jpg,0,110
+196,3431,2405,HAM_0003480,ISIC_0031996,vasc,consensus,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031996.jpg,1,111
+197,1659,6138,HAM_0005645,ISIC_0030389,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030389.jpg,0,000
+198,995,5523,HAM_0006419,ISIC_0026193,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026193.jpg,0,010
+199,4881,3887,HAM_0004404,ISIC_0025822,nv,follow_up,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025822.jpg,0,010
+200,509,8885,HAM_0003958,ISIC_0029554,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029554.jpg,0,000
+201,4723,8152,HAM_0000070,ISIC_0028513,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028513.jpg,0,000
+202,4463,2197,HAM_0003172,ISIC_0026105,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026105.jpg,1,011
+203,485,3878,HAM_0004842,ISIC_0026854,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026854.jpg,0,010
+204,4841,2226,HAM_0006764,ISIC_0027590,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027590.jpg,1,111
+205,3225,4448,HAM_0003338,ISIC_0029722,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029722.jpg,0,100
+206,510,3180,HAM_0002561,ISIC_0025325,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025325.jpg,0,000
+207,73,6877,HAM_0004418,ISIC_0031293,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031293.jpg,0,000
+208,4538,7305,HAM_0005363,ISIC_0032717,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032717.jpg,0,010
+209,3261,4526,HAM_0002524,ISIC_0026184,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026184.jpg,0,010
+210,2876,8658,HAM_0000063,ISIC_0031306,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031306.jpg,0,100
+211,1199,2106,HAM_0005006,ISIC_0031146,mel,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031146.jpg,1,101
+212,2306,5857,HAM_0004939,ISIC_0026521,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026521.jpg,0,010
+213,1047,2421,HAM_0002788,ISIC_0027563,vasc,consensus,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027563.jpg,1,011
+214,4640,5554,HAM_0000616,ISIC_0024750,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024750.jpg,0,000
+215,356,5467,HAM_0005151,ISIC_0030992,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030992.jpg,0,010
+216,828,2367,HAM_0006946,ISIC_0033349,vasc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033349.jpg,1,111
+217,4293,4890,HAM_0003831,ISIC_0026724,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026724.jpg,0,000
+218,4405,8039,HAM_0002602,ISIC_0032798,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032798.jpg,0,000
+219,1163,4459,HAM_0003988,ISIC_0024427,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024427.jpg,0,010
+220,1274,807,HAM_0000835,ISIC_0025378,bkl,confocal,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025378.jpg,1,111
+221,538,5898,HAM_0001225,ISIC_0025977,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025977.jpg,0,100
+222,3438,3874,HAM_0001882,ISIC_0025866,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025866.jpg,0,110
+223,1048,1897,HAM_0001647,ISIC_0033730,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033730.jpg,1,111
+224,1109,5779,HAM_0000848,ISIC_0026294,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026294.jpg,0,100
+225,165,5458,HAM_0006202,ISIC_0030627,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030627.jpg,0,100
+226,4894,3012,HAM_0002943,ISIC_0026054,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026054.jpg,0,000
+227,1268,1319,HAM_0000210,ISIC_0024624,mel,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024624.jpg,1,111
+228,701,4792,HAM_0005912,ISIC_0027028,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027028.jpg,0,000
+229,2303,1050,HAM_0002280,ISIC_0027275,bkl,consensus,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027275.jpg,1,001
+230,30,6143,HAM_0005593,ISIC_0029658,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029658.jpg,0,000
+231,472,3140,HAM_0007302,ISIC_0028302,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028302.jpg,0,100
+232,2544,447,HAM_0005558,ISIC_0029802,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029802.jpg,1,011
+233,4713,6228,HAM_0003334,ISIC_0030886,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030886.jpg,0,100
+234,4849,3591,HAM_0004269,ISIC_0025003,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025003.jpg,0,100
+235,941,9887,HAM_0002094,ISIC_0030549,akiec,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030549.jpg,1,001
+236,4196,112,HAM_0000114,ISIC_0028607,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028607.jpg,1,011
+237,2064,6874,HAM_0001316,ISIC_0031660,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031660.jpg,0,000
+238,1213,1647,HAM_0005748,ISIC_0032812,mel,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032812.jpg,1,001
+239,1958,2112,HAM_0005251,ISIC_0026868,mel,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026868.jpg,1,011
+240,1848,3300,HAM_0003648,ISIC_0031730,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031730.jpg,0,010
+241,3015,1559,HAM_0002235,ISIC_0034222,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034222.jpg,1,001
+242,4987,7574,HAM_0007483,ISIC_0032628,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032628.jpg,0,100
+243,4621,306,HAM_0003293,ISIC_0029010,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029010.jpg,1,011
+244,2547,5431,HAM_0004688,ISIC_0032000,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032000.jpg,0,010
+245,704,7453,HAM_0004503,ISIC_0032735,nv,histo,1,1,ear,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032735.jpg,0,110
+246,2712,2942,HAM_0001415,ISIC_0025019,bcc,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025019.jpg,1,011
+247,46,9782,HAM_0001967,ISIC_0029860,akiec,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029860.jpg,1,011
+248,3399,2293,HAM_0006832,ISIC_0029652,mel,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029652.jpg,1,001
+249,1854,3064,HAM_0005252,ISIC_0028185,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028185.jpg,0,010
+250,3186,5285,HAM_0005497,ISIC_0029506,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029506.jpg,0,010
+251,2524,5109,HAM_0001039,ISIC_0026356,nv,follow_up,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026356.jpg,0,110
+252,3518,3776,HAM_0007159,ISIC_0031637,nv,follow_up,1,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031637.jpg,0,110
+253,81,4009,HAM_0005223,ISIC_0029536,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029536.jpg,0,110
+254,4708,1335,HAM_0000903,ISIC_0024702,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024702.jpg,1,011
+255,2756,1232,HAM_0004784,ISIC_0027872,mel,histo,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027872.jpg,1,111
+256,4710,6488,HAM_0003307,ISIC_0031147,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031147.jpg,0,100
+257,2851,2804,HAM_0007588,ISIC_0031526,bcc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031526.jpg,1,111
+258,4119,5339,HAM_0007105,ISIC_0026616,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026616.jpg,0,000
+259,3916,8462,HAM_0005090,ISIC_0031564,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031564.jpg,0,100
+260,3702,8355,HAM_0001817,ISIC_0024938,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024938.jpg,0,010
+261,4056,5510,HAM_0006113,ISIC_0031696,nv,follow_up,0,1,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031696.jpg,0,100
+262,2256,5034,HAM_0002816,ISIC_0028405,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028405.jpg,0,110
+263,4103,7529,HAM_0006158,ISIC_0033367,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033367.jpg,0,000
+264,3413,5189,HAM_0001985,ISIC_0027330,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027330.jpg,0,000
+265,3743,8628,HAM_0003311,ISIC_0027007,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027007.jpg,0,110
+266,1427,7216,HAM_0002923,ISIC_0033759,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033759.jpg,0,000
+267,403,6601,HAM_0006136,ISIC_0028910,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028910.jpg,0,100
+268,3502,3997,HAM_0007424,ISIC_0030560,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030560.jpg,0,010
+269,255,7236,HAM_0000609,ISIC_0025990,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025990.jpg,0,110
+270,2837,9704,HAM_0005027,ISIC_0032329,akiec,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032329.jpg,1,111
+271,3823,297,HAM_0003791,ISIC_0026893,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026893.jpg,1,011
+272,969,1792,HAM_0007589,ISIC_0034049,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034049.jpg,1,011
+273,2301,8835,HAM_0001455,ISIC_0032405,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032405.jpg,0,100
+274,5006,3684,HAM_0002681,ISIC_0029381,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029381.jpg,0,000
+275,3894,3496,HAM_0002260,ISIC_0028699,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028699.jpg,0,000
+276,2185,379,HAM_0003913,ISIC_0027295,bkl,histo,1,0,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027295.jpg,1,011
+277,2625,5194,HAM_0004591,ISIC_0027743,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027743.jpg,0,100
+278,1650,1229,HAM_0000492,ISIC_0028445,mel,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028445.jpg,1,011
+279,2973,1653,HAM_0004984,ISIC_0032879,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032879.jpg,1,011
+280,396,7899,HAM_0003535,ISIC_0033259,nv,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033259.jpg,0,100
+281,933,4672,HAM_0004994,ISIC_0028839,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028839.jpg,0,100
+282,1443,7720,HAM_0007148,ISIC_0033965,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033965.jpg,0,000
+283,3088,1098,HAM_0004103,ISIC_0031309,df,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031309.jpg,1,011
+284,2658,2386,HAM_0004877,ISIC_0028188,vasc,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028188.jpg,1,111
+285,2620,6824,HAM_0003221,ISIC_0032341,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032341.jpg,0,100
+286,1007,8250,HAM_0004239,ISIC_0024928,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024928.jpg,0,110
+287,4233,2521,HAM_0003738,ISIC_0032139,bcc,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032139.jpg,1,111
+288,4116,8436,HAM_0000525,ISIC_0031510,nv,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031510.jpg,0,010
+289,4674,6118,HAM_0006331,ISIC_0029229,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029229.jpg,0,000
+290,490,1006,HAM_0003011,ISIC_0030959,bkl,consensus,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030959.jpg,1,111
+291,1206,632,HAM_0004921,ISIC_0025389,bkl,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025389.jpg,1,011
+292,3707,5837,HAM_0002573,ISIC_0030018,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030018.jpg,0,000
+293,3796,5966,HAM_0000130,ISIC_0025727,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025727.jpg,0,000
+294,1208,146,HAM_0006654,ISIC_0032556,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032556.jpg,1,011
+295,3304,998,HAM_0004308,ISIC_0027370,bkl,consensus,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027370.jpg,1,101
+296,2556,2565,HAM_0003593,ISIC_0027478,bcc,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027478.jpg,1,001
+297,1277,607,HAM_0004379,ISIC_0031352,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031352.jpg,1,011
+298,1592,7493,HAM_0003824,ISIC_0033091,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033091.jpg,0,100
+299,432,9575,HAM_0004202,ISIC_0033623,nv,consensus,0,1,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033623.jpg,0,100
+300,1361,6744,HAM_0000960,ISIC_0025779,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025779.jpg,0,000
+301,1168,426,HAM_0001493,ISIC_0032373,bkl,histo,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032373.jpg,1,111
+302,4503,772,HAM_0005415,ISIC_0029102,bkl,confocal,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029102.jpg,1,011
+303,2527,3546,HAM_0007600,ISIC_0025375,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025375.jpg,0,100
+304,4241,6902,HAM_0004461,ISIC_0031817,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031817.jpg,0,100
+305,1935,521,HAM_0003943,ISIC_0031464,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031464.jpg,1,111
+306,4887,6277,HAM_0002356,ISIC_0030889,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030889.jpg,0,000
+307,3180,9444,HAM_0000488,ISIC_0032930,nv,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032930.jpg,0,000
+308,1060,7916,HAM_0003969,ISIC_0032627,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032627.jpg,0,100
+309,4931,5084,HAM_0005503,ISIC_0029692,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029692.jpg,0,100
+310,836,352,HAM_0000884,ISIC_0026728,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026728.jpg,1,011
+311,1136,5276,HAM_0001471,ISIC_0031843,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031843.jpg,0,000
+312,2494,7451,HAM_0007552,ISIC_0032731,nv,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032731.jpg,0,010
+313,4076,1281,HAM_0007560,ISIC_0024987,mel,histo,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024987.jpg,1,011
+314,2444,8521,HAM_0002368,ISIC_0029121,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029121.jpg,0,010
+315,3578,1955,HAM_0006626,ISIC_0029914,mel,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029914.jpg,1,011
+316,299,1960,HAM_0002834,ISIC_0026500,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026500.jpg,1,111
+317,4678,795,HAM_0005632,ISIC_0029232,bkl,confocal,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029232.jpg,1,111
+318,1088,8071,HAM_0006333,ISIC_0024424,nv,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024424.jpg,0,000
+319,897,130,HAM_0006085,ISIC_0033127,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033127.jpg,1,111
+320,2110,3469,HAM_0004826,ISIC_0027564,nv,follow_up,0,0,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027564.jpg,0,000
+321,3706,1771,HAM_0001272,ISIC_0032968,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032968.jpg,1,011
+322,4946,2307,HAM_0001910,ISIC_0024739,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024739.jpg,1,011
+323,2001,8710,HAM_0005183,ISIC_0029696,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029696.jpg,0,110
+324,4625,1277,HAM_0000095,ISIC_0033186,mel,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033186.jpg,1,011
+325,2302,7646,HAM_0007124,ISIC_0034311,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034311.jpg,0,010
+326,3803,2911,HAM_0004621,ISIC_0030746,bcc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030746.jpg,1,111
+327,2351,6471,HAM_0003056,ISIC_0026684,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026684.jpg,0,100
+328,2906,6680,HAM_0007074,ISIC_0030646,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030646.jpg,0,100
+329,1515,2308,HAM_0002525,ISIC_0025188,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025188.jpg,1,011
+330,678,7527,HAM_0006158,ISIC_0033096,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033096.jpg,0,000
+331,2952,7120,HAM_0007541,ISIC_0032540,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032540.jpg,0,000
+332,2950,9698,HAM_0001499,ISIC_0031929,akiec,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031929.jpg,1,011
+333,4170,6076,HAM_0005977,ISIC_0028396,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028396.jpg,0,110
+334,4637,8902,HAM_0000815,ISIC_0026023,nv,histo,0,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026023.jpg,0,100
+335,245,3648,HAM_0005564,ISIC_0026320,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026320.jpg,0,100
+336,3842,1812,HAM_0001686,ISIC_0032698,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032698.jpg,1,011
+337,3832,8298,HAM_0000163,ISIC_0027338,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027338.jpg,0,010
+338,1040,458,HAM_0004400,ISIC_0030026,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030026.jpg,1,111
+339,4021,1054,HAM_0003129,ISIC_0029195,bkl,consensus,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029195.jpg,1,111
+340,3108,2456,HAM_0004862,ISIC_0032057,vasc,consensus,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032057.jpg,1,111
+341,4520,8497,HAM_0002053,ISIC_0028715,nv,histo,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028715.jpg,0,110
+342,4761,3941,HAM_0005015,ISIC_0026355,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026355.jpg,0,010
+343,31,8867,HAM_0003940,ISIC_0029803,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029803.jpg,0,100
+344,1272,6063,HAM_0003173,ISIC_0032131,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032131.jpg,0,100
+345,4112,9017,HAM_0003033,ISIC_0025989,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025989.jpg,0,110
+346,4831,3784,HAM_0006103,ISIC_0031504,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031504.jpg,0,100
+347,4846,2969,HAM_0006564,ISIC_0031971,bcc,histo,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031971.jpg,1,011
+348,1198,6622,HAM_0001970,ISIC_0031136,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031136.jpg,0,000
+349,1486,8595,HAM_0000891,ISIC_0027963,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027963.jpg,0,100
+350,4173,1505,HAM_0002824,ISIC_0034118,mel,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034118.jpg,1,101
+351,975,3667,HAM_0007251,ISIC_0024964,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024964.jpg,0,100
+352,1507,8107,HAM_0000773,ISIC_0026049,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026049.jpg,0,100
+353,4032,3976,HAM_0005849,ISIC_0028647,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028647.jpg,0,100
+354,3034,4980,HAM_0007605,ISIC_0024699,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024699.jpg,0,100
+355,2866,8481,HAM_0003568,ISIC_0030675,nv,histo,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030675.jpg,0,110
+356,2023,833,HAM_0003030,ISIC_0029527,bkl,consensus,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029527.jpg,1,111
+357,3045,428,HAM_0002301,ISIC_0029568,bkl,histo,0,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029568.jpg,1,001
+358,2820,4835,HAM_0001977,ISIC_0029261,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029261.jpg,0,110
+359,2295,8343,HAM_0002628,ISIC_0031204,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031204.jpg,0,000
+360,1751,6450,HAM_0001341,ISIC_0025191,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025191.jpg,0,000
+361,3951,6234,HAM_0002174,ISIC_0025138,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025138.jpg,0,000
+362,1194,189,HAM_0004442,ISIC_0033582,bkl,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033582.jpg,1,011
+363,1061,9037,HAM_0003754,ISIC_0029671,nv,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029671.jpg,0,010
+364,907,6939,HAM_0000589,ISIC_0030194,nv,histo,0,1,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030194.jpg,0,100
+365,1617,713,HAM_0001608,ISIC_0029406,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029406.jpg,1,011
+366,242,9296,HAM_0001765,ISIC_0026788,nv,consensus,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026788.jpg,0,110
+367,4686,6373,HAM_0002678,ISIC_0030739,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030739.jpg,0,100
+368,2754,6659,HAM_0000894,ISIC_0030478,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030478.jpg,0,100
+369,1170,7883,HAM_0006782,ISIC_0032886,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032886.jpg,0,100
+370,2766,1941,HAM_0001819,ISIC_0032424,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032424.jpg,1,111
+371,2605,298,HAM_0002827,ISIC_0025777,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025777.jpg,1,011
+372,3953,2899,HAM_0003991,ISIC_0029602,bcc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029602.jpg,1,111
+373,4280,4520,HAM_0002388,ISIC_0025200,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025200.jpg,0,010
+374,820,906,HAM_0001991,ISIC_0028347,bkl,consensus,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028347.jpg,1,011
+375,4019,5645,HAM_0000100,ISIC_0024914,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024914.jpg,0,100
+376,97,1198,HAM_0002045,ISIC_0029973,df,consensus,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029973.jpg,1,011
+377,788,4071,HAM_0003406,ISIC_0030896,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030896.jpg,0,010
+378,531,1393,HAM_0004676,ISIC_0026247,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026247.jpg,1,011
+379,4034,8671,HAM_0002497,ISIC_0025443,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025443.jpg,0,010
+380,150,9248,HAM_0006936,ISIC_0031829,nv,consensus,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031829.jpg,0,100
+381,4206,2985,HAM_0004098,ISIC_0025843,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025843.jpg,0,100
+382,1212,1499,HAM_0005500,ISIC_0033636,mel,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033636.jpg,1,011
+383,1638,2109,HAM_0007488,ISIC_0024952,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024952.jpg,1,011
+384,3475,3917,HAM_0000265,ISIC_0027283,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027283.jpg,0,100
+385,2184,9139,HAM_0000961,ISIC_0028468,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028468.jpg,0,010
+386,1979,8086,HAM_0000279,ISIC_0032375,nv,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032375.jpg,0,100
+387,4330,2859,HAM_0002313,ISIC_0024461,bcc,histo,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024461.jpg,1,111
+388,3429,5915,HAM_0006957,ISIC_0028402,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028402.jpg,0,100
+389,2254,4663,HAM_0004891,ISIC_0027943,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027943.jpg,0,110
+390,406,97,HAM_0003007,ISIC_0025388,bkl,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025388.jpg,1,101
+391,1229,3037,HAM_0002265,ISIC_0030791,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030791.jpg,0,000
+392,3082,6808,HAM_0005162,ISIC_0025568,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025568.jpg,0,100
+393,4577,6021,HAM_0005941,ISIC_0029295,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029295.jpg,0,000
+394,4312,7100,HAM_0006159,ISIC_0028977,bkl,consensus,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028977.jpg,1,101
+395,4960,381,HAM_0004131,ISIC_0025583,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025583.jpg,1,111
+396,2852,4725,HAM_0007582,ISIC_0027092,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027092.jpg,0,000
+397,2673,9385,HAM_0002147,ISIC_0029537,nv,consensus,0,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029537.jpg,0,100
+398,776,1834,HAM_0006923,ISIC_0032592,mel,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032592.jpg,1,011
+399,2357,6992,HAM_0001767,ISIC_0029357,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029357.jpg,0,100
+400,84,2843,HAM_0007507,ISIC_0031056,bcc,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031056.jpg,1,111
+401,1984,4158,HAM_0007525,ISIC_0027994,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027994.jpg,0,010
+402,2144,2271,HAM_0007530,ISIC_0024410,mel,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024410.jpg,1,001
+403,1013,6134,HAM_0000290,ISIC_0024526,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024526.jpg,0,100
+404,4646,5128,HAM_0004045,ISIC_0030939,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030939.jpg,0,100
+405,2439,1693,HAM_0005970,ISIC_0032806,mel,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032806.jpg,1,011
+406,1907,3070,HAM_0007551,ISIC_0032016,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032016.jpg,0,010
+407,2011,2042,HAM_0000766,ISIC_0029937,mel,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029937.jpg,1,001
+408,2251,7724,HAM_0001645,ISIC_0032878,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032878.jpg,0,100
+409,413,4329,HAM_0004425,ISIC_0025147,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025147.jpg,0,100
+410,482,5760,HAM_0006781,ISIC_0025765,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025765.jpg,0,100
+411,1207,7342,HAM_0006391,ISIC_0032783,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032783.jpg,0,110
+412,4010,584,HAM_0005199,ISIC_0030876,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030876.jpg,1,011
+413,488,1465,HAM_0005403,ISIC_0026086,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026086.jpg,1,011
+414,3538,6930,HAM_0005484,ISIC_0032443,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032443.jpg,0,000
+415,3472,2426,HAM_0005215,ISIC_0028406,vasc,consensus,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028406.jpg,1,011
+416,1375,3468,HAM_0000446,ISIC_0025613,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025613.jpg,0,000
+417,1171,3128,HAM_0001723,ISIC_0027784,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027784.jpg,0,100
+418,202,603,HAM_0001082,ISIC_0024696,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024696.jpg,1,011
+419,4171,8318,HAM_0005284,ISIC_0027707,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027707.jpg,0,000
+420,56,7457,HAM_0003418,ISIC_0033182,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033182.jpg,0,000
+421,2168,3179,HAM_0000580,ISIC_0029293,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029293.jpg,0,000
+422,1106,5888,HAM_0004580,ISIC_0030872,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030872.jpg,0,010
+423,4922,8834,HAM_0002552,ISIC_0033232,mel,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033232.jpg,1,001
+424,4906,9859,HAM_0004568,ISIC_0024463,akiec,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024463.jpg,1,001
+425,1521,9855,HAM_0000769,ISIC_0029851,akiec,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029851.jpg,1,011
+426,4262,1369,HAM_0001600,ISIC_0024675,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024675.jpg,1,111
+427,3256,8983,HAM_0005197,ISIC_0030922,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030922.jpg,0,010
+428,1498,1845,HAM_0006462,ISIC_0034028,mel,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034028.jpg,1,011
+429,3169,3204,HAM_0001494,ISIC_0026621,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026621.jpg,0,100
+430,1785,8916,HAM_0005175,ISIC_0029479,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029479.jpg,0,110
+431,2642,6816,HAM_0003767,ISIC_0027358,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027358.jpg,0,010
+432,4971,1978,HAM_0000775,ISIC_0031666,mel,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031666.jpg,1,011
+433,2106,120,HAM_0000566,ISIC_0026794,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026794.jpg,1,111
+434,2809,2469,HAM_0006834,ISIC_0029193,bcc,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029193.jpg,1,011
+435,1841,7549,HAM_0001133,ISIC_0032980,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032980.jpg,0,100
+436,4655,1314,HAM_0006908,ISIC_0032450,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032450.jpg,1,011
+437,3284,4377,HAM_0001611,ISIC_0031032,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031032.jpg,0,110
+438,1655,680,HAM_0001721,ISIC_0024947,bkl,histo,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024947.jpg,1,001
+439,644,4109,HAM_0001886,ISIC_0028318,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028318.jpg,0,100
+440,2207,1645,HAM_0000064,ISIC_0033871,mel,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033871.jpg,1,101
+441,1496,2075,HAM_0007114,ISIC_0028418,mel,histo,0,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028418.jpg,1,101
+442,658,2450,HAM_0007568,ISIC_0024867,vasc,consensus,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024867.jpg,1,011
+443,1356,3991,HAM_0005714,ISIC_0026308,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026308.jpg,0,010
+444,204,3299,HAM_0003197,ISIC_0028668,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028668.jpg,0,100
+445,50,4755,HAM_0004241,ISIC_0024616,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024616.jpg,0,000
+446,4328,5129,HAM_0001996,ISIC_0031179,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031179.jpg,0,100
+447,1628,9926,HAM_0001967,ISIC_0025471,akiec,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025471.jpg,1,011
+448,4556,8832,HAM_0007049,ISIC_0028179,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028179.jpg,0,010
+449,3962,9889,HAM_0005231,ISIC_0029043,akiec,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029043.jpg,1,011
+450,147,2030,HAM_0005121,ISIC_0029591,mel,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029591.jpg,1,111
+451,1671,3996,HAM_0000340,ISIC_0026397,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026397.jpg,0,010
+452,450,7139,HAM_0002363,ISIC_0033363,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033363.jpg,0,000
+453,1672,2543,HAM_0005982,ISIC_0031442,bcc,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031442.jpg,1,011
+454,3705,2832,HAM_0003826,ISIC_0027229,bcc,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027229.jpg,1,011
+455,1042,8303,HAM_0001895,ISIC_0029938,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029938.jpg,0,000
+456,4491,5151,HAM_0003519,ISIC_0026627,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026627.jpg,0,010
+457,2118,9392,HAM_0007239,ISIC_0027143,nv,consensus,0,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027143.jpg,0,000
+458,2125,8936,HAM_0006225,ISIC_0028887,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028887.jpg,0,100
+459,2264,5323,HAM_0004146,ISIC_0027450,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027450.jpg,0,000
+460,780,3711,HAM_0006659,ISIC_0028160,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028160.jpg,0,010
+461,3779,2821,HAM_0004495,ISIC_0024743,bcc,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024743.jpg,1,111
+462,2143,8503,HAM_0003585,ISIC_0029583,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029583.jpg,0,010
+463,4273,6708,HAM_0003303,ISIC_0024597,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024597.jpg,0,000
+464,4014,569,HAM_0000259,ISIC_0026493,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026493.jpg,1,011
+465,125,7673,HAM_0007265,ISIC_0033933,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033933.jpg,0,000
+466,332,3601,HAM_0004971,ISIC_0028836,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028836.jpg,0,100
+467,3263,9163,HAM_0006241,ISIC_0031379,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031379.jpg,0,000
+468,2379,796,HAM_0005632,ISIC_0025470,bkl,confocal,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025470.jpg,1,111
+469,4222,402,HAM_0001896,ISIC_0030203,bkl,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030203.jpg,1,001
+470,2900,9332,HAM_0004646,ISIC_0029140,nv,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029140.jpg,0,000
+471,1746,1538,HAM_0005636,ISIC_0032984,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032984.jpg,1,011
+472,533,7749,HAM_0002170,ISIC_0034032,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034032.jpg,0,000
+473,4763,9132,HAM_0002572,ISIC_0030033,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030033.jpg,0,000
+474,1243,4764,HAM_0005502,ISIC_0029605,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029605.jpg,0,110
+475,3656,1125,HAM_0004036,ISIC_0027107,df,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027107.jpg,1,011
+476,1924,7177,HAM_0002009,ISIC_0033165,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033165.jpg,0,110
+477,2654,5723,HAM_0003722,ISIC_0030052,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030052.jpg,0,000
+478,2268,1576,HAM_0002671,ISIC_0034218,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034218.jpg,1,011
+479,682,1183,HAM_0005330,ISIC_0024553,df,consensus,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024553.jpg,1,101
+480,4903,783,HAM_0005967,ISIC_0032031,bkl,confocal,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032031.jpg,1,111
+481,1237,6581,HAM_0007071,ISIC_0030449,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030449.jpg,0,100
+482,19,6990,HAM_0007579,ISIC_0027571,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027571.jpg,0,000
+483,2606,8031,HAM_0007533,ISIC_0033757,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033757.jpg,0,100
+484,2281,1670,HAM_0003421,ISIC_0033560,mel,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033560.jpg,1,111
+485,2555,6807,HAM_0005162,ISIC_0025943,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025943.jpg,0,100
+486,2326,5829,HAM_0004018,ISIC_0028112,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028112.jpg,0,000
+487,1857,8572,HAM_0001327,ISIC_0032489,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032489.jpg,0,000
+488,3447,2646,HAM_0005435,ISIC_0025752,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025752.jpg,1,011
+489,4074,1397,HAM_0004153,ISIC_0026489,mel,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026489.jpg,1,011
+490,2415,74,HAM_0000907,ISIC_0025554,bkl,histo,1,0,ear,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025554.jpg,1,011
+491,3181,5740,HAM_0006743,ISIC_0030055,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030055.jpg,0,000
+492,2263,2321,HAM_0006889,ISIC_0031270,vasc,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031270.jpg,1,001
+493,1680,683,HAM_0003206,ISIC_0032365,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032365.jpg,1,111
+494,4395,3259,HAM_0002322,ISIC_0027912,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027912.jpg,0,100
+495,3840,651,HAM_0006287,ISIC_0029101,bkl,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029101.jpg,1,001
+496,656,1983,HAM_0004642,ISIC_0025524,mel,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025524.jpg,1,101
+497,2458,6375,HAM_0006571,ISIC_0025418,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025418.jpg,0,100
+498,1242,1510,HAM_0007343,ISIC_0033946,mel,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033946.jpg,1,011
+499,4085,7554,HAM_0006120,ISIC_0025372,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025372.jpg,0,100
+500,2107,558,HAM_0007598,ISIC_0026514,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026514.jpg,1,011
+501,4739,7594,HAM_0007475,ISIC_0034207,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034207.jpg,0,100
+502,4192,8652,HAM_0004897,ISIC_0024352,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024352.jpg,0,100
+503,4797,4866,HAM_0004741,ISIC_0031687,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031687.jpg,0,010
+504,3551,1815,HAM_0000799,ISIC_0033226,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033226.jpg,1,011
+505,1769,955,HAM_0000332,ISIC_0033784,bkl,consensus,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033784.jpg,1,111
+506,2077,6029,HAM_0000622,ISIC_0030161,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030161.jpg,0,100
+507,830,4066,HAM_0003779,ISIC_0024656,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024656.jpg,0,010
+508,158,6570,HAM_0005444,ISIC_0025745,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025745.jpg,0,100
+509,863,7691,HAM_0006496,ISIC_0033104,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033104.jpg,0,110
+510,2939,2162,HAM_0003957,ISIC_0030653,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030653.jpg,1,111
+511,201,6110,HAM_0005105,ISIC_0027377,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027377.jpg,0,100
+512,1409,9510,HAM_0005059,ISIC_0034027,nv,consensus,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034027.jpg,0,010
+513,3625,3661,HAM_0006375,ISIC_0026114,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026114.jpg,0,100
+514,859,8346,HAM_0001507,ISIC_0028362,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028362.jpg,0,000
+515,4780,1540,HAM_0005545,ISIC_0033947,mel,histo,0,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033947.jpg,1,101
+516,626,1727,HAM_0004240,ISIC_0032517,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032517.jpg,1,001
+517,3942,2096,HAM_0002609,ISIC_0032070,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032070.jpg,1,111
+518,3293,5051,HAM_0002739,ISIC_0032452,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032452.jpg,0,010
+519,4366,8042,HAM_0002604,ISIC_0033656,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033656.jpg,0,000
+520,574,8321,HAM_0001157,ISIC_0028737,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028737.jpg,0,010
+521,1353,9525,HAM_0000650,ISIC_0033464,nv,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033464.jpg,0,000
+522,4505,1609,HAM_0005303,ISIC_0032522,mel,histo,1,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032522.jpg,1,011
+523,755,4470,HAM_0006500,ISIC_0032479,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032479.jpg,0,100
+524,1919,3444,HAM_0002662,ISIC_0031572,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031572.jpg,0,100
+525,1371,5823,HAM_0006089,ISIC_0031316,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031316.jpg,0,000
+526,2899,1154,HAM_0005663,ISIC_0026417,df,consensus,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026417.jpg,1,001
+527,3579,8732,HAM_0002865,ISIC_0031708,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031708.jpg,0,100
+528,4063,7422,HAM_0004548,ISIC_0032520,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032520.jpg,0,100
+529,952,7881,HAM_0006334,ISIC_0032779,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032779.jpg,0,100
+530,4135,8165,HAM_0000717,ISIC_0030455,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030455.jpg,0,100
+531,2643,1920,HAM_0001570,ISIC_0032872,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032872.jpg,1,011
+532,3811,3551,HAM_0005182,ISIC_0031288,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031288.jpg,0,100
+533,817,3794,HAM_0000301,ISIC_0026112,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026112.jpg,0,110
+534,1913,5401,HAM_0007485,ISIC_0032438,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032438.jpg,0,100
+535,1337,5107,HAM_0007231,ISIC_0029114,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029114.jpg,0,110
+536,736,9453,HAM_0005316,ISIC_0033139,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033139.jpg,0,000
+537,3010,8188,HAM_0005319,ISIC_0025469,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025469.jpg,0,010
+538,4341,3968,HAM_0002035,ISIC_0024989,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024989.jpg,0,100
+539,4427,4856,HAM_0000905,ISIC_0026338,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026338.jpg,0,110
+540,3644,3116,HAM_0001775,ISIC_0030338,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030338.jpg,0,100
+541,3499,5503,HAM_0001577,ISIC_0029818,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029818.jpg,0,010
+542,4912,4082,HAM_0001010,ISIC_0026170,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026170.jpg,0,110
+543,528,8602,HAM_0001799,ISIC_0028675,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028675.jpg,0,100
+544,4117,8524,HAM_0003850,ISIC_0027237,nv,histo,0,0,ear,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027237.jpg,0,000
+545,3895,8692,HAM_0001737,ISIC_0027883,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027883.jpg,0,010
+546,4983,1681,HAM_0006101,ISIC_0033872,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033872.jpg,1,011
+547,560,8128,HAM_0007195,ISIC_0031923,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031923.jpg,0,100
+548,2317,9703,HAM_0001495,ISIC_0024913,akiec,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024913.jpg,1,011
+549,2087,9064,HAM_0005230,ISIC_0027127,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027127.jpg,0,110
+550,4037,1165,HAM_0005584,ISIC_0032613,df,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032613.jpg,1,101
+551,1754,1951,HAM_0002186,ISIC_0028463,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028463.jpg,1,111
+552,3960,1502,HAM_0005893,ISIC_0032833,mel,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032833.jpg,1,011
+553,220,7581,HAM_0000165,ISIC_0033833,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033833.jpg,0,100
+554,2763,4429,HAM_0006169,ISIC_0026747,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026747.jpg,0,000
+555,40,6783,HAM_0002652,ISIC_0024934,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024934.jpg,0,000
+556,2742,7543,HAM_0001641,ISIC_0033680,nv,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033680.jpg,0,010
+557,122,3555,HAM_0007266,ISIC_0031909,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031909.jpg,0,000
+558,1789,243,HAM_0007341,ISIC_0033758,bkl,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033758.jpg,1,101
+559,3648,8667,HAM_0006154,ISIC_0030082,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030082.jpg,0,000
+560,5000,8872,HAM_0006323,ISIC_0029465,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029465.jpg,0,110
+561,1099,7182,HAM_0006634,ISIC_0033227,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033227.jpg,0,100
+562,1849,1226,HAM_0003832,ISIC_0024586,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024586.jpg,1,111
+563,3547,2175,HAM_0006877,ISIC_0028227,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028227.jpg,1,011
+564,1449,9387,HAM_0000698,ISIC_0027431,nv,consensus,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027431.jpg,0,000
+565,2993,1088,HAM_0005262,ISIC_0030488,bkl,consensus,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030488.jpg,1,111
+566,601,776,HAM_0000710,ISIC_0024489,bkl,confocal,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024489.jpg,1,111
+567,2803,8144,HAM_0005428,ISIC_0031654,nv,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031654.jpg,0,100
+568,811,6679,HAM_0001550,ISIC_0026020,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026020.jpg,0,100
+569,2933,457,HAM_0001562,ISIC_0029789,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029789.jpg,1,011
+570,3814,2341,HAM_0002538,ISIC_0032240,vasc,histo,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032240.jpg,1,111
+571,3982,9288,HAM_0003045,ISIC_0031475,nv,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031475.jpg,0,000
+572,777,5676,HAM_0005120,ISIC_0027685,nv,follow_up,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027685.jpg,0,000
+573,4440,3629,HAM_0000435,ISIC_0026620,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026620.jpg,0,000
+574,3114,8518,HAM_0006994,ISIC_0026987,nv,histo,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026987.jpg,0,000
+575,492,6887,HAM_0006389,ISIC_0027738,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027738.jpg,0,010
+576,3825,9477,HAM_0006353,ISIC_0033164,nv,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033164.jpg,0,100
+577,4408,4061,HAM_0005656,ISIC_0026478,nv,follow_up,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026478.jpg,0,000
+578,1642,5965,HAM_0001132,ISIC_0031562,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031562.jpg,0,000
+579,3032,757,HAM_0001733,ISIC_0028931,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028931.jpg,1,011
+580,4483,1688,HAM_0002993,ISIC_0033644,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033644.jpg,1,011
+581,4394,3390,HAM_0002286,ISIC_0029876,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029876.jpg,0,100
+582,2273,408,HAM_0002902,ISIC_0026443,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026443.jpg,1,111
+583,1140,8891,HAM_0005925,ISIC_0027036,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027036.jpg,0,110
+584,2684,5612,HAM_0002852,ISIC_0031530,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031530.jpg,0,010
+585,4092,8391,HAM_0006760,ISIC_0031559,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031559.jpg,0,100
+586,4771,2514,HAM_0003094,ISIC_0029647,bcc,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029647.jpg,1,011
+587,3086,7760,HAM_0003346,ISIC_0032754,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032754.jpg,0,000
+588,1572,9975,HAM_0000931,ISIC_0028820,akiec,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028820.jpg,1,011
+589,725,9150,HAM_0003078,ISIC_0026124,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026124.jpg,0,010
+590,4418,8616,HAM_0005755,ISIC_0026226,nv,histo,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026226.jpg,0,000
+591,1684,9767,HAM_0006135,ISIC_0031044,akiec,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031044.jpg,1,011
+592,2793,3077,HAM_0006178,ISIC_0031100,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031100.jpg,0,010
+593,1445,9192,HAM_0006129,ISIC_0027849,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027849.jpg,0,000
+594,2091,4391,HAM_0005731,ISIC_0024920,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024920.jpg,0,000
+595,75,7127,HAM_0001651,ISIC_0033402,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033402.jpg,0,000
+596,2960,7081,HAM_0003951,ISIC_0024317,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024317.jpg,0,100
+597,1181,9605,HAM_0001000,ISIC_0033353,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033353.jpg,0,000
+598,2422,513,HAM_0007018,ISIC_0027006,bkl,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027006.jpg,1,011
+599,3069,332,HAM_0003868,ISIC_0024708,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024708.jpg,1,011
+600,1532,5304,HAM_0005357,ISIC_0029981,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029981.jpg,0,100
+601,660,9459,HAM_0005263,ISIC_0034163,nv,consensus,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034163.jpg,0,000
+602,3227,2566,HAM_0005804,ISIC_0026275,bcc,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026275.jpg,1,011
+603,3820,3540,HAM_0007469,ISIC_0030049,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030049.jpg,0,100
+604,3231,9427,HAM_0000556,ISIC_0034279,nv,consensus,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034279.jpg,0,100
+605,2849,7770,HAM_0004038,ISIC_0032990,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032990.jpg,0,100
+606,4332,1355,HAM_0004483,ISIC_0027487,mel,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027487.jpg,1,101
+607,1888,6832,HAM_0000464,ISIC_0026223,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026223.jpg,0,110
+608,2016,7269,HAM_0000380,ISIC_0024344,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024344.jpg,0,110
+609,2998,8910,HAM_0007176,ISIC_0032144,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032144.jpg,0,000
+610,3440,3744,HAM_0003644,ISIC_0030202,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030202.jpg,0,100
+611,1531,4217,HAM_0001477,ISIC_0024308,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024308.jpg,0,110
+612,1884,6278,HAM_0004329,ISIC_0027866,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027866.jpg,0,000
+613,1634,9625,HAM_0001209,ISIC_0033064,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033064.jpg,0,000
+614,1973,3974,HAM_0002779,ISIC_0026515,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026515.jpg,0,100
+615,2267,9293,HAM_0003430,ISIC_0027266,nv,consensus,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027266.jpg,0,010
+616,2593,3915,HAM_0001008,ISIC_0031898,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031898.jpg,0,100
+617,1195,6477,HAM_0000828,ISIC_0024797,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024797.jpg,0,000
+618,1725,1586,HAM_0005535,ISIC_0029632,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029632.jpg,1,011
+619,285,4600,HAM_0006989,ISIC_0028729,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028729.jpg,0,100
+620,1856,2778,HAM_0005417,ISIC_0027966,bcc,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027966.jpg,1,011
+621,3515,672,HAM_0001292,ISIC_0031951,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031951.jpg,1,011
+622,2377,9365,HAM_0007445,ISIC_0027012,nv,consensus,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027012.jpg,0,000
+623,4236,6319,HAM_0002117,ISIC_0032324,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032324.jpg,0,110
+624,2083,7048,HAM_0001497,ISIC_0026608,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026608.jpg,0,000
+625,1810,6643,HAM_0000357,ISIC_0025134,nv,follow_up,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025134.jpg,0,010
+626,2366,7982,HAM_0004590,ISIC_0032824,nv,consensus,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032824.jpg,0,010
+627,358,3929,HAM_0000021,ISIC_0026773,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026773.jpg,0,100
+628,3671,8654,HAM_0004897,ISIC_0026293,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026293.jpg,0,100
+629,939,4697,HAM_0005955,ISIC_0024713,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024713.jpg,0,100
+630,2925,3342,HAM_0003838,ISIC_0028888,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028888.jpg,0,000
+631,740,4916,HAM_0000818,ISIC_0029611,nv,follow_up,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029611.jpg,0,010
+632,3379,8011,HAM_0004063,ISIC_0032896,nv,histo,0,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032896.jpg,0,100
+633,2698,1767,HAM_0000337,ISIC_0030391,mel,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030391.jpg,1,101
+634,3704,6844,HAM_0002942,ISIC_0027911,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027911.jpg,0,000
+635,3192,1075,HAM_0000607,ISIC_0025431,bkl,consensus,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025431.jpg,1,101
+636,1738,987,HAM_0000382,ISIC_0031897,bkl,consensus,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031897.jpg,1,011
+637,2343,6123,HAM_0001179,ISIC_0029928,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029928.jpg,0,000
+638,3555,2582,HAM_0004420,ISIC_0024795,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024795.jpg,1,011
+639,3914,9061,HAM_0003223,ISIC_0024922,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024922.jpg,0,010
+640,3853,1436,HAM_0005785,ISIC_0028489,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028489.jpg,1,011
+641,4851,1240,HAM_0005557,ISIC_0030119,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030119.jpg,1,111
+642,2056,8892,HAM_0006543,ISIC_0026096,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026096.jpg,0,000
+643,1372,7005,HAM_0005519,ISIC_0026215,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026215.jpg,0,110
+644,1288,6000,HAM_0005441,ISIC_0031804,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031804.jpg,0,010
+645,393,1675,HAM_0007021,ISIC_0033477,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033477.jpg,1,011
+646,409,8943,HAM_0000889,ISIC_0026401,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026401.jpg,0,100
+647,88,2260,HAM_0006223,ISIC_0025791,mel,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025791.jpg,1,011
+648,4743,9345,HAM_0000406,ISIC_0030890,nv,consensus,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030890.jpg,0,100
+649,4471,673,HAM_0006993,ISIC_0030310,bkl,histo,1,1,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030310.jpg,1,111
+650,771,3692,HAM_0006789,ISIC_0024976,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024976.jpg,0,000
+651,4942,8505,HAM_0005870,ISIC_0030399,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030399.jpg,0,000
+652,4717,8183,HAM_0005840,ISIC_0028692,nv,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028692.jpg,0,100
+653,1044,7020,HAM_0006605,ISIC_0027645,nv,histo,0,1,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027645.jpg,0,100
+654,3600,1009,HAM_0001429,ISIC_0027875,bkl,consensus,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027875.jpg,1,011
+655,508,4256,HAM_0007211,ISIC_0025377,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025377.jpg,0,000
+656,1939,8307,HAM_0002547,ISIC_0029516,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029516.jpg,0,100
+657,3278,4500,HAM_0000678,ISIC_0029074,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029074.jpg,0,100
+658,4620,1702,HAM_0003506,ISIC_0034188,mel,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034188.jpg,1,011
+659,1149,8896,HAM_0004288,ISIC_0026445,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026445.jpg,0,000
+660,2127,3949,HAM_0003917,ISIC_0026814,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026814.jpg,0,110
+661,4457,7271,HAM_0005127,ISIC_0026384,nv,histo,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026384.jpg,0,110
+662,4412,4555,HAM_0006082,ISIC_0027500,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027500.jpg,0,110
+663,254,6287,HAM_0003185,ISIC_0030430,nv,follow_up,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030430.jpg,0,000
+664,4381,2136,HAM_0001598,ISIC_0030910,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030910.jpg,1,011
+665,4320,1004,HAM_0007151,ISIC_0029793,bkl,consensus,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029793.jpg,1,111
+666,4398,9650,HAM_0005347,ISIC_0027265,nv,consensus,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027265.jpg,0,110
+667,32,7252,HAM_0000395,ISIC_0029656,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029656.jpg,0,000
+668,3346,3868,HAM_0007045,ISIC_0032088,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032088.jpg,0,100
+669,3128,6927,HAM_0006826,ISIC_0027049,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027049.jpg,0,100
+670,1166,5621,HAM_0002044,ISIC_0024325,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024325.jpg,0,100
+671,2026,7959,HAM_0001708,ISIC_0034191,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034191.jpg,0,010
+672,480,8778,HAM_0005670,ISIC_0030253,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030253.jpg,0,100
+673,4087,8452,HAM_0006039,ISIC_0028092,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028092.jpg,0,010
+674,218,8691,HAM_0001737,ISIC_0030039,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030039.jpg,0,010
+675,970,6448,HAM_0007449,ISIC_0025912,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025912.jpg,0,000
+676,4354,5408,HAM_0006460,ISIC_0027292,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027292.jpg,0,010
+677,4582,7875,HAM_0001883,ISIC_0033224,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033224.jpg,0,100
+678,928,4359,HAM_0007177,ISIC_0025626,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025626.jpg,0,000
+679,465,8396,HAM_0002701,ISIC_0026764,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026764.jpg,0,010
+680,1254,5366,HAM_0006175,ISIC_0024954,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024954.jpg,0,000
+681,4919,3881,HAM_0001355,ISIC_0028711,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028711.jpg,0,010
+682,1963,6914,HAM_0003475,ISIC_0030688,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030688.jpg,0,010
+683,1081,5233,HAM_0006102,ISIC_0032105,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032105.jpg,0,010
+684,2216,3083,HAM_0005619,ISIC_0025415,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025415.jpg,0,000
+685,2112,7279,HAM_0006326,ISIC_0028500,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028500.jpg,0,100
+686,3534,1478,HAM_0006445,ISIC_0033333,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033333.jpg,1,111
+687,1873,7970,HAM_0001175,ISIC_0033191,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033191.jpg,0,100
+688,4604,7122,HAM_0007462,ISIC_0032633,nv,histo,0,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032633.jpg,0,000
+689,3664,980,HAM_0007233,ISIC_0029113,bkl,consensus,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029113.jpg,1,011
+690,4876,8522,HAM_0001846,ISIC_0031302,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031302.jpg,0,100
+691,101,3695,HAM_0006736,ISIC_0024492,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024492.jpg,0,010
+692,3642,4092,HAM_0001115,ISIC_0024778,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024778.jpg,0,000
+693,1428,1076,HAM_0003582,ISIC_0027332,bkl,consensus,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027332.jpg,1,111
+694,2958,747,HAM_0001878,ISIC_0025434,bkl,histo,1,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025434.jpg,1,111
+695,2896,6683,HAM_0003246,ISIC_0029049,nv,histo,0,0,ear,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029049.jpg,0,000
+696,1101,2376,HAM_0007097,ISIC_0033230,vasc,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033230.jpg,1,011
+697,162,9267,HAM_0004360,ISIC_0026371,nv,consensus,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026371.jpg,0,000
+698,3798,8611,HAM_0004275,ISIC_0026921,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026921.jpg,0,110
+699,3596,4864,HAM_0007547,ISIC_0025429,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025429.jpg,0,010
+700,4586,2689,HAM_0002069,ISIC_0029331,bcc,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029331.jpg,1,001
+701,4277,6367,HAM_0006753,ISIC_0028073,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028073.jpg,0,100
+702,1359,7441,HAM_0000747,ISIC_0033748,nv,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033748.jpg,0,000
+703,1211,6403,HAM_0003554,ISIC_0027494,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027494.jpg,0,000
+704,3264,7546,HAM_0003181,ISIC_0034030,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034030.jpg,0,000
+705,3815,2535,HAM_0002346,ISIC_0026343,bcc,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026343.jpg,1,011
+706,2121,4584,HAM_0003837,ISIC_0028850,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028850.jpg,0,100
+707,2097,9870,HAM_0004439,ISIC_0031672,akiec,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031672.jpg,1,111
+708,3253,2116,HAM_0001657,ISIC_0031529,mel,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031529.jpg,1,101
+709,1098,4045,HAM_0006829,ISIC_0024619,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024619.jpg,0,000
+710,1032,5914,HAM_0003196,ISIC_0025475,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025475.jpg,0,100
+711,2523,249,HAM_0006281,ISIC_0033791,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033791.jpg,1,011
+712,4607,8041,HAM_0002603,ISIC_0033697,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033697.jpg,0,000
+713,2293,2430,HAM_0007532,ISIC_0024662,vasc,consensus,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024662.jpg,1,011
+714,2073,7561,HAM_0002253,ISIC_0033106,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033106.jpg,0,000
+715,727,8411,HAM_0004924,ISIC_0027040,nv,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027040.jpg,0,100
+716,3688,8583,HAM_0000886,ISIC_0029577,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029577.jpg,0,010
+717,2378,3270,HAM_0002918,ISIC_0031704,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031704.jpg,0,100
+718,192,1730,HAM_0003566,ISIC_0033171,mel,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033171.jpg,1,001
+719,635,7162,HAM_0003505,ISIC_0034227,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034227.jpg,0,000
+720,3235,5877,HAM_0006499,ISIC_0031027,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031027.jpg,0,100
+721,2984,9228,HAM_0001541,ISIC_0026218,nv,consensus,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026218.jpg,0,000
+722,1774,1245,HAM_0001811,ISIC_0028069,mel,histo,0,1,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028069.jpg,1,101
+723,1002,4289,HAM_0001805,ISIC_0027200,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027200.jpg,0,010
+724,738,365,HAM_0000050,ISIC_0030095,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030095.jpg,1,011
+725,4470,4141,HAM_0000945,ISIC_0031104,nv,follow_up,1,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031104.jpg,0,110
+726,4466,7234,HAM_0000294,ISIC_0033461,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033461.jpg,0,000
+727,4075,9113,HAM_0001701,ISIC_0025237,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025237.jpg,0,010
+728,1147,6583,HAM_0006055,ISIC_0031456,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031456.jpg,0,110
+729,1877,7567,HAM_0003884,ISIC_0033961,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033961.jpg,0,100
+730,3059,5090,HAM_0000088,ISIC_0027131,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027131.jpg,0,010
+731,2349,975,HAM_0000825,ISIC_0034186,bkl,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034186.jpg,1,001
+732,4979,4855,HAM_0006050,ISIC_0029122,nv,follow_up,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029122.jpg,0,110
+733,1560,57,HAM_0003569,ISIC_0026955,bkl,histo,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026955.jpg,1,011
+734,4134,6039,HAM_0003166,ISIC_0030848,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030848.jpg,0,100
+735,3756,3774,HAM_0003630,ISIC_0030538,nv,follow_up,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030538.jpg,0,110
+736,1173,773,HAM_0005415,ISIC_0027154,bkl,confocal,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027154.jpg,1,011
+737,2072,8927,HAM_0006685,ISIC_0029095,nv,histo,0,1,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029095.jpg,0,100
+738,2133,3944,HAM_0007082,ISIC_0027971,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027971.jpg,0,110
+739,832,1072,HAM_0000974,ISIC_0026262,bkl,consensus,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026262.jpg,1,111
+740,2905,4628,HAM_0006314,ISIC_0029532,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029532.jpg,0,010
+741,3708,8083,HAM_0005421,ISIC_0028060,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028060.jpg,0,010
+742,4336,4660,HAM_0002608,ISIC_0026484,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026484.jpg,0,100
+743,4197,3913,HAM_0001700,ISIC_0030971,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030971.jpg,0,100
+744,967,5157,HAM_0007056,ISIC_0025750,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025750.jpg,0,000
+745,3572,6704,HAM_0000288,ISIC_0027062,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027062.jpg,0,110
+746,1934,5134,HAM_0002679,ISIC_0029590,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029590.jpg,0,100
+747,3305,5245,HAM_0002830,ISIC_0025796,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025796.jpg,0,010
+748,1467,1695,HAM_0007574,ISIC_0033238,mel,histo,1,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033238.jpg,1,011
+749,1982,4303,HAM_0005825,ISIC_0027304,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027304.jpg,0,100
+750,1144,7764,HAM_0003803,ISIC_0033352,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033352.jpg,0,100
+751,4360,2031,HAM_0000241,ISIC_0030932,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030932.jpg,1,111
+752,4608,6707,HAM_0003303,ISIC_0030980,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030980.jpg,0,000
+753,2623,8078,HAM_0002533,ISIC_0027755,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027755.jpg,0,100
+754,584,9843,HAM_0004809,ISIC_0029840,akiec,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029840.jpg,1,011
+755,1313,2139,HAM_0006355,ISIC_0027663,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027663.jpg,1,001
+756,1216,4073,HAM_0005871,ISIC_0032080,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032080.jpg,0,100
+757,3766,8951,HAM_0000204,ISIC_0027639,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027639.jpg,0,010
+758,4310,944,HAM_0006528,ISIC_0034296,bkl,consensus,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034296.jpg,1,111
+759,1127,6386,HAM_0004900,ISIC_0027860,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027860.jpg,0,000
+760,1752,3119,HAM_0000797,ISIC_0026039,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026039.jpg,0,100
+761,4080,3489,HAM_0002836,ISIC_0030289,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030289.jpg,0,000
+762,1688,111,HAM_0000114,ISIC_0029674,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029674.jpg,1,011
+763,4664,934,HAM_0004258,ISIC_0033693,bkl,consensus,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033693.jpg,1,011
+764,4786,8313,HAM_0003742,ISIC_0027150,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027150.jpg,0,100
+765,90,6711,HAM_0000854,ISIC_0029534,nv,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029534.jpg,0,010
+766,1901,9863,HAM_0003633,ISIC_0030280,akiec,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030280.jpg,1,011
+767,369,8859,HAM_0007075,ISIC_0032195,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032195.jpg,0,000
+768,4376,7360,HAM_0003993,ISIC_0033706,nv,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033706.jpg,0,000
+769,4269,2506,HAM_0002791,ISIC_0031749,bcc,histo,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031749.jpg,1,101
+770,4585,6573,HAM_0005511,ISIC_0031807,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031807.jpg,0,100
+771,4747,6928,HAM_0001849,ISIC_0027209,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027209.jpg,0,100
+772,3341,8435,HAM_0001101,ISIC_0030621,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030621.jpg,0,100
+773,2448,697,HAM_0003605,ISIC_0029849,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029849.jpg,1,011
+774,1609,4205,HAM_0001432,ISIC_0024393,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024393.jpg,0,010
+775,1712,8845,HAM_0006947,ISIC_0031662,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031662.jpg,0,100
+776,719,1266,HAM_0002011,ISIC_0031711,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031711.jpg,1,111
+777,3575,7535,HAM_0001246,ISIC_0032822,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032822.jpg,0,100
+778,4007,3809,HAM_0003234,ISIC_0032467,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032467.jpg,0,100
+779,1296,7017,HAM_0006629,ISIC_0027086,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027086.jpg,0,100
+780,1028,6965,HAM_0005056,ISIC_0031094,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031094.jpg,0,010
+781,2829,3289,HAM_0002138,ISIC_0027834,nv,follow_up,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027834.jpg,0,000
+782,809,7309,HAM_0003507,ISIC_0032784,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032784.jpg,0,000
+783,2430,7521,HAM_0000439,ISIC_0033729,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033729.jpg,0,010
+784,979,285,HAM_0002691,ISIC_0031345,bkl,histo,1,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031345.jpg,1,111
+785,4805,3700,HAM_0005506,ISIC_0032484,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032484.jpg,0,010
+786,2607,7542,HAM_0001641,ISIC_0033948,nv,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033948.jpg,0,010
+787,2775,2389,HAM_0002610,ISIC_0030606,vasc,consensus,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030606.jpg,1,101
+788,3581,9402,HAM_0003360,ISIC_0033140,nv,consensus,0,1,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033140.jpg,0,100
+789,1430,8080,HAM_0000054,ISIC_0026498,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026498.jpg,0,100
+790,2372,6993,HAM_0006185,ISIC_0032309,nv,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032309.jpg,0,000
+791,3394,9208,HAM_0005479,ISIC_0028009,nv,histo,0,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028009.jpg,0,100
+792,4039,8640,HAM_0006401,ISIC_0031451,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031451.jpg,0,100
+793,890,4752,HAM_0006127,ISIC_0032449,nv,follow_up,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032449.jpg,0,000
+794,2291,5124,HAM_0006286,ISIC_0027619,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027619.jpg,0,000
+795,1367,1914,HAM_0000880,ISIC_0033089,mel,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033089.jpg,1,011
+796,1055,792,HAM_0003574,ISIC_0030835,bkl,confocal,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030835.jpg,1,001
+797,1896,6316,HAM_0002922,ISIC_0027625,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027625.jpg,0,110
+798,1462,4342,HAM_0000839,ISIC_0032049,nv,follow_up,1,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032049.jpg,0,110
+799,4927,6758,HAM_0006738,ISIC_0029374,nv,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029374.jpg,0,010
+800,3511,9100,HAM_0000194,ISIC_0030456,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030456.jpg,0,100
+801,4215,7390,HAM_0005539,ISIC_0033409,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033409.jpg,0,100
+802,713,6665,HAM_0005688,ISIC_0027186,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027186.jpg,0,100
+803,2138,7977,HAM_0004585,ISIC_0032881,nv,consensus,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032881.jpg,0,010
+804,425,8305,HAM_0001895,ISIC_0029196,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029196.jpg,0,000
+805,1837,7636,HAM_0000216,ISIC_0034232,nv,histo,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034232.jpg,0,000
+806,2613,909,HAM_0000754,ISIC_0034315,bkl,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034315.jpg,1,001
+807,1994,2108,HAM_0007488,ISIC_0029157,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029157.jpg,1,011
+808,279,5531,HAM_0000537,ISIC_0027095,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027095.jpg,0,000
+809,2209,5899,HAM_0006486,ISIC_0026880,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026880.jpg,0,100
+810,3006,8982,HAM_0001962,ISIC_0029749,nv,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029749.jpg,0,010
+811,2475,2636,HAM_0000795,ISIC_0033012,bcc,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033012.jpg,1,111
+812,615,4840,HAM_0004715,ISIC_0030494,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030494.jpg,0,100
+813,1148,3826,HAM_0002275,ISIC_0031774,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031774.jpg,0,100
+814,1087,6331,HAM_0007457,ISIC_0029813,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029813.jpg,0,100
+815,3245,6735,HAM_0000476,ISIC_0028293,nv,histo,1,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028293.jpg,0,010
+816,1416,7776,HAM_0006191,ISIC_0033530,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033530.jpg,0,000
+817,4844,8103,HAM_0002023,ISIC_0028540,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028540.jpg,0,100
+818,351,5709,HAM_0005577,ISIC_0028320,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028320.jpg,0,000
+819,1793,3647,HAM_0001540,ISIC_0028299,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028299.jpg,0,010
+820,2373,9154,HAM_0006910,ISIC_0028504,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028504.jpg,0,100
+821,3786,1762,HAM_0007102,ISIC_0030031,mel,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030031.jpg,1,011
+822,563,2063,HAM_0000910,ISIC_0028017,mel,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028017.jpg,1,101
+823,419,7845,HAM_0003623,ISIC_0033512,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033512.jpg,0,100
+824,269,9672,HAM_0002554,ISIC_0028585,nv,consensus,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028585.jpg,0,000
+825,163,9381,HAM_0005712,ISIC_0029970,nv,consensus,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029970.jpg,0,100
+826,1534,5592,HAM_0004085,ISIC_0028471,nv,follow_up,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028471.jpg,0,110
+827,1423,960,HAM_0002792,ISIC_0033169,bkl,consensus,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033169.jpg,1,111
+828,2417,6027,HAM_0003407,ISIC_0026971,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026971.jpg,0,100
+829,499,279,HAM_0000308,ISIC_0025136,bkl,histo,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025136.jpg,1,111
+830,741,6466,HAM_0000558,ISIC_0027547,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027547.jpg,0,100
+831,2622,6774,HAM_0003091,ISIC_0027152,nv,histo,0,1,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027152.jpg,0,100
+832,620,7249,HAM_0002797,ISIC_0031412,nv,histo,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031412.jpg,0,100
+833,4835,3482,HAM_0004982,ISIC_0025192,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025192.jpg,0,000
+834,1308,638,HAM_0004423,ISIC_0027982,bkl,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027982.jpg,1,111
+835,4649,8887,HAM_0000014,ISIC_0025759,nv,histo,0,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025759.jpg,0,000
+836,4833,4495,HAM_0001019,ISIC_0026377,nv,follow_up,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026377.jpg,0,110
+837,2436,8739,HAM_0001764,ISIC_0032253,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032253.jpg,0,100
+838,954,3834,HAM_0005087,ISIC_0024765,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024765.jpg,0,100
+839,197,2762,HAM_0003846,ISIC_0028113,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028113.jpg,1,011
+840,1967,6516,HAM_0005216,ISIC_0032161,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032161.jpg,0,010
+841,2403,3452,HAM_0003122,ISIC_0031069,nv,follow_up,0,1,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031069.jpg,0,100
+842,2864,9108,HAM_0003033,ISIC_0025165,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025165.jpg,0,110
+843,2713,5391,HAM_0004362,ISIC_0031873,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031873.jpg,0,100
+844,4288,2305,HAM_0003534,ISIC_0028493,mel,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028493.jpg,1,011
+845,3833,8905,HAM_0006174,ISIC_0028116,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028116.jpg,0,010
+846,1280,3935,HAM_0005076,ISIC_0024404,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024404.jpg,0,100
+847,3228,2107,HAM_0003095,ISIC_0025755,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025755.jpg,1,111
+848,4315,1916,HAM_0000375,ISIC_0031233,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031233.jpg,1,001
+849,3528,1391,HAM_0003449,ISIC_0029242,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029242.jpg,1,011
+850,483,9184,HAM_0006105,ISIC_0032236,nv,histo,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032236.jpg,0,100
+851,2407,9541,HAM_0003815,ISIC_0024715,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024715.jpg,0,000
+852,2533,2644,HAM_0005435,ISIC_0024666,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024666.jpg,1,011
+853,4337,4748,HAM_0004005,ISIC_0032093,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032093.jpg,0,000
+854,3265,9616,HAM_0005439,ISIC_0033597,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033597.jpg,0,000
+855,1326,8627,HAM_0003311,ISIC_0026452,nv,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026452.jpg,0,110
+856,1022,6366,HAM_0002415,ISIC_0026121,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026121.jpg,0,100
+857,4402,2079,HAM_0001349,ISIC_0032425,mel,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032425.jpg,1,111
+858,2647,5600,HAM_0004261,ISIC_0027075,nv,follow_up,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027075.jpg,0,000
+859,1286,6072,HAM_0003336,ISIC_0030298,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030298.jpg,0,100
+860,4365,2716,HAM_0000504,ISIC_0026716,bcc,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026716.jpg,1,001
+861,1084,1898,HAM_0001647,ISIC_0032975,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032975.jpg,1,111
+862,3682,9355,HAM_0002726,ISIC_0025473,nv,consensus,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025473.jpg,0,000
+863,2897,1492,HAM_0003983,ISIC_0033975,mel,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033975.jpg,1,011
+864,3055,8073,HAM_0002740,ISIC_0027246,nv,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027246.jpg,0,000
+865,1649,3670,HAM_0004017,ISIC_0030351,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030351.jpg,0,100
+866,2342,5473,HAM_0006788,ISIC_0026482,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026482.jpg,0,010
+867,1336,455,HAM_0005883,ISIC_0026018,bkl,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026018.jpg,1,011
+868,1817,141,HAM_0006663,ISIC_0033482,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033482.jpg,1,111
+869,1123,8930,HAM_0006409,ISIC_0028987,nv,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028987.jpg,0,110
+870,1184,2358,HAM_0004776,ISIC_0032867,vasc,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032867.jpg,1,101
+871,1182,1136,HAM_0004371,ISIC_0027626,df,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027626.jpg,1,101
+872,4316,3016,HAM_0004270,ISIC_0028455,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028455.jpg,0,000
+873,3574,2092,HAM_0005315,ISIC_0029319,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029319.jpg,1,011
+874,3925,4467,HAM_0001695,ISIC_0028752,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028752.jpg,0,100
+875,3801,5912,HAM_0001360,ISIC_0029965,nv,follow_up,0,1,hand,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029965.jpg,0,100
+876,2686,8826,HAM_0000603,ISIC_0031374,nv,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031374.jpg,0,010
+877,445,1758,HAM_0007570,ISIC_0026430,mel,histo,1,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026430.jpg,1,111
+878,443,388,HAM_0005022,ISIC_0027367,bkl,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027367.jpg,1,111
+879,2833,8745,HAM_0004802,ISIC_0026551,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026551.jpg,0,100
+880,2370,3495,HAM_0000768,ISIC_0028242,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028242.jpg,0,000
+881,493,5440,HAM_0006890,ISIC_0031983,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031983.jpg,0,010
+882,4094,6664,HAM_0001025,ISIC_0030891,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030891.jpg,0,100
+883,3550,9266,HAM_0002798,ISIC_0025323,nv,consensus,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025323.jpg,0,110
+884,1737,9535,HAM_0003809,ISIC_0032402,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032402.jpg,0,000
+885,4450,6205,HAM_0001075,ISIC_0028743,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028743.jpg,0,100
+886,3270,5348,HAM_0002412,ISIC_0026287,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026287.jpg,0,000
+887,2717,7891,HAM_0003130,ISIC_0032708,nv,histo,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032708.jpg,0,110
+888,2581,4457,HAM_0007404,ISIC_0030295,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030295.jpg,0,100
+889,3736,1169,HAM_0006371,ISIC_0033780,df,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033780.jpg,1,101
+890,4061,3582,HAM_0000016,ISIC_0029142,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029142.jpg,0,010
+891,1654,7576,HAM_0005814,ISIC_0032701,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032701.jpg,0,100
+892,765,8195,HAM_0007385,ISIC_0030933,nv,histo,0,0,scalp,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030933.jpg,0,000
+893,4779,16,HAM_0001601,ISIC_0025915,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025915.jpg,1,011
+894,3945,3194,HAM_0002775,ISIC_0024407,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024407.jpg,0,000
+895,4474,5500,HAM_0003124,ISIC_0031512,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031512.jpg,0,010
+896,2728,4971,HAM_0001963,ISIC_0025721,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025721.jpg,0,000
+897,991,718,HAM_0001359,ISIC_0028628,bkl,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028628.jpg,1,011
+898,2740,8642,HAM_0007013,ISIC_0029544,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029544.jpg,0,010
+899,3048,6439,HAM_0003498,ISIC_0024609,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024609.jpg,0,000
+900,4179,471,HAM_0000744,ISIC_0029474,bkl,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029474.jpg,1,011
+901,1265,5660,HAM_0003526,ISIC_0027070,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027070.jpg,0,000
+902,600,1094,HAM_0001223,ISIC_0030789,bkl,consensus,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030789.jpg,1,011
+903,2942,1207,HAM_0006707,ISIC_0030870,df,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030870.jpg,1,101
+904,2817,9834,HAM_0003895,ISIC_0026203,akiec,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026203.jpg,1,011
+905,2965,8477,HAM_0006983,ISIC_0026147,nv,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026147.jpg,0,100
+906,1315,3515,HAM_0003145,ISIC_0026136,nv,follow_up,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026136.jpg,0,010
+907,1657,5687,HAM_0003204,ISIC_0028564,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028564.jpg,0,100
+908,1983,9997,HAM_0006180,ISIC_0028990,akiec,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028990.jpg,1,011
+909,1426,2020,HAM_0004979,ISIC_0032245,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032245.jpg,1,011
+910,4648,6275,HAM_0005507,ISIC_0029159,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029159.jpg,0,000
+911,632,2701,HAM_0001759,ISIC_0032497,bcc,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032497.jpg,1,111
+912,4759,6326,HAM_0005148,ISIC_0026969,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026969.jpg,0,100
+913,2340,6651,HAM_0005877,ISIC_0029204,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029204.jpg,0,100
+914,764,3219,HAM_0002651,ISIC_0028682,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028682.jpg,0,100
+915,1749,2608,HAM_0000998,ISIC_0027544,bcc,histo,0,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027544.jpg,1,101
+916,1945,7522,HAM_0000439,ISIC_0034307,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034307.jpg,0,010
+917,463,1871,HAM_0000706,ISIC_0032918,mel,histo,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032918.jpg,1,001
+918,1563,9686,HAM_0003322,ISIC_0031649,nv,consensus,0,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031649.jpg,0,100
+919,1682,2315,HAM_0003171,ISIC_0025941,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025941.jpg,1,011
+920,1865,2542,HAM_0005947,ISIC_0028079,bcc,histo,1,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028079.jpg,1,111
+921,4374,1476,HAM_0002939,ISIC_0032888,mel,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032888.jpg,1,011
+922,728,7440,HAM_0000747,ISIC_0034319,nv,histo,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034319.jpg,0,000
+923,3784,3492,HAM_0001554,ISIC_0030836,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030836.jpg,0,000
+924,2938,4939,HAM_0004104,ISIC_0032483,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032483.jpg,0,100
+925,1806,9586,HAM_0004187,ISIC_0032956,nv,consensus,0,1,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032956.jpg,0,100
+926,3138,53,HAM_0001221,ISIC_0029301,bkl,histo,0,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029301.jpg,1,001
+927,3168,4099,HAM_0006665,ISIC_0030775,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030775.jpg,0,100
+928,4609,6117,HAM_0006555,ISIC_0030405,nv,follow_up,0,0,genital,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030405.jpg,0,000
+929,1340,5963,HAM_0006059,ISIC_0028089,nv,follow_up,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028089.jpg,0,010
+930,3711,8164,HAM_0003016,ISIC_0027097,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027097.jpg,0,010
+931,2294,1641,HAM_0005711,ISIC_0033911,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033911.jpg,1,001
+932,4561,5998,HAM_0007267,ISIC_0031441,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031441.jpg,0,010
+933,4530,2916,HAM_0002269,ISIC_0025509,bcc,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025509.jpg,1,011
+934,1441,8291,HAM_0000751,ISIC_0025545,nv,histo,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025545.jpg,0,100
+935,3267,9881,HAM_0001625,ISIC_0028224,akiec,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028224.jpg,1,101
+936,4563,1433,HAM_0002509,ISIC_0024732,mel,histo,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024732.jpg,1,101
+937,2200,3373,HAM_0006332,ISIC_0029822,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029822.jpg,0,100
+938,3888,8995,HAM_0001936,ISIC_0027688,nv,histo,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027688.jpg,0,110
+939,640,5565,HAM_0005192,ISIC_0031858,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031858.jpg,0,000
+940,1647,9350,HAM_0000378,ISIC_0032388,nv,consensus,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032388.jpg,0,000
+941,1519,88,HAM_0005075,ISIC_0030607,bkl,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030607.jpg,1,011
+942,4326,8567,HAM_0001941,ISIC_0024790,nv,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024790.jpg,0,010
+943,2889,6483,HAM_0000874,ISIC_0032119,nv,follow_up,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032119.jpg,0,100
+944,2660,5465,HAM_0002156,ISIC_0024802,nv,follow_up,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024802.jpg,0,010
+945,4049,4086,HAM_0004244,ISIC_0032352,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032352.jpg,0,110
+946,4455,7509,HAM_0003606,ISIC_0034288,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034288.jpg,0,010
+947,2805,374,HAM_0003835,ISIC_0024412,bkl,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0024412.jpg,1,001
+948,1201,9871,HAM_0004439,ISIC_0030986,akiec,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030986.jpg,1,111
+949,3770,3470,HAM_0001357,ISIC_0027145,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027145.jpg,0,000
+950,4305,8056,HAM_0001002,ISIC_0028280,nv,histo,1,0,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028280.jpg,0,010
+951,3143,3205,HAM_0001367,ISIC_0029239,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029239.jpg,0,100
+952,3742,4501,HAM_0006441,ISIC_0029016,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029016.jpg,0,100
+953,2334,4110,HAM_0004320,ISIC_0027901,nv,follow_up,0,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027901.jpg,0,100
+954,1904,4056,HAM_0005405,ISIC_0025164,nv,follow_up,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025164.jpg,0,000
+955,4595,7796,HAM_0001667,ISIC_0033080,nv,histo,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033080.jpg,0,010
+956,1859,1948,HAM_0005061,ISIC_0032466,mel,histo,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032466.jpg,1,011
+957,342,6108,HAM_0005138,ISIC_0027207,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0027207.jpg,0,100
+958,655,8878,HAM_0003958,ISIC_0029855,nv,histo,0,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029855.jpg,0,000
+959,1868,6208,HAM_0006970,ISIC_0026059,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026059.jpg,0,100
+960,4043,5096,HAM_0004616,ISIC_0030084,nv,follow_up,0,1,upper extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030084.jpg,0,100
+961,4659,2709,HAM_0003853,ISIC_0030644,bcc,histo,1,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030644.jpg,1,011
+962,1870,292,HAM_0002529,ISIC_0026298,bkl,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026298.jpg,1,111
+963,502,4185,HAM_0005210,ISIC_0025965,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025965.jpg,0,000
+964,2161,9610,HAM_0004430,ISIC_0032789,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032789.jpg,0,000
+965,199,4214,HAM_0006862,ISIC_0025296,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025296.jpg,0,100
+966,3384,1173,HAM_0000349,ISIC_0033695,df,consensus,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033695.jpg,1,101
+967,3024,3185,HAM_0001579,ISIC_0025636,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025636.jpg,0,000
+968,1414,4915,HAM_0000677,ISIC_0025494,nv,follow_up,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025494.jpg,0,010
+969,3271,551,HAM_0000519,ISIC_0030758,bkl,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030758.jpg,1,011
+970,554,5482,HAM_0000066,ISIC_0025014,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025014.jpg,0,000
+971,962,2186,HAM_0005532,ISIC_0030183,mel,histo,1,0,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030183.jpg,1,011
+972,1823,2418,HAM_0007150,ISIC_0028680,vasc,consensus,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028680.jpg,1,101
+973,312,9398,HAM_0000765,ISIC_0033445,nv,consensus,1,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033445.jpg,0,010
+974,4840,8121,HAM_0000448,ISIC_0026210,nv,histo,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026210.jpg,0,000
+975,3744,4722,HAM_0004845,ISIC_0026486,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026486.jpg,0,000
+976,2129,339,HAM_0002988,ISIC_0025337,bkl,histo,0,0,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025337.jpg,1,001
+977,1730,5126,HAM_0006206,ISIC_0030438,nv,follow_up,0,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030438.jpg,0,000
+978,1202,3922,HAM_0004130,ISIC_0026173,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026173.jpg,0,100
+979,152,6043,HAM_0000035,ISIC_0028039,nv,follow_up,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028039.jpg,0,000
+980,3308,6038,HAM_0005999,ISIC_0030958,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030958.jpg,0,100
+981,1860,5410,HAM_0001939,ISIC_0025468,nv,follow_up,1,0,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025468.jpg,0,010
+982,2031,330,HAM_0006350,ISIC_0031130,bkl,histo,0,1,chest,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031130.jpg,1,101
+983,4709,3618,HAM_0006100,ISIC_0032288,nv,follow_up,0,1,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032288.jpg,0,100
+984,1727,1750,HAM_0000119,ISIC_0033310,mel,histo,1,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033310.jpg,1,011
+985,3373,9555,HAM_0006230,ISIC_0032632,nv,consensus,1,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032632.jpg,0,010
+986,4254,3781,HAM_0005675,ISIC_0030814,nv,follow_up,0,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0030814.jpg,0,100
+987,1410,5017,HAM_0003731,ISIC_0031680,nv,follow_up,0,1,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031680.jpg,0,100
+988,3096,8445,HAM_0003698,ISIC_0026101,nv,histo,0,1,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0026101.jpg,0,100
+989,5004,9097,HAM_0004069,ISIC_0029476,nv,histo,1,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029476.jpg,0,010
+990,675,2335,HAM_0002218,ISIC_0029448,vasc,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0029448.jpg,1,001
+991,2907,9603,HAM_0002037,ISIC_0033733,nv,consensus,0,0,unknown,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033733.jpg,0,000
+992,2237,2603,HAM_0000823,ISIC_0033575,bcc,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0033575.jpg,1,111
+993,4482,4042,HAM_0006961,ISIC_0031792,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0031792.jpg,0,000
+994,1914,1056,HAM_0003757,ISIC_0029233,bkl,consensus,1,1,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029233.jpg,1,111
+995,1506,1561,HAM_0002235,ISIC_0034064,mel,histo,0,0,back,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0034064.jpg,1,001
+996,3984,4546,HAM_0005174,ISIC_0032276,nv,follow_up,0,0,trunk,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032276.jpg,0,000
+997,1050,4857,HAM_0000694,ISIC_0032298,nv,follow_up,1,1,lower extremity,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_2/ISIC_0032298.jpg,0,110
+998,4744,8898,HAM_0002905,ISIC_0029026,nv,histo,0,0,neck,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029026.jpg,0,000
+999,4397,9951,HAM_0000918,ISIC_0029133,akiec,histo,1,1,face,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0029133.jpg,1,111
+1000,1161,9233,HAM_0006358,ISIC_0025581,nv,consensus,0,0,foot,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0025581.jpg,0,000
+1001,2298,2233,HAM_0004354,ISIC_0028773,mel,histo,1,0,abdomen,/p/adversarialml/as9rw/datasets/ham10000/ham10000_images_part_1/ISIC_0028773.jpg,1,011

@@ -64,7 +64,7 @@ class AmazonWrapper:
             va = np.load(os.path.join(indices_path, "val.npy"))
             te = np.load(os.path.join(indices_path, "test.npy"))
             tr = np.load(os.path.join(indices_path, "train.npy"))
-        
+
         # If second source of data provided
         # Sample data from both sources according to given ratio
         # Of overlap between two sources
@@ -80,10 +80,10 @@ class AmazonWrapper:
                 numb = b.shape[0] - numa
                 return np.concatenate((np.random.choice(a, numa, replace=False),
                                        np.random.choice(b, numb, replace=False)))
-            
+
             self.va, self.te, self.tr = merge(
                 va, va_2), merge(te, te_2), merge(tr, tr_2)
-            
+
         else:
             self.va, self.te, self.tr = va, te, tr
 
