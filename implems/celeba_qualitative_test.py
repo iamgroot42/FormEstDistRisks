@@ -44,17 +44,15 @@ if __name__ == "__main__":
     inspect_these = ["Attractive", "Male", "Young"]
 
     folder_paths = [
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2"
-        "/all/64_16/",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2"
-        "/male/64_16/",
+        "/p/adversarialml/as9rw/celeb_models/50_50/split_2/all/none/",    
+        "/p/adversarialml/as9rw/celeb_models/50_50/split_2/male/none/"
     ]
 
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5), (0.5))])
     td = utils.CelebACustomBinary(
-        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all"
-        "/split_2/test",
+        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/"
+        "50_50/all/split_2/test",
         transform=transform)
 
     target_prop = attrs.index("Smiling")
@@ -68,7 +66,7 @@ if __name__ == "__main__":
         for FOLDER in tqdm(os.listdir(UPFOLDER)):
             print(FOLDER)
             wanted_model = [x for x in os.listdir(
-                os.path.join(UPFOLDER, FOLDER))if x.startswith("20_")][0]
+                os.path.join(UPFOLDER, FOLDER)) if x.startswith("15_")][0]
             MODELPATH = os.path.join(UPFOLDER, FOLDER, wanted_model)
 
             # Load model

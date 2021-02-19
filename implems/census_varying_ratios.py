@@ -280,7 +280,7 @@ if __name__ == "__main__":
             # Record performance on test data
             if args.collect_all:
                 clf = train_meta_pin((X_tr, Y_tr), lr=1e-3,
-                                     epochs=500, gpu=args.gpu)
+                                     epochs=200, gpu=args.gpu)
                 acc = acc_fn(get_outputs(clf, X_te, no_grad=True), Y_te)
                 if args.gpu:
                     acc = acc.cpu()

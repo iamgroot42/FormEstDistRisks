@@ -216,17 +216,17 @@ if __name__ == "__main__":
             hist, bin_edges = np.histogram(plot_x,
                                            bins=n_bins)
             bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
-            plt.plot(bin_centres, hist,
-                     '-o',
-                     color=colors[i][j],
-                     label=labels[i],
-                     markersize=9)
-
-            # plt.hist(plot_x,
-            #          n_bins,
+            # plt.plot(bin_centres, hist,
+            #          '-o',
             #          color=colors[i][j],
             #          label=labels[i],
-            #          alpha=0.9)
+            #          markersize=9)
+
+            plt.hist(plot_x,
+                     n_bins,
+                     color=colors[i][j],
+                     label=labels[i],
+                     alpha=0.95)
 
     patches = []
     for i in range(len(all_scores[0])):

@@ -205,9 +205,9 @@ def extract_dl_model_weights(model):
             biases.append(layer.bias.detach().cpu().numpy())
 
     # Reduce to RREF form
-    for i, w in enumerate(weights):
-        w_rref = Matrix(w).rref()[0]
-        weights[i] = np.array(w_rref).flatten()
+    # for i, w in enumerate(weights):
+    #     w_rref = Matrix(w).rref()[0]
+    #     weights[i] = np.array(w_rref).flatten()
 
     feature_vec = []
     for w, b in zip(weights, biases):

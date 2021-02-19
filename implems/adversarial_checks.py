@@ -19,14 +19,14 @@ if __name__ == "__main__":
     nb_iter = 200
     eps_iter = 2.5 * eps / nb_iter
     norm = 2
-    batch_size = 750 #900
+    batch_size = 900
 
     paths = [
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/20_0.9235165574046058.pth",
         "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/10_0.9233484619263742.pth",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth",
+        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth",
         # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_none/20_0.9065300896286812.pth",
-        "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/15_0.9120626151012892.pth"
+        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/15_0.9120626151012892.pth"
     ]
 
     models = []
@@ -63,19 +63,23 @@ if __name__ == "__main__":
     degrees = [20, 30, 40, 50, 60, 70, 80]
     jitter_vals = [0.5, 1, 2, 3, 4, 5, 6]
     translate_vals = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
+    erase_vals = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35]
     noprop_scores, prop_scores = [], []
     # for deg in tqdm(degrees):
     # for jv in tqdm(jitter_vals):
-    for tv in tqdm(translate_vals):
+    # for tv in tqdm(translate_vals):
+    for ev in tqdm(erase_vals):
         # Collecte augmented data
         # augdata = implem_utils.collect_augmented_data(dataloader,
                                                     #   translate=(tv, tv))
         # augdata = implem_utils.collect_augmented_data(dataloader, deg=deg)
         # augdata = implem_utils.collect_augmented_data(dataloader,
-                                                      # jitter=(0, 0, 0, jv))
+        #                                               jitter=(0, 0, 0, jv))
                                                     #   jitter=(jv, jv, jv, jv))
+        # augdata = implem_utils.collect_augmented_data(dataloader,
+        #                                               translate=(0, tv))
         augdata = implem_utils.collect_augmented_data(dataloader,
-                                                      translate=(0, tv))
+                                                      erase_scale=(ev-0.01, ev))
         # saveimg(augdata[1][0][0], "../visualize/gauss_val_%f.png" % jv)
         npz, pz = [], []
         for j, model in enumerate(models):
@@ -86,7 +90,7 @@ if __name__ == "__main__":
             noprop, prop = implem_utils.get_robustness_shifts(model_fn,
                                                               augdata,
                                                               target_prop,
-                                                              attrs.index(inspect_these[0]))
+                                                              attrs.index(inspect_these[1]))
 
             npz.append(noprop)
             pz.append(prop)
@@ -96,28 +100,31 @@ if __name__ == "__main__":
 
     diffs = []
     for x, y in zip(prop_scores, noprop_scores):
-        diff = ((y[0][0] - y[0][1]) / y[0][0]) - ((x[0][0] - x[0][1]) / x[0][0])
-        # diff = (y[0][0] - y[0][1]) - (x[0][0] - x[0][1])
+        # diff = 100 * (((y[0][0] - y[0][1]) / y[0][0]) - ((x[0][0] - x[0][1]) / x[0][0]))
+        diff = (y[0][0] - y[0][1]) / (x[0][0] - x[0][1])
         diffs.append(diff)
-    plt.plot(translate_vals,
+    plt.plot(erase_vals,
              diffs,
              marker='o',
-             label='all model')
+             label='more males model')
 
     diffs = []
     for x, y in zip(prop_scores, noprop_scores):
-        diff = ((y[1][0] - y[1][1]) / y[1][0]) - ((x[1][0] - x[1][1]) / x[1][0])
-        # diff = (y[1][0] - y[1][1]) - (x[1][0] - x[1][1])
+        # diff = 100 * (((y[1][0] - y[1][1]) / y[1][0]) - ((x[1][0] - x[1][1]) / x[1][0]))
+        diff = (y[1][0] - y[1][1]) / (x[1][0] - x[1][1])
         diffs.append(diff)
-    plt.plot(translate_vals,
+    plt.plot(erase_vals,
              diffs,
              marker='x',
-             label='male model')
+             label='more females model')
 
+    plt.xlabel("Parameter for data augmentation")
+    plt.ylabel("Drop in performance (%) for P=1 - Drop in performance (%) for P=0")
     plt.legend()
     # plt.savefig("../visualize/rotation_trends.png")
     # plt.savefig("../visualize/jitter_trends.png")
-    plt.savefig("../visualize/translate_trends.png")
+    # plt.savefig("../visualize/translate_trends.png")
+    plt.savefig("../visualize/erase_trends.png")
     exit(0)
 
     x_advs = []

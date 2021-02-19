@@ -12,64 +12,126 @@ import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-def layerwise_progression(model, data_x, data_y):
-    means = [], stds = []
-    x, y = data_x.clone(), data_y.clone()
-    for i, layer in enumerate(model.feature_model):
-        # Get activations for data
-        x = layer(x)
-        y = layer(y)
-        # Flatten them
-        x, y = x.view(x.shape[0], -1), y.view(y.shape[0], -1)
-        # Take not of dimension-size
-        num_dims = latent_yes.shape[1]
-        # Look at activated neurons (scaled to [0, 1])
-        act_x = ch.sum(x > 0, 1).cpu().numpy() / num_dims
-        act_y = ch.sum(y > 0, 1).cpu().numpy() / num_dims
-        # Take note of means, mean differences
-        means.append(np.mean(act_x), np.mean(act_y))
-        stds.append(np.std(act_x), np.std(act_y))
+def layerwise_progression(model, data, indices_x, indices_y):
+    activations_x, activations_y = [], []
+    x = data.clone()
 
-    means = np.array(means)
-    meanvals = -np.abs(means[:, 0] - means[:, 1])
-    indices = np.argsort(meanvals)
-    # Print highest-difference layers and mean differences
-    for i, mean in zip(indices, means):
-        print(i, ":", np.max(mean), np.min(mean))
+    blocks = model.feature_model.get_layers()
+
+    for i, block in enumerate(blocks):
+        if isinstance(block, nn.Sequential):
+            block_ = block
+        else:
+            block_ = [block]
+
+        for layer in block_:
+            x = layer(x)
+
+            # Flatten data
+            x_ = x.view(x.shape[0], -1).clone().detach().cpu()
+            # Take not of dimension-size
+            num_dims = x_.shape[1]
+            # Look at activated neurons (scaled to [0, 1])
+            act_x = ch.sum(x_[indices_x] > 0, 1).numpy() / num_dims
+            act_y = ch.sum(x_[indices_y] > 0, 1).numpy() / num_dims
+            # Take note of means, mean differences
+            activations_x.append(act_x)
+            activations_y.append(act_y)
+
+    activations_x = np.array(activations_x)
+    activations_y = np.array(activations_y)
+    return activations_x, activations_y
+
+
+def calculate_area_overlap(dist1, dist2):
+    bins = np.linspace(0, 1, 1000)
+    h1, _ = np.histogram(dist1, bins=bins, density=True)
+    h2, _ = np.histogram(dist2, bins=bins, density=True)
+
+    bins = np.diff(bins)
+    sm = 0
+    for i in range(len(bins)):
+        sm += bins[i] * min(h1[i], h2[i])
+    return sm
+
+
+def get_trends_for_model(model, dataloader):
+    acts_yes, acts_no = [], []
+    for x, y in tqdm(dataloader):
+        prop_yes = (y[:, focus_attr] == 1)
+        prop_no = (y[:, focus_attr] == 0)
+
+        # Get all layer block activations
+        act_yes, act_no = layerwise_progression(
+            model.module, x.cuda(), prop_yes, prop_no)
+        acts_yes.append(act_yes)
+        acts_no.append(act_no)
+
+    acts_yes = np.concatenate(acts_yes, 1)
+    acts_no = np.concatenate(acts_no, 1)
+
+    diffs = []
+    for i in range(acts_yes.shape[0]):
+        diffs.append(calculate_area_overlap(acts_yes[i], acts_no[i]))
+
+    diffs = np.array(diffs)
+    print("Layer-stats:", np.min(diffs), np.max(diffs), np.mean(diffs))
+    print(np.argmin(diffs))
+    return diffs
+
+    # Normalize with min/max number of activations per layer
+    # acts_all = np.concatenate((acts_yes, acts_no), 1)
+    # acts_min = np.min(acts_all, 1, keepdims=True)
+    # acts_max = np.max(acts_all, 1, keepdims=True)
+    # print(acts_min[7:10], acts_max[7:10])
+    # acts_yes = (acts_yes - acts_min) / (acts_max - acts_min)
+    # acts_no = (acts_no - acts_min) / (acts_max - acts_min)
+
+    # Get histogram-based area of overlap, plot those values instead
+    return calculate_area_overlap(acts_yes, acts_no)
+
+    # Get mean, stds per layer
+    mean_yes = np.mean(acts_yes, 1)
+    mean_no = np.mean(acts_no, 1)
+
+    return mean_yes - mean_no
 
 
 if __name__ == "__main__":
-    batch_size = 150 * 3
+    batch_size = 250
+    # batch_size = 100 * 3
     # batch_size = 250 * 4
     # batch_size = 500 * 3
     # batch_size = 500 * 4
 
     paths = [
         # First ratio category
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
-        "13_0.9135180520570949.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
-        "15_0.9125104953820319.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
-        "15_0.9222502099076406.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
-        "15_0.9177162048698573.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/3/"
-        "15_0.9136859781696054.pth",
+        [
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
+            "13_0.9135180520570949.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
+            "15_0.9125104953820319.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
+            "15_0.9222502099076406.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
+            "15_0.9177162048698573.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/3/"
+            "15_0.9136859781696054.pth",
+        ],
         # Second ratio category
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
-        "15_0.9122836498067551.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
-        "15_0.9107712989413544.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
-        "15_0.9121156108217107.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
-        "15_0.9122836498067551.pth",
-        "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/3/"
-        "12_0.9137960006721559.pth",
+        [
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
+            "15_0.9122836498067551.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
+            "15_0.9107712989413544.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
+            "15_0.9121156108217107.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
+            "15_0.9122836498067551.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/3/"
+            "12_0.9137960006721559.pth",
+        ]
     ]
-
-    MODELPATH = paths[3]
 
     # Use existing dataset instead
     constants = utils.Celeb()
@@ -86,6 +148,41 @@ if __name__ == "__main__":
     target_attr = attrs.index("Smiling")
     focus_value = 1
 
+    # colors = ['C0', 'C1']
+    # for i, sub_paths in enumerate(paths):
+    #     for j, MODELPATH in enumerate(sub_paths):
+
+    #         model = utils.FaceModel(512,
+    #                                 train_feat=True,
+    #                                 weight_init=None).cuda()
+    #         model = nn.DataParallel(model)
+    #         model.load_state_dict(ch.load(MODELPATH), strict=False)
+    #         model.eval()
+
+    #         y_ = get_trends_for_model(model, dataloader)
+    #         # y_ = np.abs(y_)
+    #         x_ = np.arange(y_.shape[0])
+
+    #         if j == 1:
+    #             plt.plot(x_, y_, color=colors[i], marker='o')
+    #         elif j == 2:
+    #             plt.plot(x_, y_, color=colors[i], marker='d')
+    #         else:
+    #             plt.plot(x_, y_, color=colors[i], marker='x')
+    # plt.xticks(np.arange(min(x_), max(x_)+1, 1.0))
+    # plt.savefig("../visualize/intra_layers_all.png")
+    # exit(0)
+
+    # MODELPATH = paths[0][3]
+    pi = (0, 0)
+
+    MODELPATH = paths[pi[0]][pi[1]]
+
+    picked_layers = [
+        [17, 11, 10, 27, 29],
+        [23, 11, 24, 12, 18]
+    ]
+
     distrs = []
     model = utils.FaceModel(512,
                             train_feat=True,
@@ -94,49 +191,91 @@ if __name__ == "__main__":
     model.load_state_dict(ch.load(MODELPATH), strict=False)
     model.eval()
 
-    picked_layer = 9
+    picked_layer = picked_layers[pi[0]][pi[1]]
 
     acts_yes, acts_no = [], []
     for x, y in tqdm(dataloader):
         prop_yes = (y[:, focus_attr] == 1)
         prop_no = (y[:, focus_attr] == 0)
 
-        latent_yes = model(x[prop_yes].cuda(), only_latent=True,
-                           deep_latent=picked_layer,
-                           within_block=None).detach()
-        latent_no = model(x[prop_no].cuda(), only_latent=True,
-                          deep_latent=picked_layer,
-                          within_block=None).detach()
+        # Get all layer block activations
+        if picked_layer == -1:
+            act_yes, act_no = layerwise_progression(
+                model.module, x.cuda(), prop_yes, prop_no)
+            acts_yes.append(act_yes)
+            acts_no.append(act_no)
+        # Get specified layer output
+        else:
+            latent_yes = model(x[prop_yes].cuda(), only_latent=True,
+                               deep_latent=picked_layer,
+                               flatmode=True).detach()
+            latent_no = model(x[prop_no].cuda(), only_latent=True,
+                              deep_latent=picked_layer,
+                              flatmode=True).detach()
 
-        latent_yes = latent_yes.view(latent_yes.shape[0], -1)
-        latent_no = latent_no.view(latent_no.shape[0], -1)
-        num_dims = latent_yes.shape[1]
+            latent_yes = latent_yes.view(latent_yes.shape[0], -1)
+            latent_no = latent_no.view(latent_no.shape[0], -1)
+            num_dims = latent_yes.shape[1]
 
-        act_yes = ch.sum(latent_yes > 0, 1).cpu().numpy()
-        act_no = ch.sum(latent_no > 0, 1).cpu().numpy()
+            act_yes = ch.sum(latent_yes > 0, 1).cpu().numpy()
+            act_no = ch.sum(latent_no > 0, 1).cpu().numpy()
 
-        acts_yes.append(act_yes)
-        acts_no.append(act_no)
+            acts_yes.append(act_yes)
+            acts_no.append(act_no)
 
-    # Data-agnostic normalizaion to [0, 1]
-    distrs.append(np.concatenate(acts_yes) / num_dims)
-    distrs.append(np.concatenate(acts_no) / num_dims)
+    if picked_layer == -1:
+        acts_yes = np.concatenate(acts_yes, 1)
+        acts_no = np.concatenate(acts_no, 1)
 
-    labels = ["Males", "Females"]
-    colors = ['C0', 'C1', ]
-    hatches = ['o', 'x']
+        # Normalize with min/max number of activations per layer
+        acts_all = np.concatenate((acts_yes, acts_no), 1)
+        acts_min = np.min(acts_all, 1, keepdims=True)
+        acts_max = np.max(acts_all, 1, keepdims=True)
+        acts_yes = (acts_yes - acts_min) / (acts_max - acts_min)
+        acts_no = (acts_no - acts_min) / (acts_max - acts_min)
 
-    for i, dist in enumerate(distrs):
-        plt.hist(dist,
-                 bins=50,
-                 density=True,
-                 alpha=0.75,
-                 label=labels[i],
-                 color=colors[i],
-                 hatch=hatches[i])
+        # Get mean, stds per layer
+        mean_yes, std_yes = np.mean(acts_yes, 1), np.std(acts_yes, 1)
+        mean_no, std_no = np.mean(acts_no, 1), np.std(acts_no, 1)
 
-    plt.legend()
-    plt.title("Activation trends on male (block %d)" % picked_layer)
-    plt.xlabel("Number of neurons activated")
-    plt.ylabel("Normalized frequency of samples")
-    plt.savefig("../visualize/celeba_within_act_distr.png")
+        # Plot in the form of error plots across blocks
+        # And visually see if any useful trends emerge
+        layers = np.arange(mean_yes.shape[0])
+
+        plt.plot(layers, mean_yes - mean_no)
+
+        # plt.errorbar(layers, mean_yes, yerr=std_yes, label='P=1',
+        #              ls='none', fmt='x')
+        # plt.errorbar(layers + 0.2, mean_no, yerr=std_no, label='P=0',
+        #              ls='none', fmt='x')
+        plt.legend()
+        plt.savefig("../visualize/intra_layer_inspect.png")
+
+    else:
+        # Data-agnostic normalizaion to [0, 1]
+        distrs.append(np.concatenate(acts_yes) / num_dims)
+        distrs.append(np.concatenate(acts_no) / num_dims)
+
+        labels = ["Males", "Females"]
+        colors = ['C0', 'C1', ]
+        hatches = ['o', 'x']
+
+        # Calculate overlap area
+        oa = calculate_area_overlap(distrs[0], distrs[1])
+        print("Overlap area: %.4f" % oa)
+
+        for i, dist in enumerate(distrs):
+            bins = np.linspace(0, 1, 1000)
+            plt.hist(dist,
+                     bins=50,
+                     density=True,
+                     alpha=0.75,
+                     label=labels[i],
+                     color=colors[i],
+                     hatch=hatches[i])
+
+        plt.legend()
+        plt.title("Activation trends on male (block %d)" % picked_layer)
+        plt.xlabel("Number of neurons activated")
+        plt.ylabel("Normalized frequency of samples")
+        plt.savefig("../visualize/celeba_within_act_distr.png")

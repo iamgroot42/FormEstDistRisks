@@ -82,7 +82,7 @@ def get_distance_representaion(model, x, y):
     norms = [1, 2, np.inf]
     delta_vec = []
     for norm in norms:
-        deltas = get_walk_distances(model, x, y,norm)
+        deltas = get_walk_distances(model, x, y, norm)
         diff = (x - deltas).cpu().numpy().reshape(x.shape[0], -1)
         delta_vec.append(np.linalg.norm(diff, ord=norm, axis=1))
     return np.stack(delta_vec, 1)

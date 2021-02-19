@@ -497,16 +497,21 @@ class FaceModel(nn.Module):
         self.dnn = nn.Sequential(*layers)
 
     def forward(self, x, only_latent=False,
-                deep_latent=None, within_block=None):
+                deep_latent=None, within_block=None,
+                flatmode=False):
         if self.train_feat:
             x_ = self.feature_model(
                 # x, with_latent=deep_latent)
-                x, with_latent=deep_latent, within_block=within_block)
+                x, with_latent=deep_latent,
+                within_block=within_block,
+                flatmode=flatmode)
         else:
             with ch.no_grad():
                 x_ = self.feature_model(
                     # x, with_latent=deep_latent)
-                    x, with_latent=deep_latent, within_block=within_block)
+                    x, with_latent=deep_latent,
+                    within_block=within_block,
+                    flatmode=flatmode)
 
         # Check if Tuple
         if type(x_) is tuple and x_[1] is not None:
@@ -625,11 +630,11 @@ def get_weight_layers(m, normalize=False):
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
 
-    # if normalize:
-        # min_w = min([ch.min(x).item() for x in weights])
-        # max_w = max([ch.max(x).item() for x in weights])
-        # weights = [(w - min_w) / (max_w - min_w) for w in weights]
-        # weights = [w / max_w for w in weights]
+    if normalize:
+        min_w = min([ch.min(x).item() for x in weights])
+        max_w = max([ch.max(x).item() for x in weights])
+        weights = [(w - min_w) / (max_w - min_w) for w in weights]
+        weights = [w / max_w for w in weights]
 
     cctd = []
     for w, b in zip(weights, biases):
@@ -763,3 +768,26 @@ class AverageMeter(object):
 def ensure_dir_exists(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
+
+
+def acc_fn(x, y):
+    with ch.no_grad():
+        return ch.sum((y == (x >= 0)))
+
+
+def get_outputs(model, X, no_grad=False):
+
+    with ch.set_grad_enabled(not no_grad):
+        outputs = model(X)
+
+    return outputs[:, 0]
+
+
+def prepare_batched_data(X):
+    inputs = [[] for _ in range(len(X[0]))]
+    for x in X:
+        for i, l in enumerate(x):
+            inputs[i].append(l)
+
+    inputs = [ch.stack(x, 0) for x in inputs]
+    return inputs

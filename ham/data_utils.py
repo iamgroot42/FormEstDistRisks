@@ -24,8 +24,10 @@ def stratified_df_split(df, second_ratio):
         stratify=stratify)
 
     # Delete remporary stratification column
-    df.drop(columns=['stratify'])
-    return df_1.reset_index(), df_2.reset_index()
+    df.drop(columns=['stratify'], inplace=True)
+    df_1.drop(columns=['stratify'], inplace=True)
+    df_2.drop(columns=['stratify'], inplace=True)
+    return df_1.reset_index(inplace=True), df_2.reset_index(inplace=True)
 
 
 def process_data(path, split_second_ratio=0.5):
@@ -73,7 +75,7 @@ class HamDataset(Dataset):
     # https://www.kaggle.com/xinruizhuang/skin-lesion-classification-acc-90-pytorch
     def __init__(self, df, argument=None, processed=False):
         if processed:
-            self.features = ch.tensor(argument)
+            self.features = argument
         else:
             self.transform = argument
         self.processed = processed
@@ -84,7 +86,7 @@ class HamDataset(Dataset):
 
     def __getitem__(self, index):
         if self.processed:
-            X = self.features[index]
+            X = self.features[self.df['path'].iloc[index]]
         else:
             X = Image.open(self.df['path'][index])
             if self.transform:
@@ -98,28 +100,34 @@ class HamDataset(Dataset):
 
 
 class HamWrapper:
-    def __init__(self, train_path, val_path):
-        self.df_train = pd.read_csv(train_path)
-        self.df_val = pd.read_csv(val_path)
+    def __init__(self, df_train, df_val, features=None):
+        self.df_train = df_train
+        self.df_val = df_val
         self.input_size = 224
-        self.data_transform = transforms.Compose([
+        data_transform = transforms.Compose([
             transforms.Resize((self.input_size, self.input_size)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])])
 
-        self.ds_train = HamDataset(self.df_train, self.data_transform)
-        self.ds_val = HamDataset(self.df_val, self.data_transform)
+        if features is None:
+            self.ds_train = HamDataset(self.df_train, data_transform)
+            self.ds_val = HamDataset(self.df_val, data_transform)
+        else:
+            self.ds_train = HamDataset(
+                self.df_train, features["train"], processed=True)
+            self.ds_val = HamDataset(
+                self.df_val, features["val"], processed=True)
 
     def get_loaders(self, batch_size):
         train_loader = DataLoader(
             self.ds_train, batch_size=batch_size,
-            shuffle=False, num_workers=8)
+            shuffle=False, num_workers=2)
         # If train mode can handle BS (weight + gradient)
         # No-grad mode can surely hadle 2 * BS?
         val_loader = DataLoader(
             self.ds_val, batch_size=batch_size * 2,
-            shuffle=False, num_workers=8)
+            shuffle=False, num_workers=2)
 
         return train_loader, val_loader
 
@@ -147,9 +155,9 @@ class HamModel(nn.Module):
         return self.layers(x)
 
 
-def make_feature_extractor():
+def make_feature_extractor(fe=False):
     model = models.densenet121(pretrained=True)
-    set_parameter_requires_grad(model, False)
+    set_parameter_requires_grad(model, fe=fe)
     # model.classifier = nn.Identity()
     model.classifier = HamModel(1024)
     # Shift to GPU, add parallel-GPU support
@@ -168,14 +176,16 @@ def get_features(model, loader):
     return all_features.numpy()
 
 
-def train_epoch(train_loader, model, criterion, optimizer, epoch):
+def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
     model.train()
     train_loss = utils.AverageMeter()
     train_acc = utils.AverageMeter()
-    iterator = tqdm(train_loader)
+    iterator = train_loader
+    if verbose:
+        iterator = tqdm(train_loader)
     for data in iterator:
         images, labels, _ = data
-        images, labels = images.cuda(), labels.cuda() 
+        images, labels = images.cuda(), labels.cuda()
         N = images.size(0)
 
         optimizer.zero_grad()
@@ -188,19 +198,21 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch):
         train_acc.update(prediction.eq(
             labels.view_as(prediction)).sum().item()/N)
         train_loss.update(loss.item())
-        iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f]' % (
-            epoch, train_loss.avg, train_acc.avg))
+
+        if verbose:
+            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f]' % (
+                epoch, train_loss.avg, train_acc.avg))
     return train_loss.avg, train_acc.avg
 
 
-def validate_epoch(val_loader, model, criterion, optimizer, epoch):
+def validate_epoch(val_loader, model, criterion, verbose=True):
     model.eval()
     val_loss = utils.AverageMeter()
     val_acc = utils.AverageMeter()
     with ch.no_grad():
         for data in val_loader:
             images, labels, _ = data
-            images, labels = images.cuda(), labels.cuda() 
+            images, labels = images.cuda(), labels.cuda()
             N = images.size(0)
 
             outputs = model(images)[:, 0]
@@ -211,22 +223,30 @@ def validate_epoch(val_loader, model, criterion, optimizer, epoch):
 
             val_loss.update(criterion(outputs, labels.float()).item())
 
-    print('[Validation], Loss: %.5f, Accuracy: %.4f' %
-          (val_loss.avg, val_acc.avg))
-    print()
+    if verbose:
+        print('[Validation], Loss: %.5f, Accuracy: %.4f' %
+              (val_loss.avg, val_acc.avg))
+        print()
     return val_loss.avg, val_acc.avg
 
 
-def train(model, loaders, lr=1e-3, epoch_num=10):
+def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
     # Get data loaders
     train_loader, val_loader = loaders
     # Define optimizer, loss function
-    optimizer = ch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = ch.optim.Adam(
+        model.parameters(), lr=lr,
+        weight_decay=weight_decay)
     criterion = nn.BCEWithLogitsLoss().cuda()
 
-    for epoch in range(1, epoch_num+1):
-        train_epoch(train_loader, model, criterion, optimizer, epoch)
-        validate_epoch(val_loader, model, criterion, optimizer, epoch)
+    iterator = range(1, epoch_num+1)
+    if not verbose:
+        iterator = tqdm(iterator)
+    for epoch in iterator:
+        train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
+        vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
+
+    return vloss, vacc
 
 
 def useful_stats(df):
@@ -245,57 +265,26 @@ if __name__ == "__main__":
     # For the sake of varying property ratios, both use
     # Samples from their respective splits
     # Same goes for train-val splits
-    # For current experiments, fix these splits for each ratio
-    # To control sources of randomness
-    # Ultimately, we will rerun experiments without this sed fixed
     df_victim, df_adv = process_data(base)
-
-    # Split each into train-test
-    filters = [
-        # No filter
-        ("original", None, None),
-        # Sex-based filter
-        ("sex_0.25", lambda x: x['sex'] == 1, 0.25),
-        ("sex_0.4", lambda x: x['sex'] == 1, 0.4),
-        ("sex_0.5", lambda x: x['sex'] == 1, 0.5),
-        ("sex_0.6", lambda x: x['sex'] == 1, 0.6),
-        ("sex_0.75", lambda x: x['sex'] == 1, 0.75),
-        # Age-based filter
-        ("age_0.25", lambda x: x['age'] == 1, 0.25),
-        ("age_0.4", lambda x: x['age'] == 1, 0.4),
-        ("age_0.5", lambda x: x['age'] == 1, 0.5),
-        ("age_0.6", lambda x: x['age'] == 1, 0.6),
-        ("age_0.75", lambda x: x['age'] == 1, 0.75),
-    ]
 
     # Save these splits for victim
     for i, df in enumerate([df_victim, df_adv]):
-        for (prefix, lbd, ratio) in filters:
-            # Apply filter to data
-            if lbd is not None:
-                while True:
-                    df_processed = utils.filter(df, lbd, ratio, verbose=False)
-                    # break
-                    # Only accept a split that does not vary
-                    # label ratio too much
-                    if (np.abs(df["label"].mean() - 0.33) <= 0.05):
-                        break
-            else:
-                df_processed = df
 
-            # Print ratios for different properties and labels
-            # As a sanity check
-            utils.log_statement(prefix)
-            useful_stats(df_processed)
-            print()
+        df_processed = utils.filter(df, None, None, verbose=False)
 
-            # Get train-val splits
-            train_df, val_df = stratified_df_split(df_processed, 0.2)
+        # Print ratios for different properties and labels
+        # As a sanity check
+        utils.log_statement("original")
+        useful_stats(df_processed)
+        print()
 
-            # Ensure directory exists
-            dir_prefix = "./data/split_%d/%s/" % (i+1, prefix)
-            utils.ensure_dir_exists(dir_prefix)
+        # Get train-val splits
+        train_df, val_df = stratified_df_split(df_processed, 0.2)
 
-            # Save train-test splits
-            train_df.to_csv(os.path.join(dir_prefix, "train.csv"))
-            val_df.to_csv(os.path.join(dir_prefix, "val.csv"))
+        # Ensure directory exists
+        dir_prefix = "./data/split_%d/%s/" % (i+1, "original")
+        utils.ensure_dir_exists(dir_prefix)
+
+        # Save train-test splits
+        train_df.to_csv(os.path.join(dir_prefix, "train.csv"))
+        val_df.to_csv(os.path.join(dir_prefix, "val.csv"))
