@@ -1,5 +1,4 @@
 import data_utils
-import pandas as pd
 import torch as ch
 from tqdm import tqdm
 import torch.nn as nn
@@ -102,11 +101,11 @@ if __name__ == "__main__":
     _, vecs_test_2 = get_model_features(test_dir_2)
 
     # Ready train, test data
-    Y_train = [1.] * len(vecs_train_1) + [0.] * len(vecs_train_2)
+    Y_train = [0.] * len(vecs_train_1) + [1.] * len(vecs_train_2)
     Y_train = ch.from_numpy(np.array(Y_train))
     X_train = vecs_train_1 + vecs_train_2
 
-    Y_test = [1.] * len(vecs_test_1) + [0.] * len(vecs_test_2)
+    Y_test = [0.] * len(vecs_test_1) + [1.] * len(vecs_test_2)
     Y_test = ch.from_numpy(np.array(Y_test))
     X_test = vecs_test_1 + vecs_test_2
 
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     print("Batching data: hold on")
 
     # Train meta-classifier model
-    metamodel = utils.PermInvModel(dims)
+    metamodel = utils.PermInvModel(dims, inside_dims=[128, 64, 32])
 
     train_model(metamodel,
                 (X_train, Y_train),

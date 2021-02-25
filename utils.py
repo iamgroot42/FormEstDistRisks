@@ -1,3 +1,4 @@
+from re import L
 import torch as ch
 import numpy as np
 import torch.nn as nn
@@ -648,32 +649,35 @@ def get_weight_layers(m, normalize=False):
 # Couple hundred models
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims):
+    def __init__(self, dims, inside_dims=[64, 8]):
         super(PermInvModel, self).__init__()
         self.dims = dims
         self.layers = []
         prev_layer = 0
 
         def make_mini(y):
-            return nn.Sequential(
-                nn.Linear(y, 64),
-                nn.ReLU(),
-                nn.Linear(64, 8),
-                nn.ReLU(),
-                nn.Dropout()
-            )
+            layers = [
+                nn.Linear(y, inside_dims[0]),
+                nn.ReLU()
+            ]
+            for i in range(1, len(inside_dims)):
+                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
+                layers.append(nn.ReLU())
+            layers.append(nn.Dropout())
+
+            return nn.Sequential(*layers)
 
         for i, dim in enumerate(self.dims):
             # +1 for bias
             # prev_layer for previous layer
             # input dimension per neuron
             if i > 0:
-                prev_layer = 8 * dim
+                prev_layer = inside_dims[-1] * dim
             self.layers.append(make_mini(prev_layer + 1 + dim))
 
         self.layers = nn.ModuleList(self.layers)
         # Final network to combine them all together
-        self.rho = nn.Linear(8 * len(dims), 1)
+        self.rho = nn.Linear(inside_dims[-1] * len(dims), 1)
 
     def forward(self, params):
         reps = []
@@ -791,3 +795,108 @@ def prepare_batched_data(X):
 
     inputs = [ch.stack(x, 0) for x in inputs]
     return inputs
+
+
+def heuristic(df, condition, ratio,
+              cwise_sample,
+              class_imbalance=2.0,
+              n_tries=1000):
+    vals, pckds = [], []
+    iterator = tqdm(range(n_tries))
+    for _ in iterator:
+        pckd_df = filter(df, condition, ratio, verbose=False)
+        # Class-balanced sampling
+        zero_ids = np.nonzero(pckd_df["label"].to_numpy() == 0)[0]
+        one_ids = np.nonzero(pckd_df["label"].to_numpy() == 1)[0]
+
+        zero_ids = np.random.permutation(
+            zero_ids)[:int(class_imbalance * cwise_sample)]
+        one_ids = np.random.permutation(
+            one_ids)[:cwise_sample]
+        # Combine them together
+        pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
+        pckd_df = pckd_df.iloc[pckd]
+
+        vals.append(condition(pckd_df).mean())
+        pckds.append(pckd_df)
+
+        # Print best ratio so far in descripton
+        iterator.set_description(
+            "%.4f" % (ratio + np.min([np.abs(zz-ratio) for zz in vals])))
+
+    vals = np.abs(np.array(vals) - ratio)
+    # Pick the one closest to desired ratio
+    return pckds[np.argmin(vals)]
+
+
+def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
+    model.train()
+    train_loss = AverageMeter()
+    train_acc = AverageMeter()
+    iterator = train_loader
+    if verbose:
+        iterator = tqdm(train_loader)
+    for data in iterator:
+        images, labels, _ = data
+        images, labels = images.cuda(), labels.cuda()
+        N = images.size(0)
+
+        optimizer.zero_grad()
+        outputs = model(images)[:, 0]
+
+        loss = criterion(outputs, labels.float())
+        loss.backward()
+        optimizer.step()
+        prediction = (outputs >= 0)
+        train_acc.update(prediction.eq(
+            labels.view_as(prediction)).sum().item()/N)
+        train_loss.update(loss.item())
+
+        if verbose:
+            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f]' % (
+                epoch, train_loss.avg, train_acc.avg))
+    return train_loss.avg, train_acc.avg
+
+
+def validate_epoch(val_loader, model, criterion, verbose=True):
+    model.eval()
+    val_loss = AverageMeter()
+    val_acc = AverageMeter()
+    with ch.no_grad():
+        for data in val_loader:
+            images, labels, _ = data
+            images, labels = images.cuda(), labels.cuda()
+            N = images.size(0)
+
+            outputs = model(images)[:, 0]
+            prediction = (outputs >= 0)
+
+            val_acc.update(prediction.eq(
+                labels.view_as(prediction)).sum().item()/N)
+
+            val_loss.update(criterion(outputs, labels.float()).item())
+
+    if verbose:
+        print('[Validation], Loss: %.5f, Accuracy: %.4f' %
+              (val_loss.avg, val_acc.avg))
+        print()
+    return val_loss.avg, val_acc.avg
+
+
+def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
+    # Get data loaders
+    train_loader, val_loader = loaders
+    # Define optimizer, loss function
+    optimizer = ch.optim.Adam(
+        model.parameters(), lr=lr,
+        weight_decay=weight_decay)
+    criterion = nn.BCEWithLogitsLoss().cuda()
+
+    iterator = range(1, epoch_num+1)
+    if not verbose:
+        iterator = tqdm(iterator)
+    for epoch in iterator:
+        train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
+        vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
+
+    return vloss, vacc

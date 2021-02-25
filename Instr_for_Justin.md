@@ -133,3 +133,23 @@ Problem is, in current experimental settings, this N itself is either trained or
 * Run the above set of experiments while varying `<MERGE_RATIO>`: 0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 0.9, for both `0` and `1` for the last argument. Don't forget to use different folders to save these models!
 
 * Note: these scripts will take quite a while to run (a few hours ), so it might be in your best interest to use a screen/tmux to run them in. Also, depending on which GPU is free, you can add the `CUDA_VISIBLE_DEVICES` prefix. That way, you can run multiple scripts on a machine simultaneously, each on a different GPU.
+
+
+## For 3/3
+
+Train models for skin-lesion (HAM1000) dataset with two different ratios: 0.2 and 0.8, trying out both the 'sex' and 'age' attributes
+We will train 3000 models each (which we will use for train set for the metaclassifier), and 500 models each (which we will use for test set for the meta classifier)
+
+* Navigate to the appropriate folder (`ham/`)
+
+* Run the following command to generate models (to be used to train)
+
+`python train_models.py <attribute> <ratio> 3000 1 <save_dir>`
+
+
+* Run the following command to generate models (to be used to test)
+
+`python train_models.py <attribute> <ratio> 500 2 <save_dir>`
+
+
+* `attribute` is `sex/age`, `ratio` is `0.2 or 0.8`, `save_dir` is where models will be saved. So overall, there wil be 2 (age/sex) * 2 (ratio 0.2/ratio 0.8) * 2 (first command/second command) = 8 scripts to run.

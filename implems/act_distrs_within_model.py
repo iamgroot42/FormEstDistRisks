@@ -8,6 +8,7 @@ import utils
 import implem_utils
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -109,10 +110,10 @@ if __name__ == "__main__":
         [
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
             "13_0.9135180520570949.pth",
-            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
-            "15_0.9125104953820319.pth",
-            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
-            "15_0.9222502099076406.pth",
+            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
+            # "15_0.9125104953820319.pth",
+            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
+            # "15_0.9222502099076406.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
             "15_0.9177162048698573.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/3/"
@@ -122,10 +123,10 @@ if __name__ == "__main__":
         [
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
             "15_0.9122836498067551.pth",
-            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
-            "15_0.9107712989413544.pth",
-            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
-            "15_0.9121156108217107.pth",
+            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
+            # "15_0.9107712989413544.pth",
+            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
+            # "15_0.9121156108217107.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
             "15_0.9122836498067551.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/3/"
@@ -148,30 +149,40 @@ if __name__ == "__main__":
     target_attr = attrs.index("Smiling")
     focus_value = 1
 
-    # colors = ['C0', 'C1']
-    # for i, sub_paths in enumerate(paths):
-    #     for j, MODELPATH in enumerate(sub_paths):
+    colors = ['C0', 'C1']
+    for i, sub_paths in enumerate(paths):
+        for j, MODELPATH in enumerate(sub_paths):
 
-    #         model = utils.FaceModel(512,
-    #                                 train_feat=True,
-    #                                 weight_init=None).cuda()
-    #         model = nn.DataParallel(model)
-    #         model.load_state_dict(ch.load(MODELPATH), strict=False)
-    #         model.eval()
+            model = utils.FaceModel(512,
+                                    train_feat=True,
+                                    weight_init=None).cuda()
+            model = nn.DataParallel(model)
+            model.load_state_dict(ch.load(MODELPATH), strict=False)
+            model.eval()
 
-    #         y_ = get_trends_for_model(model, dataloader)
-    #         # y_ = np.abs(y_)
-    #         x_ = np.arange(y_.shape[0])
+            y_ = get_trends_for_model(model, dataloader)
+            # y_ = np.abs(y_)
+            x_ = np.arange(y_.shape[0])
 
-    #         if j == 1:
-    #             plt.plot(x_, y_, color=colors[i], marker='o')
-    #         elif j == 2:
-    #             plt.plot(x_, y_, color=colors[i], marker='d')
-    #         else:
-    #             plt.plot(x_, y_, color=colors[i], marker='x')
-    # plt.xticks(np.arange(min(x_), max(x_)+1, 1.0))
-    # plt.savefig("../visualize/intra_layers_all.png")
-    # exit(0)
+            # if j == 1:
+                # plt.plot(x_, y_, color=colors[i], marker='o')
+            # elif j == 2:
+                # plt.plot(x_, y_, color=colors[i], marker='d')
+            # else:
+                # plt.plot(x_, y_, color=colors[i], marker='x')
+            plt.plot(x_, y_, color=colors[i], marker='x')
+
+    c0_patch = mpatches.Patch(
+        color='C0', label=r'Model traind on $D\sim G_0(\mathcal{D})$')
+    c1_patch = mpatches.Patch(
+        color='C1', label=r'Model traind on $D\sim G_1(\mathcal{D})$')
+    plt.legend(handles=[c0_patch, c1_patch])
+    plt.xticks(np.arange(min(x_), max(x_)+1, 4.0))
+    plt.xlabel("Model layers")
+    plt.ylabel(
+        r'Overlap (area) in activation distributions between $y_d=0, y_d=1$')
+    plt.savefig("../visualize/intra_layers_all.png")
+    exit(0)
 
     # MODELPATH = paths[0][3]
     pi = (0, 0)
