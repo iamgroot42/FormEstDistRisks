@@ -68,7 +68,7 @@ if __name__ == "__main__":
         print("Validation accuracy: %.3f" % vacc)
 
         # Save model
-        # ch.save(model.state_dict(), os.path.join(
-        #     savepath_prefix, "%d_%.3f.pth" % (i+1, vacc)))
+        ch.save(model.state_dict(), os.path.join(
+            savepath_prefix, "%d_%.3f.pth" % (i+1, vacc)))
 
         print("[Status] %d/%d" % (i+1, num_models))
