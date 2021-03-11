@@ -1,125 +1,201 @@
-from dgl.data import AmazonCoBuyComputerDataset, PubmedGraphDataset, AmazonCoBuyPhotoDataset
+from torch_geometric.nn import GCNConv, SAGEConv
+from ogb.nodeproppred import PygNodePropPredDataset
+import torch_geometric.transforms as T
 import torch as ch
-from dgl.transform import add_self_loop
 import torch.nn.functional as F
 import torch.nn as nn
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from dgl.nn.pytorch import GraphConv
 from sklearn.manifold import TSNE
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-class GraphData:
-    def __init__(self, dclass, shuffle=False):
-        self.dataset = dclass()
-
+class GraphNodeDataset:
+    def __init__(self, name, device, make_symm=False):
+        self.dataset = PygNodePropPredDataset(name=name, transform=T.ToSparseTensor())
+        self.device = device
+        
         self.data = self.dataset[0]
-        self.data = add_self_loop(self.data)
-        self.data = self.data.int().to('cuda')
-        # if shuffle:
-        #     self.dataset.shuffle()
-        self.num_features = self.data.ndata['feat'].shape[1]
+        # make undirected
+        if make_symm:
+            self.data.adj_t = self.data.adj_t.to_symmetric()
+        
+        self.data = self.data.to(self.device)
+
+        self.num_features = self.data.num_features
         self.num_classes = self.dataset.num_classes
-        self.num_nodes = self.data.number_of_nodes()
-
-    def make_train_test_masks(self, test_ratio=0.2):
-        # train_mask = self.data.ndata['train_mask']
-        # test_mask = self.data.ndata['val_mask']
-        num_test = int(test_ratio * self.num_nodes)
-        train_mask = ch.zeros(self.num_nodes, dtype=ch.bool)
-        train_mask[num_test:] = 1
-        test_mask = ch.zeros(
-            self.num_nodes, dtype=ch.bool)
-        test_mask[:num_test] = 1
-        return train_mask, test_mask
-
-    def get_data(self):
-        return self.data
-
-    def get_features(self):
-        return self.data.ndata['feat']
-
-    def get_labels(self):
-        return self.data.ndata['label']
+        self.num_nodes = self.data.num_nodes
 
 
-class AmazonComputersData(GraphData):
-    def __init__(self, shuffle=False):
-        super(AmazonComputersData, self).__init__(
-            AmazonCoBuyComputerDataset, shuffle=shuffle)
-
-
-class AmazonPhotoData(GraphData):
-    def __init__(self, shuffle=False):
-        super(AmazonPhotoData, self).__init__(
-            AmazonCoBuyPhotoDataset, shuffle=shuffle)
-
-
-class PubMedData(GraphData):
-    def __init__(self, shuffle=False):
-        super(PubMedData, self).__init__(
-            PubmedGraphDataset, shuffle=shuffle)
+class ArxivNodeDataset(GraphNodeDataset):
+    def __init__(self, device, split):
+        super(ArxivNodeDataset, self).__init__('ogbn-arxiv', device, make_symm=True)
+        # 59:41 victim:adv data split (all original data, including train/val/test)
+        # Original data had 54:46 train-nontrain split
+        # Get similar splits
+        split_year = 2016
+        if split == 'adv':
+            # 77:23 train:test split
+            test_year = 2015
+            self.train_idx = self.data.node_year < test_year
+            self.test_idx = ch.logical_and(
+                self.data.node_year >= test_year, self.data.node_year < split_year)
+        elif split == 'victim':
+            # 66:34 train:test split
+            test_year = 2019
+            self.train_idx = ch.logical_and(
+                self.data.node_year != test_year, self.data.node_year >= split_year)
+            self.test_idx = (self.data.node_year == test_year)
+        else:
+            raise ValueError("Invalid split requested!")
+            
+        self.train_idx = ch.nonzero(self.train_idx, as_tuple=True)[0]
+        self.test_idx = ch.nonzero(self.test_idx, as_tuple=True)[0]
+    
+    def get_idx_split(self):
+        return self.train_idx, self.test_idx
 
 
 class GCN(nn.Module):
-    def __init__(self, ds,
-                 n_hidden, n_layers,
+    def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
                  dropout):
         super(GCN, self).__init__()
-        self.g = ds.data
-        self.layers = nn.ModuleList()
-        # input layer
-        self.layers.append(
-            GraphConv(ds.num_features, n_hidden, activation=F.relu))
-        # hidden layers
-        for i in range(n_layers - 1):
-            self.layers.append(
-                GraphConv(n_hidden, n_hidden, activation=F.relu))
-        # output layer
-        self.layers.append(GraphConv(n_hidden, ds.num_classes))
-        self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, features):
-        h = features
-        for i, layer in enumerate(self.layers):
-            if i != 0:
-                h = self.dropout(h)
-            h = layer(self.g, h)
-        return h
+        self.convs = nn.ModuleList()
+        self.convs.append(GCNConv(in_channels, hidden_channels, cached=True))
+        self.bns = nn.ModuleList()
+        self.bns.append(nn.BatchNorm1d(hidden_channels))
+        for _ in range(num_layers - 2):
+            self.convs.append(
+                GCNConv(hidden_channels, hidden_channels, cached=True))
+            self.bns.append(nn.BatchNorm1d(hidden_channels))
+        self.convs.append(GCNConv(hidden_channels, out_channels, cached=True))
+
+        self.dropout = dropout
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+        for bn in self.bns:
+            bn.reset_parameters()
+
+    def forward(self, x, adj_t):
+        for i, conv in enumerate(self.convs[:-1]):
+            x = conv(x, adj_t)
+            x = self.bns[i](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](x, adj_t)
+        return x.log_softmax(dim=-1)
 
 
-def get_model(ds):
-    model = GCN(ds, n_hidden=16, n_layers=1, dropout=0.1)
-    model.cuda()
+class SAGE(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
+                 dropout):
+        super(SAGE, self).__init__()
+
+        self.convs = nn.ModuleList()
+        self.convs.append(SAGEConv(in_channels, hidden_channels))
+        self.bns = nn.ModuleList()
+        self.bns.append(nn.BatchNorm1d(hidden_channels))
+        for _ in range(num_layers - 2):
+            self.convs.append(SAGEConv(hidden_channels, hidden_channels))
+            self.bns.append(nn.BatchNorm1d(hidden_channels))
+        self.convs.append(SAGEConv(hidden_channels, out_channels))
+
+        self.dropout = dropout
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+        for bn in self.bns:
+            bn.reset_parameters()
+
+    def forward(self, x, adj_t):
+        for i, conv in enumerate(self.convs[:-1]):
+            x = conv(x, adj_t)
+            x = self.bns[i](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](x, adj_t)
+        return x.log_softmax(dim=-1)
+
+
+def get_model(ds, device, args):
+    if args.use_sage:
+        model = SAGE(ds.num_features, args.hidden_channels,
+                     ds.num_classes, args.num_layers,
+                     args.dropout).to(device)
+    else:
+        model = GCN(ds.num_features, args.hidden_channels,
+                    ds.num_classes, args.num_layers,
+                    args.dropout).to(device)
     return model
 
 
-def train_model(ds, test_ratio, model, lr=1e-3, epochs=2000):
-    optimizer = ch.optim.Adam(model.parameters(), lr=lr, weight_decay=5e-4)
-    loss_fn = ch.nn.CrossEntropyLoss().cuda()
+
+def train(model, data, train_idx, optimizer):
     model.train()
 
-    train_mask, test_mask = ds.make_train_test_masks(test_ratio)
-    data = ds.get_features()
-    labels = ds.get_labels()
+    optimizer.zero_grad()
+    out = model(data.x, data.adj_t)[train_idx]
+    loss = F.nll_loss(out, data.y.squeeze(1)[train_idx])
+    loss.backward()
+    optimizer.step()
 
-    iterator = tqdm(range(epochs))
-    for _ in iterator:
-        optimizer.zero_grad()
-        out = model(data)
-        loss = loss_fn(out[train_mask], labels[train_mask])
-        loss.backward()
-        optimizer.step()
+    return loss.item()
 
-        iterator.set_description("Loss: %.3f" % loss.item())
 
+@ch.no_grad()
+def test(model, data, train_idx, test_idx, evaluator):
     model.eval()
-    _, pred = model(data).max(dim=1)
-    correct = int(pred[test_mask].eq(labels[test_mask]).sum().item())
-    acc = correct / int(test_mask.sum())
-    return acc
+
+    out = model(data.x, data.adj_t)
+    y_pred = out.argmax(dim=-1, keepdim=True)
+
+    train_acc = evaluator.eval({
+        'y_true': data.y[train_idx],
+        'y_pred': y_pred[train_idx],
+    })['acc']
+    test_acc = evaluator.eval({
+        'y_true': data.y[test_idx],
+        'y_pred': y_pred[test_idx],
+    })['acc']
+
+    return train_acc, test_acc
+
+
+def train_model(ds, model, evaluator, args):
+    run_accs = {
+        "train": [],
+        "test": []
+    }
+
+    train_idx, test_idx = ds.get_idx_split()
+
+    for run in range(1, 1 + args.runs):
+
+        model.reset_parameters()
+        optimizer = ch.optim.Adam(model.parameters(), lr=args.lr)
+        iterator = tqdm(range(1, 1 + args.epochs))
+        
+        for epoch in iterator:
+            loss = train(model, ds.data, train_idx, optimizer)
+            train_acc, test_acc = test(
+                model, ds.data, train_idx, test_idx, evaluator)
+
+            iterator.set_description(f'Run: {run:02d}, '
+                      f'Epoch: {epoch:02d}, '
+                      f'Loss: {loss:.4f}, '
+                      f'Train: {100 * train_acc:.2f}%, '
+                      f'Test: {100 * test_acc:.2f}%')
+        
+        # Keep track of train/test accuracies across runs
+        run_accs["train"].append(train_acc)
+        run_accs["test"].append(test_acc)
+
+    return run_accs
 
 
 def visualize(h, color):
