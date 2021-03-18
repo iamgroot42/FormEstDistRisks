@@ -1,36 +1,84 @@
-from torch_geometric.nn import GCNConv, SAGEConv
-from ogb.nodeproppred import PygNodePropPredDataset
-import torch_geometric.transforms as T
+import dgl
+from dgl.nn.pytorch import GraphConv
+from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 import torch as ch
 import torch.nn.functional as F
 import torch.nn as nn
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
 
-class GraphNodeDataset:
-    def __init__(self, name, device, make_symm=False):
-        self.dataset = PygNodePropPredDataset(name=name, transform=T.ToSparseTensor())
-        self.device = device
+class GraphData:
+    def __init__(self, name, normalize=True):
+        self.data = DglNodePropPredDataset(name=name)
+
+        self.g, self.labels = self.data[0]
+
+        # Extract node features
+        self.features = self.g.ndata['feat']
+
+        # Normalize features
+        if normalize:
+            m, std = ch.mean(self.features, 0), ch.std(self.features, 0)
+            self.features = (self.features - m) / std
+
+        self.num_features = self.features.shape[1]
+        self.num_classes = self.data.num_classes
+        self.num_nodes = self.g.number_of_nodes()
+
+        # Extract any extra data
+        self.before_init()
+
+        # Process graph before shifting to GPU
+        self.pre_process()
+
+        # Shift data to GPU
+        self.shift_to_gpu()
+
+    def before_init(self):
+        pass
+
+    def pre_process(self):
+        # Add self loops
+        self.g = dgl.remove_self_loop(self.g)
+        self.g = dgl.add_self_loop(self.g)
+
+        # Make bidirectional
+        self.g = dgl.to_bidirected(self.g)
+    
+    def shift_to_gpu(self):
+        # Shift graph, labels to cuda
+        self.g = self.g.to('cuda')
+        self.labels = self.labels.cuda()
+        self.features = self.features.cuda()
+
+    def get_idx_split(self, test_ratio=0.2):
+        # train_mask = self.data.ndata['train_mask']
+        # test_mask = self.data.ndata['val_mask']
+        num_test = int(test_ratio * self.num_nodes)
+        train_mask = ch.zeros(self.num_nodes, dtype=ch.bool)
+        train_mask[num_test:] = 1
+        test_mask = ch.zeros(
+            self.num_nodes, dtype=ch.bool)
+        test_mask[:num_test] = 1
+        return train_mask, test_mask
+
+    def get_features(self):
+        return self.features
+
+    def get_labels(self):
+        return self.labels
+
+
+class ArxivNodeDataset(GraphData):
+    def __init__(self, split, normalize=True):
+        super(ArxivNodeDataset, self).__init__(
+            'ogbn-arxiv', normalize=normalize)
         
-        self.data = self.dataset[0]
-        # make undirected
-        if make_symm:
-            self.data.adj_t = self.data.adj_t.to_symmetric()
-        
-        self.data = self.data.to(self.device)
-
-        self.num_features = self.data.num_features
-        self.num_classes = self.dataset.num_classes
-        self.num_nodes = self.data.num_nodes
-
-
-class ArxivNodeDataset(GraphNodeDataset):
-    def __init__(self, device, split):
-        super(ArxivNodeDataset, self).__init__('ogbn-arxiv', device, make_symm=True)
         # 59:41 victim:adv data split (all original data, including train/val/test)
         # Original data had 54:46 train-nontrain split
         # Get similar splits
@@ -38,164 +86,116 @@ class ArxivNodeDataset(GraphNodeDataset):
         if split == 'adv':
             # 77:23 train:test split
             test_year = 2015
-            self.train_idx = self.data.node_year < test_year
+            self.train_idx = self.years < test_year
             self.test_idx = ch.logical_and(
-                self.data.node_year >= test_year, self.data.node_year < split_year)
+                self.years >= test_year, self.years < split_year)
         elif split == 'victim':
             # 66:34 train:test split
             test_year = 2019
             self.train_idx = ch.logical_and(
-                self.data.node_year != test_year, self.data.node_year >= split_year)
-            self.test_idx = (self.data.node_year == test_year)
+                self.years != test_year, self.years >= split_year)
+            self.test_idx = (self.years == test_year)
         else:
             raise ValueError("Invalid split requested!")
-            
+
         self.train_idx = ch.nonzero(self.train_idx, as_tuple=True)[0]
         self.test_idx = ch.nonzero(self.test_idx, as_tuple=True)[0]
-    
+
+        # Sort them now, for easier access later
+        self.train_idx = ch.sort(self.train_idx)[0]
+        self.test_idx = ch.sort(self.test_idx)[0]
+
+    def before_init(self):
+        # Extract years
+        self.years = ch.squeeze(self.g.ndata['year'], 1)
+        self.years = self.years.cuda()
+
     def get_idx_split(self):
         return self.train_idx, self.test_idx
+    
+    def change_mean_degree(self, wanted_degree):
+        # Prune graph, get rid of nodes
+        self.g, pruned_nodes = achieve_mean_degree(self.g, wanted_degree)
+
+        # Make mapping between old and new IDs
+        not_pruned = ch.ones(self.num_nodes).byte()
+        not_pruned[pruned_nodes] = False
+        not_pruned = ch.nonzero(not_pruned, as_tuple=True)[0]
+        mapping = {x.item():i for i, x in enumerate(not_pruned)}
+
+        # Function to modify current masks to reflect pruning
+        def process(ids):
+            # Convert indices to mask
+            keep = ch.zeros(self.num_nodes).byte()
+            keep[ids] = True
+
+            # Get rid of pruned nodes from this, get back to IDs
+            not_pruned = ch.ones(self.num_nodes).byte()
+            not_pruned[pruned_nodes] = False
+            not_pruned = ch.nonzero(not_pruned, as_tuple=True)[0]
+            keep[pruned_nodes] = False
+            keep = ch.nonzero(keep, as_tuple=True)[0]
+
+            # Update current mask to point to correct IDs
+            for i, x in enumerate(keep):
+                keep[i] = mapping[x.item()]
+            
+            # Shift mask back to GPU
+            keep = keep.cuda()
+            return keep
+        
+        # Update masks to account for pruned nodes,  re-indexing
+        self.train_idx = process(self.train_idx)
+        self.test_idx = process(self.test_idx)
+
+        # Update features, labels, year-information
+        self.years = self.years[not_pruned]
+        self.features = self.features[not_pruned]
+        self.labels = self.labels[not_pruned]
+
+        # Update number of nodes in graph
+        self.num_nodes -= len(pruned_nodes)
 
 
-class GCN(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
-                 dropout):
-        super(GCN, self).__init__()
-
-        self.convs = nn.ModuleList()
-        self.convs.append(GCNConv(in_channels, hidden_channels, cached=True))
-        self.bns = nn.ModuleList()
-        self.bns.append(nn.BatchNorm1d(hidden_channels))
-        for _ in range(num_layers - 2):
-            self.convs.append(
-                GCNConv(hidden_channels, hidden_channels, cached=True))
-            self.bns.append(nn.BatchNorm1d(hidden_channels))
-        self.convs.append(GCNConv(hidden_channels, out_channels, cached=True))
-
-        self.dropout = dropout
-
-    def reset_parameters(self):
-        for conv in self.convs:
-            conv.reset_parameters()
-        for bn in self.bns:
-            bn.reset_parameters()
-
-    def forward(self, x, adj_t):
-        for i, conv in enumerate(self.convs[:-1]):
-            x = conv(x, adj_t)
-            x = self.bns[i](x)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, adj_t)
-        return x.log_softmax(dim=-1)
-
-
-class SAGE(nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
-                 dropout):
-        super(SAGE, self).__init__()
-
-        self.convs = nn.ModuleList()
-        self.convs.append(SAGEConv(in_channels, hidden_channels))
-        self.bns = nn.ModuleList()
-        self.bns.append(nn.BatchNorm1d(hidden_channels))
-        for _ in range(num_layers - 2):
-            self.convs.append(SAGEConv(hidden_channels, hidden_channels))
-            self.bns.append(nn.BatchNorm1d(hidden_channels))
-        self.convs.append(SAGEConv(hidden_channels, out_channels))
-
-        self.dropout = dropout
-
-    def reset_parameters(self):
-        for conv in self.convs:
-            conv.reset_parameters()
-        for bn in self.bns:
-            bn.reset_parameters()
-
-    def forward(self, x, adj_t):
-        for i, conv in enumerate(self.convs[:-1]):
-            x = conv(x, adj_t)
-            x = self.bns[i](x)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, adj_t)
-        return x.log_softmax(dim=-1)
-
-
-def get_model(ds, device, args):
-    if args.use_sage:
-        model = SAGE(ds.num_features, args.hidden_channels,
-                     ds.num_classes, args.num_layers,
-                     args.dropout).to(device)
+def find_to_prune(degs, wanted_deg):
+    prune = []
+    # Take note of mean degree right now
+    cur_deg = np.mean(degs)
+    # If desired degree is more than current, prune low-degree nodes
+    i = 0
+    if wanted_deg > cur_deg:
+        # Find sorted order for degrees
+        so = np.argsort(degs)
+        while cur_deg < wanted_deg:
+            i += 1
+            cur_deg = np.mean(degs[so[i:]])
+            prune.append(so[i])
+    # Else, prune high-degree nodes
     else:
-        model = GCN(ds.num_features, args.hidden_channels,
-                    ds.num_classes, args.num_layers,
-                    args.dropout).to(device)
-    return model
+        # Find rever-sesorted order for degrees
+        so = np.argsort(-degs)
+        while cur_deg > wanted_deg:
+            i += 1
+            cur_deg = np.mean(degs[so[i:]])
+            prune.append(so[i])
+    # Return list of nodes that should be removed
+    return prune
 
 
+def achieve_mean_degree(g, wanted_deg):
+    X, _ = g.edges()
+    degs = []
+    for i in tqdm(range(g.number_of_nodes())):
+        degs.append(ch.sum(X == i).item())
+    degs = np.array(degs)
 
-def train(model, data, train_idx, optimizer):
-    model.train()
+    # Find which nodes should be pruned
+    to_prune = find_to_prune(degs, wanted_deg)
 
-    optimizer.zero_grad()
-    out = model(data.x, data.adj_t)[train_idx]
-    loss = F.nll_loss(out, data.y.squeeze(1)[train_idx])
-    loss.backward()
-    optimizer.step()
+    # Get rid of these nodes from graph
+    g = dgl.remove_nodes(g, to_prune)
 
-    return loss.item()
-
-
-@ch.no_grad()
-def test(model, data, train_idx, test_idx, evaluator):
-    model.eval()
-
-    out = model(data.x, data.adj_t)
-    y_pred = out.argmax(dim=-1, keepdim=True)
-
-    train_acc = evaluator.eval({
-        'y_true': data.y[train_idx],
-        'y_pred': y_pred[train_idx],
-    })['acc']
-    test_acc = evaluator.eval({
-        'y_true': data.y[test_idx],
-        'y_pred': y_pred[test_idx],
-    })['acc']
-
-    return train_acc, test_acc
-
-
-def train_model(ds, model, evaluator, args):
-    run_accs = {
-        "train": [],
-        "test": []
-    }
-
-    train_idx, test_idx = ds.get_idx_split()
-
-    for run in range(1, 1 + args.runs):
-
-        model.reset_parameters()
-        optimizer = ch.optim.Adam(model.parameters(), lr=args.lr)
-        iterator = tqdm(range(1, 1 + args.epochs))
-        
-        for epoch in iterator:
-            loss = train(model, ds.data, train_idx, optimizer)
-            train_acc, test_acc = test(
-                model, ds.data, train_idx, test_idx, evaluator)
-
-            iterator.set_description(f'Run: {run:02d}, '
-                      f'Epoch: {epoch:02d}, '
-                      f'Loss: {loss:.4f}, '
-                      f'Train: {100 * train_acc:.2f}%, '
-                      f'Test: {100 * test_acc:.2f}%')
-        
-        # Keep track of train/test accuracies across runs
-        run_accs["train"].append(train_acc)
-        run_accs["test"].append(test_acc)
-
-    return run_accs
+    return g, to_prune
 
 
 def visualize(h, color):
