@@ -21,6 +21,9 @@ class GraphData:
         # Extract node features
         self.features = self.g.ndata['feat']
 
+        # Degrees of nodes
+        self.degs = []
+
         # Normalize features
         if normalize:
             m, std = ch.mean(self.features, 0), ch.std(self.features, 0)
@@ -73,6 +76,13 @@ class GraphData:
     def get_labels(self):
         return self.labels
 
+    def precompute_degrees(self):
+        X, _ = self.g.edges()
+        degs = []
+        for i in tqdm(range(self.g.number_of_nodes())):
+            degs.append(ch.sum(X == i).item())
+        self.degs = np.array(degs)
+
 
 class ArxivNodeDataset(GraphData):
     def __init__(self, split, normalize=True):
@@ -112,10 +122,24 @@ class ArxivNodeDataset(GraphData):
 
     def get_idx_split(self):
         return self.train_idx, self.test_idx
+
+    def random_split_pick(self, ratio):
+        # Randomly sample 'ratio' worth of specified train data
+        # Set train mask to those ones
+        n_elems = len(self.train_idx)
+        perm = ch.randperm(n_elems)[:int(ratio * n_elems)]
+        self.train_idx = self.train_idx[perm]
     
-    def change_mean_degree(self, wanted_degree):
+    def change_mean_degree(self, wanted_degree, shuffle=False):
+        # If no change requested, perform no change
+        if wanted_degree is None: return 
+
+        # Compute degrees
+        self.precompute_degrees()
+
         # Prune graph, get rid of nodes
-        self.g, pruned_nodes = achieve_mean_degree(self.g, wanted_degree)
+        self.g, pruned_nodes = achieve_mean_degree(
+            self.g, self.degs, wanted_degree, shuffle)
 
         # Make mapping between old and new IDs
         not_pruned = ch.ones(self.num_nodes).byte()
@@ -157,7 +181,7 @@ class ArxivNodeDataset(GraphData):
         self.num_nodes -= len(pruned_nodes)
 
 
-def find_to_prune(degs, wanted_deg):
+def find_to_prune(degs, wanted_deg, shuffle=False):
     prune = []
     # Take note of mean degree right now
     cur_deg = np.mean(degs)
@@ -166,14 +190,26 @@ def find_to_prune(degs, wanted_deg):
     if wanted_deg > cur_deg:
         # Find sorted order for degrees
         so = np.argsort(degs)
+        if shuffle:
+            # Shuffle first 10% of to-remove data
+            # To add some randomness
+            bp = int(0.1 * len(so))
+            so[:bp] = so[ch.randperm(bp)]
+
         while cur_deg < wanted_deg:
             i += 1
             cur_deg = np.mean(degs[so[i:]])
             prune.append(so[i])
     # Else, prune high-degree nodes
     else:
-        # Find rever-sesorted order for degrees
+        # Find reverse-sorted order for degrees
         so = np.argsort(-degs)
+        if shuffle:
+            # Shuffle first 10% of to-remove data
+            # To add some randomness
+            bp = int(0.1 * len(so))
+            so[:bp] = so[ch.randperm(bp)]
+
         while cur_deg > wanted_deg:
             i += 1
             cur_deg = np.mean(degs[so[i:]])
@@ -182,15 +218,9 @@ def find_to_prune(degs, wanted_deg):
     return prune
 
 
-def achieve_mean_degree(g, wanted_deg):
-    X, _ = g.edges()
-    degs = []
-    for i in tqdm(range(g.number_of_nodes())):
-        degs.append(ch.sum(X == i).item())
-    degs = np.array(degs)
-
+def achieve_mean_degree(g, degs, wanted_deg, shuffle=False):
     # Find which nodes should be pruned
-    to_prune = find_to_prune(degs, wanted_deg)
+    to_prune = find_to_prune(degs, wanted_deg, shuffle)
 
     # Get rid of these nodes from graph
     g = dgl.remove_nodes(g, to_prune)

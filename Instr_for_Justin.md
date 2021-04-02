@@ -153,3 +153,10 @@ We will train 3000 models each (which we will use for train set for the metaclas
 
 
 * `attribute` is `sex/age`, `ratio` is `0.2 or 0.8`, `save_dir` is where models will be saved. So overall, there wil be 2 (age/sex) * 2 (ratio 0.2/ratio 0.8) * 2 (first command/second command) = 8 scripts to run.
+
+
+## For 4/7
+
+I have updated the model to accept arguments that should enable retrieving intermediate model activations. For instance, model logits are usually retrieved via the command `outputs = model(images)[:, 0]`, which would return a `(n,)` shaped vector (where `n=images.shape[0]`).
+
+To retreve activations, you will use `acts = model(images, latent=0)`, whch will return a `(n, num_features)` shaped vector. You can then count the number of fired neurons (value > 0) per image.

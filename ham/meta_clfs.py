@@ -87,10 +87,10 @@ if __name__ == "__main__":
     first_cat = sys.argv[1]
     second_cat = sys.argv[2]
 
-    train_dir_1 = "/p/adversarialml/as9rw/models_ham/split_1/%s/" % first_cat
-    train_dir_2 = "/p/adversarialml/as9rw/models_ham/split_1/%s/" % second_cat
-    test_dir_1 = "/p/adversarialml/as9rw/models_ham/split_2/%s/" % first_cat
-    test_dir_2 = "/p/adversarialml/as9rw/models_ham/split_2/%s/" % second_cat
+    train_dir_1 = "/p/adversarialml/as9rw/models_ham_justin/split_1/%s/" % first_cat
+    train_dir_2 = "/p/adversarialml/as9rw/models_ham_justin/split_1/%s/" % second_cat
+    test_dir_1 = "/p/adversarialml/as9rw/models_ham_justin/split_2/%s/" % first_cat
+    test_dir_2 = "/p/adversarialml/as9rw/models_ham_justin/split_2/%s/" % second_cat
     features_avail = False
 
     # Load models, convert to features

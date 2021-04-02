@@ -13,8 +13,10 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--epochs', type=int, default=75)
-    parser.add_argument('--degree', type=int, default=10)
-    parser.add_argument("--save_path", help="path to save trained model")
+    parser.add_argument('--degree', type=int, default=None)
+    parser.add_argument('--shuffle', action='store_true',
+                        help='shuffle relevant 10% nodes before pruning')
+    parser.add_argument("--savepath", help="path to save trained model")
     args = parser.parse_args()
     print(args)
 
@@ -30,9 +32,13 @@ def main():
     print("Nodes in graph before modification: %d" % ds.num_nodes)
 
     # Modify dataset
-    ds.change_mean_degree(args.degree)
+    ds.change_mean_degree(args.degree, args.shuffle)
 
     print("Nodes in graph after modification: %d" % ds.num_nodes)
+
+    # Modify labels for data to create randomness
+    # Use 90% of all labeled data
+    ds.random_split_pick(0.9)
 
     # Define model
     model = model_utils.get_model(ds, args)
@@ -47,7 +53,7 @@ def main():
     print("Test accuracy: %.2f" % (acc_te))
 
     # Save model
-    ch.save(model.state_dict(), args.save_path)
+    ch.save(model.state_dict(), args.savepath + "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
 
 
 if __name__ == "__main__":
