@@ -19,12 +19,12 @@ class GCN(nn.Module):
         # input layer
         self.layers.append(
             GraphConv(ds.num_features, n_hidden, activation=F.relu))
-        
+
         # hidden layers
         for i in range(n_layers - 1):
             self.layers.append(
                 GraphConv(n_hidden, n_hidden, activation=F.relu))
-        
+
         # output layer
         self.layers.append(GraphConv(n_hidden, ds.num_classes))
         self.dropout = nn.Dropout(p=dropout)
@@ -94,7 +94,7 @@ def train_model(ds, model, evaluator, args):
         model.parameters(), lr=args.lr, weight_decay=5e-4)
     loss_fn = ch.nn.CrossEntropyLoss().cuda()
     iterator = tqdm(range(1, 1 + args.epochs))
-        
+
     for epoch in iterator:
         loss = train(model, ds, train_idx, optimizer, loss_fn)
         train_acc, test_acc = test(
@@ -104,7 +104,7 @@ def train_model(ds, model, evaluator, args):
                     f'Loss: {loss:.4f}, '
                     f'Train: {100 * train_acc:.2f}%, '
                     f'Test: {100 * test_acc:.2f}%')
-        
+
         # Keep track of train/test accuracies across runs
         run_accs["train"].append(train_acc)
         run_accs["test"].append(test_acc)
@@ -129,7 +129,7 @@ def extract_model_weights(m, normalize=False):
 
     cctd = []
     for w, b in zip(weights, biases):
-        cctd.append(ch.cat((w, b), 0))
+        cctd.append(ch.cat((w, b), 0).T)
 
     return dims, cctd
 

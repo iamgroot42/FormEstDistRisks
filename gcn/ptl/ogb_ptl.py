@@ -13,7 +13,6 @@ import data_utils
 from ogb.nodeproppred import Evaluator
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
     parser.add_argument('--device', type=int, default=0)
