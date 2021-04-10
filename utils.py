@@ -896,7 +896,9 @@ def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
     if not verbose:
         iterator = tqdm(iterator)
     for epoch in iterator:
-        train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
+        tloss, tacc = train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
         vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
+        iterator.set_description(
+            "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
 
     return vloss, vacc

@@ -52,7 +52,7 @@ class GraphData:
 
         # Make bidirectional
         self.g = dgl.to_bidirected(self.g)
-    
+
     def shift_to_gpu(self):
         # Shift graph, labels to cuda
         self.g = self.g.to('cuda')
@@ -88,7 +88,7 @@ class ArxivNodeDataset(GraphData):
     def __init__(self, split, normalize=True):
         super(ArxivNodeDataset, self).__init__(
             'ogbn-arxiv', normalize=normalize)
-        
+
         # 59:41 victim:adv data split (all original data, including train/val/test)
         # Original data had 54:46 train-nontrain split
         # Get similar splits
@@ -129,23 +129,49 @@ class ArxivNodeDataset(GraphData):
         n_elems = len(self.train_idx)
         perm = ch.randperm(n_elems)[:int(ratio * n_elems)]
         self.train_idx = self.train_idx[perm]
-    
-    def change_mean_degree(self, wanted_degree, shuffle=False):
+
+    def label_ratio_preserving_pick(self, total_tr, total_te):
+        # While maintaining relative label ratios for classes
+        # Sample a set of size total
+        labels = ch.cat(
+            (self.labels[self.train_idx, 0], self.labels[self.test_idx, 0]), 0)
+        elems, counts = ch.unique(labels, return_counts=True)
+        # Get ratios for these elems
+        counts = counts.float() / len(labels)
+        # Sample according to ratio from existing train, test sets
+        train_new, test_new = [], []
+        for e, c in zip(elems, counts):
+            # for train
+            qualify = ch.nonzero(
+                self.labels[self.train_idx, 0] == e, as_tuple=True)[0]
+            ids = ch.randperm(len(qualify))[:int(c * total_tr)]
+            train_new.append(qualify[ids])
+            # for test
+            qualify = ch.nonzero(
+                self.labels[self.test_idx, 0] == e, as_tuple=True)[0]
+            ids = ch.randperm(len(qualify))[:int(c * total_te)]
+            test_new.append(qualify[ids])
+
+        self.train_idx = ch.cat(train_new, 0)
+        self.test_idx = ch.cat(test_new, 0)
+
+    def change_mean_degree(self, wanted_degree):
         # If no change requested, perform no change
-        if wanted_degree is None: return 
+        if wanted_degree is None:
+            return
 
         # Compute degrees
         self.precompute_degrees()
 
         # Prune graph, get rid of nodes
         self.g, pruned_nodes = achieve_mean_degree(
-            self.g, self.degs, wanted_degree, shuffle)
+            self.g, self.degs, wanted_degree)
 
         # Make mapping between old and new IDs
         not_pruned = ch.ones(self.num_nodes).byte()
         not_pruned[pruned_nodes] = False
         not_pruned = ch.nonzero(not_pruned, as_tuple=True)[0]
-        mapping = {x.item():i for i, x in enumerate(not_pruned)}
+        mapping = {x.item(): i for i, x in enumerate(not_pruned)}
 
         # Function to modify current masks to reflect pruning
         def process(ids):
@@ -163,11 +189,11 @@ class ArxivNodeDataset(GraphData):
             # Update current mask to point to correct IDs
             for i, x in enumerate(keep):
                 keep[i] = mapping[x.item()]
-            
+
             # Shift mask back to GPU
             keep = keep.cuda()
             return keep
-        
+
         # Update masks to account for pruned nodes,  re-indexing
         self.train_idx = process(self.train_idx)
         self.test_idx = process(self.test_idx)
@@ -181,46 +207,63 @@ class ArxivNodeDataset(GraphData):
         self.num_nodes -= len(pruned_nodes)
 
 
-def find_to_prune(degs, wanted_deg, shuffle=False):
+def find_to_prune(g, degs, wanted_deg):
     prune = []
     # Take note of mean degree right now
     cur_deg = np.mean(degs)
-    # If desired degree is more than current, prune low-degree nodes
-    i = 0
-    if wanted_deg > cur_deg:
-        # Find sorted order for degrees
-        so = np.argsort(degs)
-        if shuffle:
-            # Shuffle first 10% of to-remove data
-            # To add some randomness
-            bp = int(0.1 * len(so))
-            so[:bp] = so[ch.randperm(bp)]
 
+    # If desired degree is more than current, prune low-degree nodes
+    if wanted_deg > cur_deg:
+
+        inf_val = np.max(degs) + 1
         while cur_deg < wanted_deg:
-            i += 1
-            cur_deg = np.mean(degs[so[i:]])
-            prune.append(so[i])
+            # Find minimum right now
+            pick = np.argmin(degs)
+
+            # Reduce degree of all nodes that were connected to pruned node
+            # And are up for consideration currently
+            L, R = g.edges()
+            neighbors = R[L == pick].cpu().numpy()
+            neighbors_mask = np.zeros_like(degs, dtype=bool)
+            neighbors_mask[neighbors] = True
+            neighbors_mask[degs == inf_val] = False
+            degs[neighbors_mask] -= 1
+
+            # Removed this node, mark as INF
+            degs[pick] = inf_val
+
+            cur_deg = np.mean(degs[degs != inf_val])
+            prune.append(pick)
+
     # Else, prune high-degree nodes
     else:
-        # Find reverse-sorted order for degrees
-        so = np.argsort(-degs)
-        if shuffle:
-            # Shuffle first 10% of to-remove data
-            # To add some randomness
-            bp = int(0.1 * len(so))
-            so[:bp] = so[ch.randperm(bp)]
 
+        inf_val = -1
         while cur_deg > wanted_deg:
-            i += 1
-            cur_deg = np.mean(degs[so[i:]])
-            prune.append(so[i])
+            # Find minimum right now
+            pick = np.argmax(degs)
+
+            # Reduce degree of all nodes that were connected to pruned node
+            # And are up for consideration currently
+            L, R = g.edges()
+            neighbors = R[L == pick].cpu().numpy()
+            neighbors_mask = np.zeros_like(degs, dtype=bool)
+            neighbors_mask[neighbors] = True
+            neighbors_mask[degs == inf_val] = False
+            degs[neighbors_mask] -= 1
+
+            # Removed this node, mark as -1
+            degs[pick] = inf_val
+
+            cur_deg = np.mean(degs[degs != inf_val])
+            prune.append(pick)
     # Return list of nodes that should be removed
     return prune
 
 
-def achieve_mean_degree(g, degs, wanted_deg, shuffle=False):
+def achieve_mean_degree(g, degs, wanted_deg):
     # Find which nodes should be pruned
-    to_prune = find_to_prune(degs, wanted_deg, shuffle)
+    to_prune = find_to_prune(g, degs, wanted_deg)
 
     # Get rid of these nodes from graph
     g = dgl.remove_nodes(g, to_prune)

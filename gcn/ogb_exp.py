@@ -12,10 +12,8 @@ def main():
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
-    parser.add_argument('--epochs', type=int, default=75)
+    parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--degree', type=int, default=None)
-    parser.add_argument('--shuffle', action='store_true',
-                        help='shuffle relevant 10% nodes before pruning')
     parser.add_argument("--savepath", help="path to save trained model")
     args = parser.parse_args()
     print(args)
@@ -23,22 +21,35 @@ def main():
     ds = data_utils.ArxivNodeDataset(args.split)
 
     n_edges = ds.g.number_of_edges()
+    n_nodes = ds.g.number_of_nodes()
     print("""----Data statistics------'
           #Edges %d
+          Nodes %d
           #Classes %d
           """ %
-          (n_edges, ds.num_classes,))
+          (n_edges, n_nodes, ds.num_classes,))
 
-    print("Nodes in graph before modification: %d" % ds.num_nodes)
+    if args.degree is not None:
+        print("-> Before modification")
+        print("Nodes: %d, Average degree: %.2f" %
+              (ds.num_nodes, ds.g.number_of_edges() / ds.num_nodes))
+        print("Train: %d, Test: %d" % (len(ds.train_idx), len(ds.test_idx)))
 
     # Modify dataset
-    ds.change_mean_degree(args.degree, args.shuffle)
+    ds.change_mean_degree(args.degree)
 
-    print("Nodes in graph after modification: %d" % ds.num_nodes)
+    pick_tr, pick_te = 30000, 10000
+    if args.split == "victim":
+        pick_tr, pick_te = 62000, 35000
 
-    # Modify labels for data to create randomness
-    # Use 90% of all labeled data
-    ds.random_split_pick(0.9)
+    # Subsample from all available labels to introduce some randomness
+    ds.label_ratio_preserving_pick(pick_tr, pick_te)
+
+    if args.degree is not None:
+        print("-> After modification")
+        print("Nodes: %d, Average degree: %.2f" %
+              (ds.num_nodes, ds.g.number_of_edges() / ds.num_nodes))
+        print("Train: %d, Test: %d" % (len(ds.train_idx), len(ds.test_idx)))
 
     # Define model
     model = model_utils.get_model(ds, args)
@@ -49,11 +60,13 @@ def main():
     acc_tr, acc_te = run_accs["train"][-1], run_accs["test"][-1]
 
     # Log performance on train, test nodes
+    print()
     print("Train accuracy: %.2f" % (acc_tr))
     print("Test accuracy: %.2f" % (acc_te))
 
     # Save model
-    ch.save(model.state_dict(), args.savepath + "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
+    ch.save(model.state_dict(), args.savepath +
+            "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
 
 
 if __name__ == "__main__":

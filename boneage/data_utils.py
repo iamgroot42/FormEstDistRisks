@@ -2,6 +2,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
+import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 import torch as ch
@@ -145,7 +146,9 @@ if __name__ == "__main__":
     # For the sake of varying property ratios, both use
     # Samples from their respective splits
     # Same goes for train-val splits
-    df_victim, df_adv = process_data(base)
+
+    # Make a 2:1 victim:adv split
+    df_victim, df_adv = process_data(base, split_second_ratio=0.33)
 
     # Save these splits
     def save_split(df, split):

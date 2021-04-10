@@ -14,6 +14,7 @@ def get_model_features(model_dir, ds, args, max_read=None):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
+        np.random.shuffle(iterator)
         iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
@@ -102,17 +103,17 @@ def main():
     ds = ArxivNodeDataset('adv')
 
     # Directories where saved models are stored
-    train_dir_1 = "models/adv/og"
-    train_dir_2 = "models/adv/deg10"
-    test_dir_1 = "models/victim/og"
-    test_dir_2 = "models/victim/deg10"
+    train_dir_1 = "models/adv/deg13"
+    train_dir_2 = "models/adv/deg11"
+    test_dir_1 = "models/victim/deg13"
+    test_dir_2 = "models/victim/deg11"
 
     # Load models, convert to features
-    dims, vecs_train_1 = get_model_features(train_dir_1, ds, args)
-    _, vecs_train_2 = get_model_features(train_dir_2, ds, args)
+    dims, vecs_train_1 = get_model_features(train_dir_1, ds, args, max_read=700)
+    _, vecs_train_2 = get_model_features(train_dir_2, ds, args, max_read=700)
 
-    _, vecs_test_1 = get_model_features(test_dir_1, ds, args, max_read=500)
-    _, vecs_test_2 = get_model_features(test_dir_2, ds, args, max_read=500)
+    _, vecs_test_1 = get_model_features(test_dir_1, ds, args)
+    _, vecs_test_2 = get_model_features(test_dir_2, ds, args)
 
     # Ready train, test data
     Y_train = [0.] * len(vecs_train_1) + [1.] * len(vecs_train_2)
@@ -129,8 +130,8 @@ def main():
     train_model(metamodel,
                 (X_train, Y_train),
                 (X_test, Y_test),
-                epochs=150,
-                eval_every=10)
+                epochs=40,
+                eval_every=5)
 
 
 if __name__ == "__main__":
