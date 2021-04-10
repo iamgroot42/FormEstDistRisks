@@ -99,7 +99,7 @@ def get_trends_for_model(model, dataloader):
 
 
 if __name__ == "__main__":
-    batch_size = 250
+    batch_size = 150
     # batch_size = 100 * 3
     # batch_size = 250 * 4
     # batch_size = 500 * 3
@@ -109,28 +109,40 @@ if __name__ == "__main__":
         # First ratio category
         [
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
-            "13_0.9135180520570949.pth",
+            "15_0.8884970612930311.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
+            "11_0.9141897565071369.pth",
             # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
             # "15_0.9125104953820319.pth",
             # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
             # "15_0.9222502099076406.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
             "15_0.9177162048698573.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
+            "11_0.8753988245172124.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/3/"
             "15_0.9136859781696054.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/3/"
+            "11_0.9158690176322418.pth",
         ],
         # Second ratio category
         [
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
             "15_0.9122836498067551.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
+            "11_0.9075785582255084.pth",
             # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
             # "15_0.9107712989413544.pth",
             # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
             # "15_0.9121156108217107.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
             "15_0.9122836498067551.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
+            "11_0.8926230885565452.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/3/"
-            "12_0.9137960006721559.pth",
+            "15_0.9000168038985045.pth",
+            "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/3/"
+            "11_0.9074105192404638.pth"
         ]
     ]
 
@@ -147,7 +159,6 @@ if __name__ == "__main__":
     attrs = constants.attr_names
     focus_attr = attrs.index("Male")
     target_attr = attrs.index("Smiling")
-    focus_value = 1
 
     colors = ['C0', 'C1']
     for i, sub_paths in enumerate(paths):

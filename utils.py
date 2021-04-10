@@ -649,11 +649,15 @@ def get_weight_layers(m, normalize=False):
 # Couple hundred models
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims, inside_dims=[64, 8]):
+    def __init__(self, dims, inside_dims=[64, 8], n_classes=2):
         super(PermInvModel, self).__init__()
         self.dims = dims
         self.layers = []
         prev_layer = 0
+
+        # If binary, need only one output
+        if n_classes == 2:
+            n_classes = 1
 
         def make_mini(y):
             layers = [
@@ -677,7 +681,7 @@ class PermInvModel(nn.Module):
 
         self.layers = nn.ModuleList(self.layers)
         # Final network to combine them all together
-        self.rho = nn.Linear(inside_dims[-1] * len(dims), 1)
+        self.rho = nn.Linear(inside_dims[-1] * len(dims), n_classes)
 
     def forward(self, params):
         reps = []
