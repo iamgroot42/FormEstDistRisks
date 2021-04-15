@@ -115,51 +115,51 @@ def main():
     ds = ArxivNodeDataset('adv')
 
     # Directories where saved models are stored
-    train_dir_1 = "models/adv/deg9"
-    train_dir_2 = "models/adv/deg11"
-    train_dir_3 = "models/adv/deg13"
-    train_dir_4 = "models/adv/deg15"
-    train_dir_5 = "models/adv/deg17"
-    test_dir_1 = "models/victim/deg9"
-    test_dir_2 = "models/victim/deg11"
-    test_dir_3 = "models/victim/deg13"
-    test_dir_4 = "models/victim/deg15"
-    test_dir_5 = "models/victim/deg17"
+    train_dir_1 = "models/adv/deg13"
+    train_dir_2 = "models/adv/deg12.5"
+    # train_dir_3 = "models/adv/deg13"
+    # train_dir_4 = "models/adv/deg15"
+    # train_dir_5 = "models/adv/deg17"
+    test_dir_1 = "models/victim/deg13"
+    test_dir_2 = "models/victim/deg12.5"
+    # test_dir_3 = "models/victim/deg13"
+    # test_dir_4 = "models/victim/deg15"
+    # test_dir_5 = "models/victim/deg17"
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
         train_dir_1, ds, args, max_read=700)
     _, vecs_train_2 = get_model_features(
         train_dir_2, ds, args, max_read=700)
-    _, vecs_train_3 = get_model_features(
-        train_dir_3, ds, args, max_read=700)
-    _, vecs_train_4 = get_model_features(
-        train_dir_4, ds, args, max_read=700)
-    _, vecs_train_5 = get_model_features(
-        train_dir_5, ds, args, max_read=700)
+    # _, vecs_train_3 = get_model_features(
+    #     train_dir_3, ds, args, max_read=700)
+    # _, vecs_train_4 = get_model_features(
+    #     train_dir_4, ds, args, max_read=700)
+    # _, vecs_train_5 = get_model_features(
+    #     train_dir_5, ds, args, max_read=700)
 
     _, vecs_test_1 = get_model_features(test_dir_1, ds, args)
     _, vecs_test_2 = get_model_features(test_dir_2, ds, args)
-    _, vecs_test_3 = get_model_features(test_dir_3, ds, args)
-    _, vecs_test_4 = get_model_features(test_dir_4, ds, args)
-    _, vecs_test_5 = get_model_features(test_dir_5, ds, args)
+    # _, vecs_test_3 = get_model_features(test_dir_3, ds, args)
+    # _, vecs_test_4 = get_model_features(test_dir_4, ds, args)
+    # _, vecs_test_5 = get_model_features(test_dir_5, ds, args)
 
     # Ready train, test data
-    # Y_train = [0.] * len(vecs_train_1) + [1.] * len(vecs_train_2)
-    Y_train = [0] * len(vecs_train_1) + [1] * len(vecs_train_2) + [2] * \
-        len(vecs_train_3) + [3] * len(vecs_train_4) + [4] * len(vecs_train_5)
+    Y_train = [0.] * len(vecs_train_1) + [1.] * len(vecs_train_2)
+    # Y_train = [0] * len(vecs_train_1) + [1] * len(vecs_train_2) + [2] * \
+    #     len(vecs_train_3) + [3] * len(vecs_train_4) + [4] * len(vecs_train_5)
     Y_train = ch.from_numpy(np.array(Y_train))
-    X_train = vecs_train_1 + vecs_train_2 + \
-        vecs_train_3 + vecs_train_4 + vecs_train_5
-    # X_train = vecs_train_1 + vecs_train_2
+    # X_train = vecs_train_1 + vecs_train_2 + \
+    #     vecs_train_3 + vecs_train_4 + vecs_train_5
+    X_train = vecs_train_1 + vecs_train_2
 
-    # Y_test = [0.] * len(vecs_test_1) + [1.] * len(vecs_test_2)
-    Y_test = [0] * len(vecs_test_1) + [1] * len(vecs_test_2) + [2] * \
-        len(vecs_test_3) + [3] * len(vecs_test_4) + [4] * len(vecs_test_5)
+    Y_test = [0.] * len(vecs_test_1) + [1.] * len(vecs_test_2)
+    # Y_test = [0] * len(vecs_test_1) + [1] * len(vecs_test_2) + [2] * \
+    #     len(vecs_test_3) + [3] * len(vecs_test_4) + [4] * len(vecs_test_5)
     Y_test = ch.from_numpy(np.array(Y_test))
-    X_test = vecs_test_1 + vecs_test_2 + \
-        vecs_test_3 + vecs_test_4 + vecs_test_5
-    # X_test = vecs_test_1 + vecs_test_2
+    # X_test = vecs_test_1 + vecs_test_2 + \
+    #     vecs_test_3 + vecs_test_4 + vecs_test_5
+    X_test = vecs_test_1 + vecs_test_2
 
     # First experiment: shuffle labels and use those to train
     # np.random.shuffle(Y_train)
@@ -168,13 +168,15 @@ def main():
     # Cells added/modified above
 
     # Train meta-classifier model
-    metamodel = PermInvModel(dims, n_classes=5)
+    # metamodel = PermInvModel(dims, n_classes=5)
+    metamodel = PermInvModel(dims)
 
     train_model(metamodel,
                 (X_train, Y_train),
                 (X_test, Y_test),
+                # epochs=40,
                 epochs=100,
-                binary=False,
+                # binary=False,
                 eval_every=5)
 
 

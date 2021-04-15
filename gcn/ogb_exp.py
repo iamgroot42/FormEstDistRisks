@@ -13,7 +13,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--degree', type=int, default=None)
+    parser.add_argument('--degree', type=float, default=None)
     parser.add_argument("--savepath", help="path to save trained model")
     args = parser.parse_args()
     print(args)
