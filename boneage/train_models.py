@@ -51,7 +51,8 @@ if __name__ == "__main__":
 
         # Process datasets and get features
         ds = data_utils.BoneWrapper(
-            df_train, df_val,
+            df_train_processed,
+            df_val_processed,
             features=features)
 
         train_loader, val_loader = ds.get_loaders(batch_size, shuffle=False)

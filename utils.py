@@ -830,7 +830,8 @@ def heuristic(df, condition, ratio,
 
     vals = np.abs(np.array(vals) - ratio)
     # Pick the one closest to desired ratio
-    return pckds[np.argmin(vals)]
+    picked_df = pckds[np.argmin(vals)]
+    return picked_df.reset_index(drop=True)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
@@ -857,7 +858,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
         train_loss.update(loss.item())
 
         if verbose:
-            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f]' % (
+            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f' % (
                 epoch, train_loss.avg, train_acc.avg))
     return train_loss.avg, train_acc.avg
 
@@ -902,7 +903,8 @@ def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
     for epoch in iterator:
         tloss, tacc = train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
         vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
-        iterator.set_description(
-            "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
+        if not verbose:
+            iterator.set_description(
+                "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
 
     return vloss, vacc

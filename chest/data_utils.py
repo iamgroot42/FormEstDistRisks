@@ -39,7 +39,7 @@ class ChestDataset(Dataset):
         return X, y, (gender, age)
 
 
-class BoneWrapper:
+class ChestWrapper:
     def __init__(self, df_train, df_val, features=None):
         self.df_train = df_train
         self.df_val = df_val
@@ -47,8 +47,8 @@ class BoneWrapper:
         data_transform = transforms.Compose([
             transforms.Resize((self.input_size, self.input_size)),
             transforms.ToTensor(),
-            # transforms.Normalize(mean=[0.485, 0.456, 0.406],
-            #                      std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])
             ])
 
         if features is None:
@@ -97,7 +97,7 @@ def stratified_patient_df_split(df, second_ratio, iters=2000):
 
     def get_stratification_vector(x):
         return np.array([np.mean(x.gender), np.mean(x.age), np.mean(x.label)])
-    
+
     picked_1, picked_2, best = None, None, np.inf
 
     # Keep generating patient-ID divisions until similar ratios are achieved
@@ -119,9 +119,9 @@ def stratified_patient_df_split(df, second_ratio, iters=2000):
             best = dist
             picked_1 = df_1
             picked_2 = df_2
-        
+
         iterator.set_description("Best stratified loss: %.5f" % best)
-    
+
     # Delete remporary stratification column
     df_1 = picked_1.reset_index()
     df_2 = picked_2.reset_index()
@@ -135,13 +135,13 @@ def process_data(path, split_second_ratio=0.5):
     # Get data together
     all_image_paths = {os.path.basename(x): x for x in
                        glob(os.path.join(DATA_DIR, 'images*', '*', '*.png'))}
-    
+
     # Check how many files found
     print('Scans found: %d/%d images' % (len(all_image_paths), df.shape[0]))
     df['path'] = df['Image Index'].map(all_image_paths.get)
-    
+
     # Convert gender to 0/1
-    df['gender'] = df['Patient Gender'].map(lambda x: 1 * (x  == 'F'))
+    df['gender'] = df['Patient Gender'].map(lambda x: 1*(x == 'F'))
 
     # Convert age to 0/1
     df['age'] = df['Patient Age'].map(lambda x: 1 * (x > 48))
@@ -166,7 +166,7 @@ def useful_stats(df):
 if __name__ == "__main__":
     DATA_DIR = "./data"
 
-   # Make a 2:1 victim:adv split
+    # Make a 2:1 victim:adv split
     df_victim, df_adv = process_data(DATA_DIR, split_second_ratio=1/3)
 
     df_victim_train, df_victim_test = stratified_patient_df_split(df_victim, 0.2)

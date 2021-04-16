@@ -27,8 +27,6 @@ def get_model_preds(model_dir, ds, args, max_read=None):
         model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
         model.eval()
 
-        model.eval()
-
         out = model(X)[test_idx].detach()
         pred = out.argmax(dim=-1, keepdim=True)
 

@@ -56,7 +56,8 @@ if __name__ == "__main__":
 
         # Process datasets and get features
         ds = data_utils.HamWrapper(
-            df_train, df_val,
+            df_train_processed,
+            df_val_processed,
             features)
 
         train_loader, val_loader = ds.get_loaders(batch_size, shuffle=False)
