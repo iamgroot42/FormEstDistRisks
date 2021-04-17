@@ -94,8 +94,8 @@ if __name__ == "__main__":
     features_avail = False
 
     # Load models, convert to features
-    dims, vecs_train_1 = get_model_features(train_dir_1)
-    _, vecs_train_2 = get_model_features(train_dir_2)
+    dims, vecs_train_1 = get_model_features(train_dir_1, max_read=700)
+    _, vecs_train_2 = get_model_features(train_dir_2, max_read=700)
 
     _, vecs_test_1 = get_model_features(test_dir_1)
     _, vecs_test_2 = get_model_features(test_dir_2)

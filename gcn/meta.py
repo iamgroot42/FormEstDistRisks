@@ -38,12 +38,16 @@ def get_model_features(model_dir, ds, args, max_read=None):
 # Function to train meta-classifier
 def train_model(model, train_data, test_data,
                 eval_every=5, epochs=200, lr=0.001,
-                binary=True):
+                binary=True, regression=False):
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
 
-    loss_fn = nn.BCEWithLogitsLoss()
-    if not binary:
-        loss_fn = nn.CrossEntropyLoss()
+    if regression:
+        loss_fn = nn.MSELoss()
+    else:
+        if binary:
+            loss_fn = nn.BCEWithLogitsLoss()
+        else:
+            loss_fn = nn.CrossEntropyLoss()
 
     params, y = train_data
     params_test, y_test = test_data
@@ -60,33 +64,35 @@ def train_model(model, train_data, test_data,
 
         outputs = []
         for param in params:
-            if binary:
+            if binary or regression:
                 outputs.append(model(param)[:, 0])
             else:
                 outputs.append(model(param))
 
         outputs = ch.cat(outputs, 0)
         optimizer.zero_grad()
-        loss = loss_fn(outputs, y)
 
+        loss = loss_fn(outputs, y)
         loss.backward()
         optimizer.step()
 
         num_samples = outputs.shape[0]
         loss = loss.item() * num_samples
-        running_acc = acc_fn(outputs, y)
 
-        iterator.set_description("Epoch %d : [Train] Loss: %.5f "
-                                 "Accuacy: %.2f" % (
-                                     e, loss / num_samples,
-                                     100 * running_acc / num_samples))
+        print_acc = ""
+        if not regression:
+            running_acc = acc_fn(outputs, y)
+            print_acc = ", Accuacy: %.2f" % (100 * running_acc / num_samples)
+
+        iterator.set_description("Epoch %d : [Train] Loss: %.5f%s" % (
+                                     e, loss / num_samples, print_acc))
 
         if (e+1) % eval_every == 0:
             # Validation
             model.eval()
             outputs = []
             for param in params_test:
-                if binary:
+                if binary or regression:
                     outputs.append(model(param)[:, 0])
                 else:
                     outputs.append(model(param))
@@ -94,12 +100,16 @@ def train_model(model, train_data, test_data,
             with ch.no_grad():
                 num_samples = outputs.shape[0]
                 loss = loss_fn(outputs, y_test).item() * num_samples
-                running_acc = acc_fn(outputs, y_test)
-                print("[Test] Loss: %.5f, Accuracy: %.2f" % (
-                    loss / num_samples, 100 * running_acc / num_samples
-                ))
 
-    # return best_model, best_vacc
+                print_acc = ""
+                if not regression:
+                    running_acc = acc_fn(outputs, y_test)
+                    print_acc = ", Accuacy: %.2f" % (100 * running_acc / num_samples)
+
+                print("[Test] Loss: %.5f%s" % (loss / num_samples, print_acc))
+
+    model.eval()
+    return model
 
 
 def main():
@@ -107,59 +117,52 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
-    # parser.add_argument("--load_path", help="path to save trained model")
+    parser.add_argument('--regression', action="store_true")
     args = parser.parse_args()
     print(args)
 
     # Get dataset ready (only need meta-data from this object)
     ds = ArxivNodeDataset('adv')
 
+    degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
+    binary = len(degrees) == 2
+
     # Directories where saved models are stored
-    train_dir_1 = "models/adv/deg13"
-    train_dir_2 = "models/adv/deg12.5"
-    # train_dir_3 = "models/adv/deg13"
-    # train_dir_4 = "models/adv/deg15"
-    # train_dir_5 = "models/adv/deg17"
-    test_dir_1 = "models/victim/deg13"
-    test_dir_2 = "models/victim/deg12.5"
-    # test_dir_3 = "models/victim/deg13"
-    # test_dir_4 = "models/victim/deg15"
-    # test_dir_5 = "models/victim/deg17"
+    train_dirs = ["models/adv/deg" + x for x in degrees]
+    test_dirs = ["models/victim/deg" + x for x in degrees]
 
     # Load models, convert to features
-    dims, vecs_train_1 = get_model_features(
-        train_dir_1, ds, args, max_read=700)
-    _, vecs_train_2 = get_model_features(
-        train_dir_2, ds, args, max_read=700)
-    # _, vecs_train_3 = get_model_features(
-    #     train_dir_3, ds, args, max_read=700)
-    # _, vecs_train_4 = get_model_features(
-    #     train_dir_4, ds, args, max_read=700)
-    # _, vecs_train_5 = get_model_features(
-    #     train_dir_5, ds, args, max_read=700)
+    train_vecs, test_vecs = [], []
+    for trd, ted in zip(train_dirs, test_dirs):
+        dims, vecs_train = get_model_features(
+            trd, ds, args, max_read=700)
+        _, vecs_test = get_model_features(
+            ted, ds, args, max_read=1000)
 
-    _, vecs_test_1 = get_model_features(test_dir_1, ds, args)
-    _, vecs_test_2 = get_model_features(test_dir_2, ds, args)
-    # _, vecs_test_3 = get_model_features(test_dir_3, ds, args)
-    # _, vecs_test_4 = get_model_features(test_dir_4, ds, args)
-    # _, vecs_test_5 = get_model_features(test_dir_5, ds, args)
+        train_vecs.append(vecs_train)
+        test_vecs.append(vecs_test)
 
     # Ready train, test data
-    Y_train = [0.] * len(vecs_train_1) + [1.] * len(vecs_train_2)
-    # Y_train = [0] * len(vecs_train_1) + [1] * len(vecs_train_2) + [2] * \
-    #     len(vecs_train_3) + [3] * len(vecs_train_4) + [4] * len(vecs_train_5)
-    Y_train = ch.from_numpy(np.array(Y_train))
-    # X_train = vecs_train_1 + vecs_train_2 + \
-    #     vecs_train_3 + vecs_train_4 + vecs_train_5
-    X_train = vecs_train_1 + vecs_train_2
+    Y_train, Y_test = [], []
+    X_train, X_test = [], []
+    for i, (vtr, vte) in enumerate(zip(train_vecs, test_vecs)):
+        i_ = i
+        if args.regression:
+            i_ = float(degrees[i_])
+        elif binary:
+            i_ = float(i_)
+        Y_train.append([i_] * len(vtr))
+        Y_test.append([i_] * len(vte))
 
-    Y_test = [0.] * len(vecs_test_1) + [1.] * len(vecs_test_2)
-    # Y_test = [0] * len(vecs_test_1) + [1] * len(vecs_test_2) + [2] * \
-    #     len(vecs_test_3) + [3] * len(vecs_test_4) + [4] * len(vecs_test_5)
-    Y_test = ch.from_numpy(np.array(Y_test))
-    # X_test = vecs_test_1 + vecs_test_2 + \
-    #     vecs_test_3 + vecs_test_4 + vecs_test_5
-    X_test = vecs_test_1 + vecs_test_2
+        X_train += vtr
+        X_test += vte
+
+    Y_train = ch.from_numpy(np.concatenate(Y_train))
+    Y_test = ch.from_numpy(np.concatenate(Y_test))
+
+    if binary or args.regression:
+        Y_train = Y_train.float()
+        Y_test = Y_test.float()
 
     # First experiment: shuffle labels and use those to train
     # np.random.shuffle(Y_train)
@@ -168,16 +171,23 @@ def main():
     # Cells added/modified above
 
     # Train meta-classifier model
-    # metamodel = PermInvModel(dims, n_classes=5)
-    metamodel = PermInvModel(dims)
+    if binary or args.regression:
+        metamodel = PermInvModel(dims)
+    else:
+        metamodel = PermInvModel(dims, n_classes=len(degrees))
 
-    train_model(metamodel,
-                (X_train, Y_train),
-                (X_test, Y_test),
-                # epochs=40,
-                epochs=100,
-                # binary=False,
-                eval_every=5)
+    metamodel = train_model(metamodel,
+                            (X_train, Y_train),
+                            (X_test, Y_test),
+                            # epochs=40,
+                            # epochs=100,
+                            epochs=200,
+                            binary=binary,
+                            regression=args.regression,
+                            eval_every=5)
+
+    # Sav emeta-model
+    ch.save(metamodel.state_dict(), "./metamodel.pth")
 
 
 if __name__ == "__main__":
