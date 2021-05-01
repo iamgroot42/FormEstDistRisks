@@ -8,13 +8,14 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 data = []
-columns = ["Mean-degree of dataset that model is trained on",
-           "Meta-classifier accuracy (%) differentiating between models"]
+columns = [
+    "Mean-degree of dataset that model is trained on",
+    "Meta-classifier accuracy (%) differentiating between models"
+]
 
 # Set dark background style
 plt.style.use('dark_background')
 
-# Add data for Collab
 # Degree 9
 data.append([9, 99.7, ])
 data.append([9, 99.5, ])
@@ -67,7 +68,7 @@ data.append([17, 100, ])
 
 df = pd.DataFrame(data, columns=columns)
 
-limit_range = np.arange(9,17.5, 0.5)
+limit_range = np.arange(9, 17.5, 0.5)
 wanted = [9, 10, 11, 12, 12.5, 13, 13.5, 14, 15, 16, 17]
 
 sns_plot = sns.boxplot(x=columns[0], y=columns[1], data=df, order=limit_range)

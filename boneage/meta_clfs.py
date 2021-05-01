@@ -87,10 +87,10 @@ if __name__ == "__main__":
     first_cat = sys.argv[1]
     second_cat = sys.argv[2]
 
-    train_dir_1 = "/p/adversarialml/as9rw/models_boneage/split_1/%s/" % first_cat
-    train_dir_2 = "/p/adversarialml/as9rw/models_boneage/split_1/%s/" % second_cat
-    test_dir_1 = "/p/adversarialml/as9rw/models_boneage/split_2/%s/" % first_cat
-    test_dir_2 = "/p/adversarialml/as9rw/models_boneage/split_2/%s/" % second_cat
+    train_dir_1 = "%ssplit_1/%s/" % (data_utils.BASE_MODELS_DIR, first_cat)
+    train_dir_2 = "%ssplit_1/%s/" % (data_utils.BASE_MODELS_DIR, second_cat)
+    test_dir_1 = "%ssplit_2/%s/" % (data_utils.BASE_MODELS_DIR, first_cat)
+    test_dir_2 = "%ssplit_2/%s/" % (data_utils.BASE_MODELS_DIR, second_cat)
     features_avail = False
 
     # Load models, convert to features
@@ -119,5 +119,5 @@ if __name__ == "__main__":
     train_model(metamodel,
                 (X_train, Y_train),
                 (X_test, Y_test),
-                epochs=1000,
+                epochs=200,
                 eval_every=10)

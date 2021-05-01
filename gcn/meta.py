@@ -117,6 +117,7 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
+    parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
     parser.add_argument('--regression', action="store_true")
     args = parser.parse_args()
     print(args)
@@ -124,7 +125,7 @@ def main():
     # Get dataset ready (only need meta-data from this object)
     ds = ArxivNodeDataset('adv')
 
-    degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
+    degrees = args.degrees.split(",")
     binary = len(degrees) == 2
 
     # Directories where saved models are stored
@@ -180,10 +181,10 @@ def main():
                             (X_train, Y_train),
                             (X_test, Y_test),
                             # epochs=40,
-                            # epochs=100,
-                            epochs=200,
+                            epochs=100,
                             binary=binary,
                             regression=args.regression,
+                            lr=0.01,
                             eval_every=5)
 
     # Sav emeta-model

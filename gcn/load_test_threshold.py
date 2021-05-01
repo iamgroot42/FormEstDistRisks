@@ -41,34 +41,25 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--property', choices=data_utils.SUPPORTED_PROPERTIES)
     parser.add_argument('--deg', type=int)
     args = parser.parse_args()
     print(args)
 
+    # Set dark background
+    plt.style.use('dark_background')
+
     # Get datasets ready
     ds_1 = data_utils.ArxivNodeDataset("adv")
+
     ds_2 = data_utils.ArxivNodeDataset("adv")
-
-    # Modify dataset properties
-    if args.property == " mean":
-        deg_1, deg_2 = 13, args.deg
-
-        # Modify mean degree
-        ds_1.change_mean_degree(deg_1)
-        ds_2.change_mean_degree(deg_2)
-    else:
-        deg_1, deg_2 = "og", args.deg
-
-        # Get rid of nodes above a specified node-degree
-        ds_2.keep_below_degree_threshold(deg_2)
+    ds_2.keep_below_degree_threshold(args.deg)
 
     # Directories where saved models are stored
-    dir_1 = "models/victim/deg%s" % str(deg_1)
-    dir_2 = "models/victim/deg%s" % str(deg_2)
+    dir_1 = "test/og"
+    dir_2 = "test/modified"
 
     # Function to plot accuracies for both sets of models
-    def plot_accs(ds, deg):
+    def plot_accs(ds, which):
 
         preds_1, y_gt = get_model_preds(dir_1, ds, args)
         preds_2, _ = get_model_preds(dir_2, ds, args)
@@ -79,16 +70,16 @@ def main():
                             for x in preds_2]).numpy()
 
         plt.plot(np.arange(len(accs_1)), np.sort(
-            accs_1), label="Deg-%s on %s" % (str(deg_1), str(deg)))
+            accs_1), label="OG model on %s data" % (which))
         plt.plot(np.arange(len(accs_2)), np.sort(
-            accs_2), label="Deg-%s on %s" % (str(deg_2), str(deg)))
+            accs_2), label="Modified model on %s data" % (which))
 
     # Plot accuracies for both datasets
-    plot_accs(ds_1, deg_1)
-    plot_accs(ds_2, deg_2)
+    plot_accs(ds_1, "og")
+    plot_accs(ds_2, "modified")
 
     plt.legend()
-    plt.savefig("./acc_distr_%s_%s.png" % (str(deg_1), str(deg_2)))
+    plt.savefig("./acc_distr_threshold_deg_%d.png" % (args.deg))
 
 
 if __name__ == "__main__":

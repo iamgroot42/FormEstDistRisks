@@ -14,9 +14,14 @@ def main():
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--degree', type=float, default=None)
+    parser.add_argument('--property', choices=data_utils.SUPPORTED_PROPERTIES)
+    parser.add_argument('--prune', type=float, default=0)
     parser.add_argument("--savepath", help="path to save trained model")
     args = parser.parse_args()
     print(args)
+
+    # Prune ratio should be valid and not too large
+    assert args.prune >= 0 and args.prune <= 0.1
 
     ds = data_utils.ArxivNodeDataset(args.split)
 
@@ -35,8 +40,13 @@ def main():
               (ds.num_nodes, ds.g.number_of_edges() / ds.num_nodes))
         print("Train: %d, Test: %d" % (len(ds.train_idx), len(ds.test_idx)))
 
-    # Modify dataset
-    ds.change_mean_degree(args.degree)
+    # Modify dataset property
+    if args.property == "mean":
+        # Modify mean degree
+        ds.change_mean_degree(args.degree, args.prune)
+    else:
+        # Get rid of nodes above a specified node-degree
+        ds.keep_below_degree_threshold(args.degree, args.prune)
 
     pick_tr, pick_te = 30000, 10000
     if args.split == "victim":

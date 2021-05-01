@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch as ch
 import numpy as np
 import utils
+from tqdm import tqdm
 import os
 
 import matplotlib.pyplot as plt
@@ -15,13 +16,14 @@ def get_accs(val_loader, folder_path):
     accs = []
 
     criterion = nn.BCEWithLogitsLoss().cuda()
-    for mpath in os.listdir(folder_path):
+    for mpath in tqdm(os.listdir(folder_path)):
         model = data_utils.BoneModel(1024)
         model.load_state_dict(ch.load(os.path.join(folder_path, mpath)))
         model.eval()
         model = model.cuda()
 
-        _, vacc = utils.validate_epoch(val_loader, model, criterion)
+        _, vacc = utils.validate_epoch(
+            val_loader, model, criterion, verbose=False)
         accs.append(vacc)
 
     return accs

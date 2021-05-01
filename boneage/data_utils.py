@@ -12,6 +12,9 @@ import os
 import utils
 
 
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_boneage/"
+
+
 class BoneDataset(Dataset):
     def __init__(self, df, argument=None, processed=False):
         if processed:

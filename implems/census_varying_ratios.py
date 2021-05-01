@@ -11,7 +11,7 @@ import os
 import torch.nn as nn
 import torch.optim as optim
 import torch as ch
-
+import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -158,6 +158,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     utils.flash_utils(args)
 
+    # Set dark background
+    plt.style.use('dark_background')
+
     # Census Income dataset
     prefix = os.path.join(args.save_prefix, args.filter)
     ci = utils.CensusIncome("./census_data/")
@@ -199,8 +202,10 @@ if __name__ == "__main__":
 
     data = []
     columns = [
-        "Ratio of dataset satisfying property",
-        "Accuracy on unseen models"
+        "Ratio of females in dataset that model is trained on",
+        "Meta-classifier accuracy (%) differentiating between models"
+        # "Ratio of dataset satisfying property",
+        # "Accuracy on unseen models"
     ]
     for tg in targets:
 
@@ -292,11 +297,14 @@ if __name__ == "__main__":
                 clf.fit(X_tr, Y_tr)
                 data.append([float(tg), clf.score(X_te, Y_te)])
 
+    # Add dividing line
+    plt.axvline(x=2.5, color='w', linewidth=1.0, linestyle='--')
+
     # Construct dataframe for boxplots
     df = pd.DataFrame(data, columns=columns)
     sns_plot = sns.boxplot(
-        x="Ratio of dataset satisfying property",
-        y="Accuracy on unseen models",
+        x=columns[0],
+        y=columns[1],
         data=df)
 
     # plt.ylim(0.45, 1.0)

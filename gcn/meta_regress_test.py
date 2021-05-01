@@ -56,12 +56,15 @@ def main():
     args = parser.parse_args()
     print(args)
 
+    # Set dark background
+    plt.style.use('dark_background')
+
     # Get dataset ready (only need meta-data from this object)
     ds = ArxivNodeDataset('adv')
 
     # Directories where saved models are stored
-    # degrees = ["12.5", "13.5"]
-    degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
+    degrees = ["12.5", "13.5"]
+    # degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
     test_dirs = ["models/victim/deg" + x for x in degrees]
 
     # Load models, convert to features
@@ -73,7 +76,7 @@ def main():
         test_vecs.append(vecs_test)
 
     model = PermInvModel(dims)
-    model.load_state_dict(ch.load("./metamodel_0.53.pth"))
+    model.load_state_dict(ch.load("./metamodel_0.37.pth"))
     model.eval()
 
     for i, vte in enumerate(test_vecs):
@@ -87,6 +90,9 @@ def main():
         # Reference line
         plt.axhline(y=float(degrees[i]), linewidth=1.0, linestyle='--', color='C%d' % i)
 
+    plt.xlabel("Models (1000), sorted by meta-classifier's predicted degree")
+    plt.ylabel("Degree of graph predicted by meta-classifier")
+    plt.savefig("./regression_plot_nolegend.png")
     plt.legend()
     plt.savefig("./regression_plot.png")
 

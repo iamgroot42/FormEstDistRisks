@@ -1,15 +1,15 @@
 import dgl
-from dgl.nn.pytorch import GraphConv
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 import torch as ch
-import torch.nn.functional as F
-import torch.nn as nn
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
+
+
+SUPPORTED_PROPERTIES = ["mean", "keep_below"]
 
 
 class GraphData:
@@ -60,8 +60,6 @@ class GraphData:
         self.features = self.features.cuda()
 
     def get_idx_split(self, test_ratio=0.2):
-        # train_mask = self.data.ndata['train_mask']
-        # test_mask = self.data.ndata['val_mask']
         num_test = int(test_ratio * self.num_nodes)
         train_mask = ch.zeros(self.num_nodes, dtype=ch.bool)
         train_mask[num_test:] = 1
@@ -89,7 +87,8 @@ class ArxivNodeDataset(GraphData):
         super(ArxivNodeDataset, self).__init__(
             'ogbn-arxiv', normalize=normalize)
 
-        # 59:41 victim:adv data split (all original data, including train/val/test)
+        # 59:41 victim:adv data split
+        # (all original data, including train/val/test)
         # Original data had 54:46 train-nontrain split
         # Get similar splits
         split_year = 2016
@@ -155,7 +154,11 @@ class ArxivNodeDataset(GraphData):
         self.train_idx = ch.cat(train_new, 0)
         self.test_idx = ch.cat(test_new, 0)
 
-    def change_mean_degree(self, wanted_degree):
+    def change_property(self, wanted_degree, change, prune_ratio=0.0):
+        '''
+        Prune graph nodes such that mean degree of remaining
+        graph is the same as requested degree.
+        '''
         # If no change requested, perform no change
         if wanted_degree is None:
             return
@@ -164,8 +167,10 @@ class ArxivNodeDataset(GraphData):
         self.precompute_degrees()
 
         # Prune graph, get rid of nodes
-        self.g, pruned_nodes = achieve_mean_degree(
-            self.g, self.degs, wanted_degree)
+        label_ids = ch.cat((self.train_idx, self.test_idx)).cpu().numpy()
+        self.g, pruned_nodes = change_graph_property(
+            self.g, self.degs, wanted_degree, change,
+            label_ids, prune_ratio=prune_ratio)
 
         # Make mapping between old and new IDs
         not_pruned = ch.ones(self.num_nodes).byte()
@@ -206,64 +211,176 @@ class ArxivNodeDataset(GraphData):
         # Update number of nodes in graph
         self.num_nodes -= len(pruned_nodes)
 
+    def change_mean_degree(self, wanted_degree, prune_ratio=0.0):
+        '''
+        Prune graph nodes such that mean degree of remaining
+        graph is the same as requested degree.
+        '''
+        self.change_property(wanted_degree, "mean", prune_ratio)
 
-def find_to_prune(g, degs, wanted_deg):
+    def keep_below_degree_threshold(self, threshold_degree, prune_ratio=0.0):
+        '''
+        Prune graph nodes such that remaining nodes all have
+        node degree strictly below threshold
+        '''
+        self.change_property(threshold_degree, "keep_below", prune_ratio)
+
+
+def neighbor_removal(g, pick, degs, inf_val):
+    L, R = g.edges()
+    neighbors = R[L == pick].cpu().numpy()
+    neighbors_mask = np.zeros_like(degs, dtype=bool)
+    neighbors_mask[neighbors] = True
+    neighbors_mask[degs == inf_val] = False
+    degs[neighbors_mask] -= 1
+    return degs
+
+
+def find_to_prune_for_mean_degree(g, degs, wanted_deg, pre_prune=[]):
     prune = []
+    degs = degs.astype(np.float32)
+
+    # Define logic to process removal of node
+    def loop_step(pick):
+        nonlocal degs, prune
+
+        # Reduce degree of all nodes that were connected to pruned node
+        # And are up for consideration currently
+        degs = neighbor_removal(g, pick, degs, np.nan)
+
+        # Removed this node, mark as NAN
+        degs[pick] = np.nan
+
+        # Note node to be pruned and keep track of current degree
+        cur_deg = np.nanmean(degs)
+        prune.append(pick)
+
+        return cur_deg
+
+    # If nodes to be pruned already provided, add them to list
+    # and be mindful of their pruning
+    for pp in pre_prune:
+        cur_deg = loop_step(pp)
+
     # Take note of mean degree right now
-    cur_deg = np.mean(degs)
+    cur_deg = np.nanmean(degs)
 
     # If desired degree is more than current, prune low-degree nodes
     if wanted_deg > cur_deg:
-
-        inf_val = np.max(degs) + 1
         while cur_deg < wanted_deg:
             # Find minimum right now
-            pick = np.argmin(degs)
+            pick = np.nanargmin(degs)
 
-            # Reduce degree of all nodes that were connected to pruned node
-            # And are up for consideration currently
-            L, R = g.edges()
-            neighbors = R[L == pick].cpu().numpy()
-            neighbors_mask = np.zeros_like(degs, dtype=bool)
-            neighbors_mask[neighbors] = True
-            neighbors_mask[degs == inf_val] = False
-            degs[neighbors_mask] -= 1
-
-            # Removed this node, mark as INF
-            degs[pick] = inf_val
-
-            cur_deg = np.mean(degs[degs != inf_val])
-            prune.append(pick)
+            # Process removal of this node
+            cur_deg = loop_step(pick)
 
     # Else, prune high-degree nodes
     else:
-
-        inf_val = -1
         while cur_deg > wanted_deg:
             # Find minimum right now
-            pick = np.argmax(degs)
+            pick = np.nanargmax(degs)
 
-            # Reduce degree of all nodes that were connected to pruned node
-            # And are up for consideration currently
-            L, R = g.edges()
-            neighbors = R[L == pick].cpu().numpy()
-            neighbors_mask = np.zeros_like(degs, dtype=bool)
-            neighbors_mask[neighbors] = True
-            neighbors_mask[degs == inf_val] = False
-            degs[neighbors_mask] -= 1
+            # Process removal of this node
+            cur_deg = loop_step(pick)
 
-            # Removed this node, mark as -1
-            degs[pick] = inf_val
-
-            cur_deg = np.mean(degs[degs != inf_val])
-            prune.append(pick)
     # Return list of nodes that should be removed
     return prune
 
 
-def achieve_mean_degree(g, degs, wanted_deg):
-    # Find which nodes should be pruned
-    to_prune = find_to_prune(g, degs, wanted_deg)
+# def find_to_prune_for_threshold_degree(g, degs, threshold_degree):
+#     # Get sorted order of degrees
+#     sorted_order = np.argsort(degs)
+
+#     # Look at first instance of degree
+#     prune_start = np.argmax(degs[sorted_order] >= threshold_degree)
+
+#     # Get list of nodes to be pruned
+#     prune = sorted_order[prune_start:]
+
+#     # Make sure other nodes have strictly smaller degree
+#     assert np.all(degs[sorted_order[:prune_start]] < threshold_degree)
+#     # and that the pruned nodes have equal or greater degree
+#     assert np.all(degs[sorted_order[prune_start:]] >= threshold_degree)
+
+#     return prune
+
+
+def find_to_prune_for_threshold_degree(
+    g, degs, threshold_degree, pre_prune=[]):
+    prune = []
+    inf_val = -1
+
+    # Define logic to process removal of node
+    def loop_step(pick):
+        nonlocal degs, prune
+
+        # Note node to be pruned
+        prune.append(pick)
+
+        # Reduce degree of all nodes that were connected to pruned node
+        # And are up for consideration currently
+        degs = neighbor_removal(g, pick, degs, inf_val)
+
+        # Removed this node, mark as -1
+        degs[pick] = inf_val
+
+        return degs
+
+    # If nodes to be pruned already provided, add them to list
+    # and be mindful of their pruning
+    for pp in pre_prune:
+        degs = loop_step(pp)
+
+    # Keep going until maximum node degree in graph is below threshold
+    pick = np.argmax(degs)
+    while degs[pick] >= threshold_degree:
+
+        # Process removal of this node
+        degs = loop_step(pick)
+
+        # Find maximum degree node right now
+        pick = np.argmax(degs)
+
+    # Make sure other nodes have strictly smaller degree
+    assert np.all(degs < threshold_degree)
+    return prune
+
+
+def change_graph_property(
+        g, degs, wanted_deg, change,
+        label_ids, prune_ratio=0):
+
+    # Randomly pick and prune non-label nodes for graph
+    # To introduce some randomness in graph structure
+    pre_prune = []
+
+    if prune_ratio > 0:
+        # Since distribution according to connectivity is uneven
+        # Bin according to degree to avoid pruning only
+        # Low degree nodes
+
+        bins = [0, 5, 10, 20, 50, np.inf]
+        for i in range(len(bins)-1):
+            picked = np.logical_and(degs >= bins[i], degs < bins[i+1])
+            picked = picked.nonzero()[0]
+            n_wanted = int(prune_ratio * len(picked))
+
+            # Avoid nodes with labels
+            picked = np.setdiff1d(picked, label_ids, assume_unique=True)
+
+            perm = np.random.permutation(
+                len(picked))[:n_wanted]
+            pre_prune += list(perm)
+
+    if change not in SUPPORTED_PROPERTIES:
+        raise NotImplementedError("Not implemented this property")
+
+    if change == "mean":
+        to_prune = find_to_prune_for_mean_degree(
+            g, degs, wanted_deg, pre_prune)
+    else:
+        to_prune = find_to_prune_for_threshold_degree(
+            g, degs, wanted_deg, pre_prune)
 
     # Get rid of these nodes from graph
     g = dgl.remove_nodes(g, to_prune)
