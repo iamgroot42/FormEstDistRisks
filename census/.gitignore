@@ -1,0 +1,5 @@
+__pycache__/*
+census_models/*
+census_models_mlp/*
+census_models_mlp_many/*
+census_data/*

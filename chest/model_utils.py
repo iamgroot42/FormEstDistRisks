@@ -12,28 +12,31 @@ class ChestModel(nn.Module):
 
         # self.fe = models.mobilenet_v2(pretrained=True)
         # self.fe = models.vgg19_bn(pretrained=True)
-        self.fe = models.densenet161(pretrained=True)
+        # self.fe = models.densenet161(pretrained=True)
+        self.fe = models.inception_v3(pretrained=True, aux_logits=False)
 
-        self.fe.classifier = nn.Identity()
+        # self.fe.classifier = nn.Identity()
+        self.fe.fc = nn.Identity()
 
         # Make sure FE is not trainable
         for param in self.fe.parameters():
             param.requires_grad = False
 
-        # self.classifier = nn.Sequential(
-        #     nn.Linear(512 * 7 * 7, 4096),
-        #     nn.ReLU(True),
-        #     nn.Dropout(),
-        #     nn.Linear(4096, 4096),
-        #     nn.ReLU(True),
-        #     nn.Dropout(),
-        #     nn.Linear(4096, 1),
-        # )
-
         self.classifier = nn.Sequential(
-            # nn.Dropout(p=0.2, inplace=False),
-            nn.Linear(2208, 1),
+            nn.Linear(2048, 512),
+            nn.ReLU(True),
+            nn.Dropout(p=0.2),
+            nn.Linear(512, 64),
+            nn.ReLU(True),
+            nn.Dropout(p=0.2),
+            nn.Linear(64, 1),
         )
+
+        # self.classifier = nn.Sequential(
+        #     # nn.Dropout(p=0.2, inplace=False),
+        #     # nn.Linear(2208, 1),
+        #     nn.Linear(2048, 1),
+        # )
 
     def forward(self, x):
         # return self.fe(x)
@@ -67,7 +70,7 @@ if __name__ == "__main__":
     ds = ChestWrapper(df_train_processed, df_val_processed)
 
     # Get loaders
-    batch_size = 64
+    batch_size = 32 * 3 * 8
     train_loader, val_loader = ds.get_loaders(batch_size, shuffle=False)
 
     # Train model

@@ -20,6 +20,8 @@ class ChestDataset(Dataset):
         self.processed = processed
         self.df = df
 
+        print(np.mean(df['label']))
+
     def __len__(self):
         return len(self.df)
 
@@ -43,9 +45,10 @@ class ChestWrapper:
     def __init__(self, df_train, df_val, features=None):
         self.df_train = df_train
         self.df_val = df_val
-        self.input_size = 128
+        self.input_size = 299
         data_transform = transforms.Compose([
-            transforms.Resize((self.input_size, self.input_size)),
+            transforms.Resize(350),
+            transforms.CenterCrop(self.input_size),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                  std=[0.229, 0.224, 0.225])

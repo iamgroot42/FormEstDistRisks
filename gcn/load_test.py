@@ -78,10 +78,15 @@ def main():
         accs_2 = ch.Tensor([ch.mean(1. * (x[:, 0] == y_gt[:, 0]))
                             for x in preds_2]).numpy()
 
-        plt.plot(np.arange(len(accs_1)), np.sort(
-            accs_1), label="Deg-%s on %s" % (str(deg_1), str(deg)))
-        plt.plot(np.arange(len(accs_2)), np.sort(
-            accs_2), label="Deg-%s on %s" % (str(deg_2), str(deg)))
+        # plt.plot(np.arange(len(accs_1)), np.sort(
+        #     accs_1), label="Deg-%s on %s" % (str(deg_1), str(deg)))
+        # plt.plot(np.arange(len(accs_2)), np.sort(
+        #     accs_2), label="Deg-%s on %s" % (str(deg_2), str(deg)))
+
+        plt.hist(accs_1, bins=50, density=True, alpha=0.5,
+                 label="Deg-%s on %s" % (str(deg_1), str(deg)))
+        plt.hist(accs_2, bins=50, density=True, alpha=0.5,
+                 label="Deg-%s on %s" % (str(deg_2), str(deg)))
 
     # Plot accuracies for both datasets
     plot_accs(ds_1, deg_1)
