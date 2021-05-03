@@ -8,6 +8,7 @@ Folder structure:
 - `gcn` : Experiments on the [ogbn-arxiv](https://ogb.stanford.edu/docs/nodeprop/) node-classfication task
 - `ham` : Experiments on the [Skin-Cancer MNIST](https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000) task, reduced to binary prediction
 - `heritage` : Experiments on the [Heritage Health Prize](https://www.kaggle.com/c/hhp) task
-- `implems` : Experiments on the [Adult Income](https://www.kaggle.com/uciml/adult-census-income) and [Celeb-A](https://www.kaggle.com/jessicali9530/celeba-dataset) datasets
+- `census` : Experiments on the [Adult Income](https://www.kaggle.com/uciml/adult-census-income) dataset
+- `celeba` : Experiments on the [Celeb-A](https://www.kaggle.com/jessicali9530/celeba-dataset) dataset
 
 Everything else: archived code
