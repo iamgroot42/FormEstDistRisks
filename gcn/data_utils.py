@@ -287,24 +287,6 @@ def find_to_prune_for_mean_degree(g, degs, wanted_deg, pre_prune=[]):
     return prune
 
 
-# def find_to_prune_for_threshold_degree(g, degs, threshold_degree):
-#     # Get sorted order of degrees
-#     sorted_order = np.argsort(degs)
-
-#     # Look at first instance of degree
-#     prune_start = np.argmax(degs[sorted_order] >= threshold_degree)
-
-#     # Get list of nodes to be pruned
-#     prune = sorted_order[prune_start:]
-
-#     # Make sure other nodes have strictly smaller degree
-#     assert np.all(degs[sorted_order[:prune_start]] < threshold_degree)
-#     # and that the pruned nodes have equal or greater degree
-#     assert np.all(degs[sorted_order[prune_start:]] >= threshold_degree)
-
-#     return prune
-
-
 def find_to_prune_for_threshold_degree(
     g, degs, threshold_degree, pre_prune=[]):
     prune = []
@@ -343,6 +325,7 @@ def find_to_prune_for_threshold_degree(
 
     # Make sure other nodes have strictly smaller degree
     assert np.all(degs < threshold_degree)
+
     return prune
 
 

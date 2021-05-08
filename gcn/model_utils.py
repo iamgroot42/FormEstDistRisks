@@ -2,6 +2,8 @@ from dgl.nn.pytorch import GraphConv
 import torch as ch
 import torch.nn.functional as F
 import torch.nn as nn
+import os
+import numpy as np
 from tqdm import tqdm
 import argparse
 import data_utils
@@ -132,6 +134,36 @@ def extract_model_weights(m, normalize=False):
         cctd.append(ch.cat((w, b), 0).T)
 
     return dims, cctd
+
+
+def get_model_features(model_dir, ds, args, max_read=None):
+    vecs = []
+    iterator = os.listdir(model_dir)
+
+    if max_read is not None:
+        # Fix sample to see if bad performance comes from bad split
+        # np.random.seed(2021)
+        np.random.shuffle(iterator)
+        iterator = iterator[:max_read]
+
+    for mpath in tqdm(iterator):
+        # Define model
+        model = get_model(ds, args)
+
+        # Load weights into model
+        model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
+        model.eval()
+
+        # Extract model weights
+        dims, fvec = extract_model_weights(model)
+
+        # Shift to GPU, if requested
+        if args.gpu:
+            fvec = [x.cuda() for x in fvec]
+
+        vecs.append(fvec)
+
+    return dims, vecs
 
 
 if __name__ == "__main__":

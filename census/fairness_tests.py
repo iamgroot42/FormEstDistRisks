@@ -1,10 +1,10 @@
 import utils
-import implem_utils
+import data_utils
+from model_utils import load_model
 
 from tqdm import tqdm
 import os
 import numpy as np
-from joblib import load
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -34,7 +34,7 @@ def collect_data_for_models(folder_paths,
                     continue
 
                 # Load model
-                model = load(MODELPATH)
+                model = load_model(MODELPATH)
 
                 # Get predictions
                 preds = model.predict_proba(all_x)[:, 1]
@@ -49,12 +49,12 @@ def collect_data_for_models(folder_paths,
                 clasf_dataset.labels[fav_inds] = clasf_dataset.favorable_label
                 clasf_dataset.labels[~fav_inds] = clasf_dataset.unfavorable_label
 
-                metrics = implem_utils.compute_metrics(aif_dataset,
-                                                       clasf_dataset,
-                                                       unprivileged_groups=[
-                                                           {"race": 0}],
-                                                       privileged_groups=[
-                                                           {"race": 1}])
+                metrics = utils.compute_metrics(aif_dataset,
+                                                clasf_dataset,
+                                                unprivileged_groups=[
+                                                    {"race": 0}],
+                                                privileged_groups=[
+                                                    {"race": 1}])
 
                 all_metrics.append(metrics)
 
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     utils.flash_utils(args)
 
     # Load test data
-    ci = utils.CensusIncome("./census_data/")
+    ci = data_utils.CensusIncome()
     _, (all_x, all_y), cols = ci.load_data(None,
                                            first=False,
                                            test_ratio=0.5)

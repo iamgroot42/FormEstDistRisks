@@ -8,6 +8,8 @@ from torchvision import transforms
 
 from lime import lime_image
 
+import model_utils
+import data_utils
 import utils
 import os
 from sklearn.ensemble import RandomForestClassifier
@@ -15,17 +17,6 @@ from sklearn.ensemble import RandomForestClassifier
 import matplotlib.pyplot as plt 
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_model(path):
-    model = utils.FaceModel(512,
-                            train_feat=True,
-                            weight_init=None,
-                            hidden=[64, 16]).cuda()
-    model = nn.DataParallel(model)
-    model.load_state_dict(ch.load(path), strict=False)
-    model.eval()
-    return model
 
 
 def raw_255_image(z):
@@ -96,10 +87,11 @@ def get_data_for_meta(model_paths,
                 model_list = np.random.permutation(model_list)[:how_many]
             for model_path in tqdm(model_list):
                 MODELPATH = os.path.join(model_dir, model_path)
-                model = get_model(MODELPATH)
+                model = model_utils.get_model(MODELPATH)
                 scores, labels = get_scores(model, verbose=False)
                 where_prop = np.nonzero(labels[:, attrs.index(target_prop)])[0]
-                where_noprop = np.nonzero(1 - labels[:, attrs.index(target_prop)])[0]
+                where_noprop = np.nonzero(
+                    1 - labels[:, attrs.index(target_prop)])[0]
                 X.append([
                     np.mean(scores[where_prop, 0] - scores[where_prop, 2]),
                     np.mean(scores[where_noprop, 0] - scores[where_noprop, 2])
@@ -112,26 +104,12 @@ if __name__ == "__main__":
     import sys
     MODELPATH = sys.argv[1]
 
-    constants = utils.Celeb()
-    ds = constants.get_dataset()
-    transform = transforms.Compose([transforms.ToTensor(),
-                                   transforms.Normalize((0.5), (0.5))])
-
-    def get_input_tensors(img):
-        # unsqeeze converts single image to batch of 1
-        return transform(img).unsqueeze(0)
-
-    td = utils.CelebACustomBinary(
-        "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/all/split_2/test",
-        transform=transform)
-
-    attrs = constants.attr_names
-    cropped_dataloader = DataLoader(td,
-                                    batch_size=5,
-                                    shuffle=False)
+    ds = data_utils.CelebaWrapper("all", "victim")
+    attrs = ds.attr_names
+    _, cropped_dataloader = ds.get_loaders(5)
 
     if 1 == 2:
-        model = get_model(MODELPATH)
+        model = model_utils.get_model(MODELPATH, use_prefix=False)
 
         scores, labels = get_scores(model)
         where_prop = np.nonzero(labels[:, attrs.index("Male")])[0]
@@ -146,7 +124,8 @@ if __name__ == "__main__":
         print(np.mean(scores[where_noprop, 0] - scores[where_noprop, 2]))
 
         prop_order = np.argsort(scores[where_prop, 1] - scores[where_prop, 2])
-        noprop_order = np.argsort(scores[where_noprop, 1] - scores[where_noprop, 2])
+        noprop_order = np.argsort(
+            scores[where_noprop, 1] - scores[where_noprop, 2])
 
         plt.plot(np.arange(where_prop.shape[0]),
                  scores[where_prop[prop_order], 1] - scores[where_prop[prop_order], 2],
@@ -159,20 +138,12 @@ if __name__ == "__main__":
         plt.savefig("../visualize/lime_score_distrs.png")
 
     else:
-        common_prefix = "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/"
         folder_paths = [
-            [
-                common_prefix + "split_2/all/64_16/augment_none/",
-                common_prefix + "split_2/all/64_16/none/",
-            ],
-            [
-                common_prefix + "split_2/male/64_16/augment_none/",
-                common_prefix + "split_2/male/64_16/none/",
-            ]
+            ["adv/all/64_16/augment_none/", "adv/all/64_16/none/"],
+            ["adv/male/64_16/augment_none/", "adv/male/64_16/none/"]
         ]
         X_train, Y_train = get_data_for_meta(folder_paths,
-                                             attrs,
-                                             how_many=10,
+                                             attrs, how_many=10,
                                              target_prop="Male")
 
         clf = RandomForestClassifier(max_depth=3,
@@ -180,18 +151,11 @@ if __name__ == "__main__":
         clf.fit(X_train, Y_train)
         print("On train data:", clf.score(X_train, Y_train))
         blind_test_models = [
-            [
-                common_prefix + "split_2/all/64_16/augment_vggface/",
-                common_prefix + "split_1/all/vggface/"
-            ],
-            [
-                common_prefix + "split_2/male/64_16/augment_vggface/",
-                common_prefix + "split_1/male/vggface/"
-            ]
+            ["adv/all/64_16/augment_vggface/", "victim/all/vggface/"],
+            ["adv/male/64_16/augment_vggface/", "victim/male/vggface/"]
         ]
         X_test, Y_test = get_data_for_meta(blind_test_models,
-                                           attrs,
-                                           how_many=10,
+                                           attrs, how_many=10,
                                            target_prop="Male")
         print("On unseen models:", clf.score(X_test, Y_test))
         print("Probabilities:", clf.predict_proba(X_test)[:, 1])

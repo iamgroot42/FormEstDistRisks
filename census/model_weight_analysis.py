@@ -3,6 +3,7 @@ from joblib import load
 import os
 from sklearn.neural_network._base import ACTIVATIONS
 import utils
+import data_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
@@ -13,7 +14,7 @@ if __name__ == "__main__":
 
     base_path = "census_models_mlp"
     paths = ['original', 'income', 'sex', 'race']
-    ci = utils.CensusIncome("./census_data/")
+    ci = data_utils.CensusIncome()
 
     def sex_filter(df): return utils.filter(
         df, lambda x: x['sex:Female'] == 1, 0.65)

@@ -1,4 +1,5 @@
 import utils
+import data_utils
 import seaborn as sns
 import pandas as pd
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         raise ValueError("At least one model must be used!")
 
     paths = [args.path1, args.path2]
-    ci = utils.CensusIncome("./census_data/")
+    ci = data_utils.CensusIncome()
 
     w, b = [], []
     labels = []

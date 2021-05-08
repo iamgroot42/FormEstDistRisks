@@ -1,8 +1,5 @@
-import utils
-import implem_utils
+import model_utils
 import numpy as np
-import torch as ch
-import torch.nn as nn
 from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import KFold
@@ -12,25 +9,13 @@ import os
 if __name__ == "__main__":
     common_prefix = "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/"
     folder_paths = [
-        [
-            common_prefix + "split_2/all/64_16/augment_none/",
-            common_prefix + "split_2/all/64_16/none/",
-        ],
-        [
-            common_prefix + "split_2/male/64_16/augment_none/",
-            common_prefix + "split_2/male/64_16/none/",
-        ]
+        ["split_2/all/64_16/augment_none/", "split_2/all/64_16/none/"],
+        ["split_2/male/64_16/augment_none/", "split_2/male/64_16/none/"]
     ]
 
     blind_test_models = [
-        [
-            common_prefix + "split_2/all/64_16/augment_vggface/",
-            common_prefix + "split_1/all/vggface/"
-        ],
-        [
-            common_prefix + "split_2/male/64_16/augment_vggface/",
-            common_prefix + "split_1/male/vggface/"
-        ]
+        ["split_2/all/64_16/augment_vggface/", "split_1/all/vggface/"],
+        ["split_2/male/64_16/augment_vggface/", "split_1/male/vggface/"]
     ]
 
     model_vectors = []
@@ -41,15 +26,8 @@ if __name__ == "__main__":
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
 
                 # Load model
-                model = utils.FaceModel(512,
-                                        train_feat=True,
-                                        weight_init=None,
-                                        hidden=[64, 16])
-                model = nn.DataParallel(model)
-                model.load_state_dict(ch.load(MODELPATH), strict=False)
-                model.eval()
-
-                vec = implem_utils.extract_dl_model_weights(model)
+                model = model_utils.get_model(MODELPATH)
+                vec = model_utils.extract_dl_model_weights(model)
 
                 # Store model representation vector, label
                 labels.append(index)
@@ -86,15 +64,8 @@ if __name__ == "__main__":
                 MODELPATH = os.path.join(pf, MODELPATHSUFFIX)
 
                 # Load model
-                model = utils.FaceModel(512,
-                                        train_feat=True,
-                                        weight_init=None,
-                                        hidden=[64, 16])
-                model = nn.DataParallel(model)
-                model.load_state_dict(ch.load(MODELPATH), strict=False)
-                model.eval()
-
-                vec = implem_utils.extract_dl_model_weights(model)
+                model = model_utils.get_model(MODELPATH)
+                vec = model_utils.extract_dl_model_weights(model)
 
                 # Store model representation vector, label
                 labels.append(index)

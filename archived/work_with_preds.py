@@ -1,12 +1,7 @@
 import numpy as np
 import torch as ch
-import torch.nn as nn
 import utils
-from tqdm import tqdm
-import os
 from PIL import Image
-from facenet_pytorch import InceptionResnetV1, MTCNN
-from torch.utils.data import TensorDataset, DataLoader
 
 
 import matplotlib.pyplot as plt

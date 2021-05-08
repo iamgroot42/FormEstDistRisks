@@ -2,6 +2,7 @@ import numpy as np
 from joblib import load
 import os
 import utils
+import data_utils
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     # Census Income dataset
     base_path = "census_models_mlp"
     paths = ['original', 'income', 'sex', 'race']
-    ci = utils.CensusIncome("./census_data/")
+    ci = data_utils.CensusIncome()
 
     def sex_filter(df): return utils.filter(
         df, lambda x: x['sex:Female'] == 1, 0.65)

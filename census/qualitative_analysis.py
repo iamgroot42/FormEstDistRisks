@@ -1,60 +1,26 @@
 import numpy as np
-from tqdm import tqdm
-from sklearn.ensemble import RandomForestClassifier
-import pandas as pd
-from sklearn.neural_network import MLPClassifier
-from joblib import dump, load
 import os
-
-import utils
+import data_utils
+from model_utils import load_model, get_models_path
 
 
 if __name__ == "__main__":
     base_path = "census_models_mlp"
-    paths = ['original', 'income', 'sex', 'race']
-    ci = utils.CensusIncome("./census_data/")
-
-    sex_filter = lambda df: utils.filter(df, lambda x: x['sex:Female'] == 1, 0.65)
-    race_filter = lambda df: utils.filter(df, lambda x: x['race:White'] == 0,  1.0)
-    income_filter = lambda df: utils.filter(df, lambda x: x['income'] == 1, 0.5)
+    paths = ['none', 'income', 'sex', 'race']
+    ci = data_utils.CensusIncome()
 
     _, (x_te, y_te), cols = ci.load_data()
     cols = list(cols)
-    # print(cols)
-    # desired_property = cols.index("sex:Male")
     desired_property = cols.index("race:White")
 
-    # (x_tr, y_tr), _, cols = ci.load_data()
-    # cols = list(cols)
-    # print(np.median(x_tr[:, cols.index("age")]))
-    # exit(0)
-    # desired_property = 1
-    # desired_property = cols.index("race:White")
     # Focus on performance of desired property
-    # desired_ids = (y_te == 1)[:,0]
     desired_ids = x_te[:, desired_property] >= 0
-
-    # need_em = []
-    # for path_seg in paths:
-    # 	per_model = []
-    # 	for path in os.listdir(os.path.join(base_path, path_seg)):
-    # 		clf = load(os.path.join(base_path, path_seg, path))
-
-    # 		preds = clf.predict(x_te)
-    # 		# per_model.append(np.nonzero(preds != y_te[:,0])[0])
-    # 		per_model.append(np.nonzero(preds != y_te[:,0])[0])
-    # 	# Look at common incorrect-examples across these models
-    # 	need_em.append(list(set(per_model[0]).intersection(*per_model)))
-
-    # for i, ne in enumerate(need_em):
-    # 	x_ = x_te[ne]
-    # 	print(paths[i], np.mean(x_[:, desired_property]), np.std(x_[:, desired_property]), np.median(x_[:, desired_property]))
 
     need_em = []
     for path_seg in paths:
         per_model = []
-        for path in os.listdir(os.path.join(base_path, path_seg)):
-            clf = load(os.path.join(base_path, path_seg, path))
+        for path in os.listdir(get_models_path(path_seg, "adv", value=0.5)):
+            clf = load_model(os.path.join(base_path, path_seg, path))
 
             preds = clf.predict(x_te)
             per_model.append(preds)
@@ -68,7 +34,6 @@ if __name__ == "__main__":
         for j in range(4):
             if i == j:
                 continue
-            # ids = np.nonzero(need_em[i] != need_em[j])[0]
             ids = np.nonzero(need_em[i] == need_em[j])[0]
             vals, counts = np.unique(x_te[ids, desired_property],
                                      return_counts=True)

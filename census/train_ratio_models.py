@@ -1,7 +1,7 @@
 from tqdm import tqdm
-from sklearn.neural_network import MLPClassifier
-from joblib import dump
 import os
+import data_utils
+import model_utils
 import utils
 
 
@@ -18,10 +18,8 @@ if __name__ == "__main__":
                         help='how many classifiers to train?')
     parser.add_argument('--split_ratio', type=float, default=0.5,
                         help='split original data into two (ratio for second)')
-    parser.add_argument('--on_first', action="store_true",
-                        help='train on first split?')
-    parser.add_argument('--no_split', action="store_true",
-                        help='do not split data at all?')
+    parser.add_argument('--split', choices=["adv", "victim", "all"],
+                        help='which split of data to use')
     parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')
     parser.add_argument('--max_iter', type=int, default=100,
@@ -31,31 +29,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     utils.flash_utils(args)
 
-    # Census Income dataset
-    ci = utils.CensusIncome("./census_data/")
-    ratio = args.ratio
+    # Get appropriate data filter
+    data_filter = data_utils.get_default_filter(
+        args.filter, args.ratio, args.verbose)
 
-    if args.filter == "sex":
-        def data_filter(df): return utils.filter(
-            df, lambda x: x['sex:Female'] == 1, ratio, args.verbose)  # 0.65
-    elif args.filter == "race":
-        def data_filter(df): return utils.filter(
-            df, lambda x: x['race:White'] == 0,  ratio, args.verbose)  # 1.0
-    elif args.filter == "income":
-        def data_filter(df): return utils.filter(
-            df, lambda x: x['income'] == 1, ratio, args.verbose)  # 0.5
-    elif args.filter == "none":
-        data_filter = None
-    else:
-        raise ValueError("Invalid filter requested")
+    # Census Income dataset
+    ds = data_utils.CensusWrapper(data_filter)
 
     iterator = range(1, args.num + 1)
     if not args.verbose:
         iterator = tqdm(iterator)
-
-    on_first = args.on_first
-    if args.no_split:
-        on_first = None
 
     for i in iterator:
         if args.verbose:
@@ -64,15 +47,12 @@ if __name__ == "__main__":
         # Sample to qualify ratio, ultimately coming from fixed split
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
-        (x, y), _, cols = ci.load_data(data_filter,
-                                       first=on_first,
+        (x, y), _, cols = ds.load_data(data_filter,
+                                       split=args.split,
                                        test_ratio=args.split_ratio,
                                        sample_ratio=args.subsample_ratio)
 
-        clf = MLPClassifier(hidden_layer_sizes=(32, 16, 8),
-                            max_iter=args.max_iter,
-                            early_stopping=True,
-                            validation_fraction=0.25)
+        clf = model_utils.get_model(max_iter=args.max_iter)
         clf.fit(x, y.ravel())
         train_acc = 100 * clf.score(x, y.ravel())
         test_acc = 100 * clf.best_validation_score_
@@ -80,4 +60,5 @@ if __name__ == "__main__":
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
 
-        dump(clf, os.path.join(args.savepath,  str(i) + "_%.2f" % test_acc))
+        save_path = os.path.join(args.savepath,  str(i) + "_%.2f" % test_acc)
+        model_utils.save_model(clf, save_path)

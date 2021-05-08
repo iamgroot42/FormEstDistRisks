@@ -5,7 +5,8 @@ import torch as ch
 import numpy as np
 import torch.nn as nn
 import utils
-import implem_utils
+
+from model_utils import get_model
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -101,9 +102,6 @@ def get_trends_for_model(model, dataloader):
 if __name__ == "__main__":
     batch_size = 150
     # batch_size = 100 * 3
-    # batch_size = 250 * 4
-    # batch_size = 500 * 3
-    # batch_size = 500 * 4
 
     paths = [
         # First ratio category
@@ -112,10 +110,6 @@ if __name__ == "__main__":
             "15_0.8884970612930311.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/1/"
             "11_0.9141897565071369.pth",
-            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/casia/1/"
-            # "15_0.9125104953820319.pth",
-            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/vggface/1/"
-            # "15_0.9222502099076406.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
             "15_0.9177162048698573.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/all/none/2/"
@@ -131,10 +125,6 @@ if __name__ == "__main__":
             "15_0.9122836498067551.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/1/"
             "11_0.9075785582255084.pth",
-            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/casia/1/"
-            # "15_0.9107712989413544.pth",
-            # "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/vggface/1/"
-            # "15_0.9121156108217107.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
             "15_0.9122836498067551.pth",
             "/p/adversarialml/as9rw/celeb_models/50_50/split_1/male/none/2/"
@@ -164,12 +154,7 @@ if __name__ == "__main__":
     for i, sub_paths in enumerate(paths):
         for j, MODELPATH in enumerate(sub_paths):
 
-            model = utils.FaceModel(512,
-                                    train_feat=True,
-                                    weight_init=None).cuda()
-            model = nn.DataParallel(model)
-            model.load_state_dict(ch.load(MODELPATH), strict=False)
-            model.eval()
+            model = get_model(MODELPATH, use_prefix=False).cuda()
 
             y_ = get_trends_for_model(model, dataloader)
             # y_ = np.abs(y_)

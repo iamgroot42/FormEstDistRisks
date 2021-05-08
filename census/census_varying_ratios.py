@@ -1,11 +1,12 @@
 import utils
+import data_utils
+from model_utils import get_models_path, load_model
 import seaborn as sns
 import pandas as pd
 
 import numpy as np
 from tqdm import tqdm
 from sklearn.neural_network import MLPClassifier
-from joblib import load
 import os
 
 import torch.nn as nn
@@ -19,21 +20,6 @@ mpl.rcParams['figure.dpi'] = 200
 def params_to_gpu(params):
     for i in range(len(params)):
         params[i] = [x.clone().cuda() for x in params[i]]
-
-
-def acc_fn(x, y):
-    with ch.no_grad():
-        return ch.sum((y == (x >= 0)))
-
-
-def prepare_batched_data(X):
-    inputs = [[] for _ in range(len(X[0]))]
-    for x in X:
-        for i, l in enumerate(x):
-            inputs[i].append(l)
-
-    inputs = [ch.stack(x, 0) for x in inputs]
-    return inputs
 
 
 def get_outputs(model, X, no_grad=False):
@@ -70,7 +56,7 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
 
         num_samples = outputs.shape[0]
         loss = loss.item() * num_samples
-        running_acc = acc_fn(outputs, y)
+        running_acc = utils.acc_fn(outputs, y)
 
         if verbose:
             iterator.set_description("Epoch %d : [Train] Loss: %.5f "
@@ -83,44 +69,30 @@ def train_meta_pin(train_data, lr=1e-3, epochs=20, verbose=True, gpu=False):
     return model
 
 
-def get_models(folder_path, label, collect_all=False):
+# Load models from directory, return feature representations for meta-classifier
+def get_models(folder_path, label):
     models_in_folder = os.listdir(folder_path)
     # np.random.shuffle(models_in_folder)
     w, labels = [], []
     for path in tqdm(models_in_folder):
-        clf = load(os.path.join(folder_path, path))
+        clf = load_model(os.path.join(folder_path, path))
 
         # Look at weights linked to 'sex:Female' as well as 'sex:Male'
         _, _, cols = ci.load_data()
 
-        # Look at initial layer weights, biases
-        if collect_all:
-            # Extract model parameters
-            weights = [ch.from_numpy(x) for x in clf.coefs_]
-            biases = [ch.from_numpy(x) for x in clf.intercepts_]
-            processed = [ch.cat((w, ch.unsqueeze(b, 0)), 0).float().T
-                         for (w, b) in zip(weights, biases)]
-        else:
-            processed = clf.coefs_[0]
-            processed = np.concatenate((
-                # np.mean(processed, 1),
-                # np.mean(processed ** 2, 1),
-                # np.std(processed, 1),
-                np.mean(processed, 1),
-                np.mean(processed ** 2, 1),
-                np.std(processed, 1),
-            ))
+        # Extract model parameters
+        weights = [ch.from_numpy(x) for x in clf.coefs_]
+        biases = [ch.from_numpy(x) for x in clf.intercepts_]
+        processed = [ch.cat((w, ch.unsqueeze(b, 0)), 0).float().T
+                     for (w, b) in zip(weights, biases)]
 
         w.append(processed)
         labels.append(label)
 
     labels = np.array(labels)
 
-    if collect_all:
-        w = np.array(w, dtype=object)
-        labels = ch.from_numpy(labels)
-    else:
-        w = np.array(w)
+    w = np.array(w, dtype=object)
+    labels = ch.from_numpy(labels)
 
     return w, labels
 
@@ -137,21 +109,15 @@ def conditional_load(path1, path2):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default='',
-                        help='path to folder of models')
-    parser.add_argument('--test_path', type=str, default='',
-                        help='path to folder of models')
     parser.add_argument('--sample', type=int, default=0,
                         help='# models (per label) to use for meta-classifier')
     parser.add_argument('--ntimes', type=int, default=5,
                         help='number of repetitions for multimode')
     parser.add_argument('--filename', type=str, default="graph",
                         help='desired title for plot, sep by _')
-    parser.add_argument('--collect_all', action="store_true",
-                        help='use all layer weights, like PIN?')
     parser.add_argument('--save_prefix', default="./loaded_census_models/",
                         help='default basepath to store loaded model weights in')
-    parser.add_argument('--filter', choices=["sex", "race"],
+    parser.add_argument('--filter', choices=data_utils.SUPPORTED_PROPERTIES,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--gpu', action="store_true",
                         help='use GPU for training PIM?')
@@ -163,12 +129,12 @@ if __name__ == "__main__":
 
     # Census Income dataset
     prefix = os.path.join(args.save_prefix, args.filter)
-    ci = utils.CensusIncome("./census_data/")
+    ci = data_utils.CensusIncome()
 
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
-    d_0 = "0.5"
-    targets = filter(lambda x: x != "0.5", os.listdir(args.path))
+    targets = filter(lambda x: x != "0.5", os.listdir(
+        get_models_path(args.filter, "adv")))
 
     # Load up positive-label test data
     tup = conditional_load(os.path.join(
@@ -179,8 +145,8 @@ if __name__ == "__main__":
         pos_labels_test = ch.tensor(pos_labels_test)
         print("Loaded from memory!")
     else:
-        pos_w_test, pos_labels_test = get_models(os.path.join(
-            args.test_path, "0.5"), 1, collect_all=args.collect_all)
+        pos_w_test, pos_labels_test = get_models(get_models_path(
+            args.filter, "victim", "0.5"), 1)
         # Save for later use
         np.save(os.path.join(prefix, "test_0.5_W"), pos_w_test)
         np.save(os.path.join(prefix, "test_0.5_labels"), pos_labels_test)
@@ -194,8 +160,8 @@ if __name__ == "__main__":
         pos_labels = ch.tensor(pos_labels)
         print("Loaded from memory!")
     else:
-        pos_w, pos_labels = get_models(os.path.join(
-            args.path, "0.5"), 1, collect_all=args.collect_all)
+        pos_w, pos_labels = get_models(get_models_path(
+            args.filter, "adv", "0.5"), 1)
         # Save for later use
         np.save(os.path.join(prefix, "train_0.5_W"), pos_w)
         np.save(os.path.join(prefix, "train_0.5_labels"), pos_labels)
@@ -218,8 +184,8 @@ if __name__ == "__main__":
             neg_labels = ch.tensor(neg_labels)
             print("Loaded from memory!")
         else:
-            neg_w, neg_labels = get_models(os.path.join(
-                args.path, tg), 0, collect_all=args.collect_all)
+            neg_w, neg_labels = get_models(get_models_path(
+                args.filter, "adv", tg), 0)
             # Save for later use
             np.save(os.path.join(prefix, "train_%s_W" % tg), neg_w)
             np.save(os.path.join(prefix, "train_%s_labels" %
@@ -234,8 +200,8 @@ if __name__ == "__main__":
             neg_labels_test = ch.tensor(neg_labels_test)
             print("Loaded from memory!")
         else:
-            neg_w_test, neg_labels_test = get_models(os.path.join(
-                args.test_path, tg), 0, collect_all=args.collect_all)
+            neg_w_test, neg_labels_test = get_models(get_models_path(
+                args.filter, "victim", tg), 0)
             # Save for later use
             np.save(os.path.join(prefix, "test_%s_W" % tg), neg_w_test)
             np.save(os.path.join(prefix, "test_%s_labels" %
@@ -248,7 +214,7 @@ if __name__ == "__main__":
             params_to_gpu(X_te)
             # Batch layer-wise inputs
         print("Batching data: hold on")
-        X_te = prepare_batched_data(X_te)
+        X_te = utils.prepare_batched_data(X_te)
 
         if args.collect_all:
             Y_te = ch.cat((pos_labels_test, neg_labels_test))
@@ -279,14 +245,14 @@ if __name__ == "__main__":
 
             # Batch layer-wise inputs
             print("Batching data: hold on")
-            X_tr = prepare_batched_data(X_tr)
+            X_tr = utils.prepare_batched_data(X_tr)
 
             # Train meta-classifier on this
             # Record performance on test data
             if args.collect_all:
                 clf = train_meta_pin((X_tr, Y_tr), lr=1e-3,
                                      epochs=200, gpu=args.gpu)
-                acc = acc_fn(get_outputs(clf, X_te, no_grad=True), Y_te)
+                acc = utils.acc_fn(get_outputs(clf, X_te, no_grad=True), Y_te)
                 if args.gpu:
                     acc = acc.cpu()
                 acc = acc.numpy()
