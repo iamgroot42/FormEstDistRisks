@@ -12,7 +12,24 @@ mpl.rcParams['figure.dpi'] = 200
 SUPPORTED_PROPERTIES = ["mean", "keep_below"]
 
 
-class GraphData:
+class GraphLevelGraphDataset:
+    def __init__(self, name):
+        self.data = dgl.data.TUDataset(name)
+
+
+class Reddit5KDataset(GraphLevelGraphDataset):
+    def __init__(self):
+        super(Reddit5KDataset, self).__init__(
+            'REDDIT-MULTI-5K')
+
+        # Average degrees of data
+        self.degs = []
+
+    def pre_process(self):
+        pass
+
+
+class NodeLevelDataset:
     def __init__(self, name, normalize=True):
         self.data = DglNodePropPredDataset(name=name)
 
@@ -82,7 +99,7 @@ class GraphData:
         self.degs = np.array(degs)
 
 
-class ArxivNodeDataset(GraphData):
+class ArxivNodeDataset(NodeLevelDataset):
     def __init__(self, split, normalize=True):
         super(ArxivNodeDataset, self).__init__(
             'ogbn-arxiv', normalize=normalize)

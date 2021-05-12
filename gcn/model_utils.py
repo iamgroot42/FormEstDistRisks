@@ -7,6 +7,10 @@ import numpy as np
 from tqdm import tqdm
 import argparse
 import data_utils
+from utils import get_weight_layers
+
+
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_arxiv/"
 
 
 class GCN(nn.Module):
@@ -45,6 +49,11 @@ def get_model(ds, args):
                 args.num_layers, args.dropout)
     model = model.cuda()
     return model
+
+
+def save_model(model, split, prop_and_name):
+    savepath = os.path.join(split, prop_and_name)
+    ch.save(model.state_dict(), os.path.join(BASE_MODELS_DIR, savepath))
 
 
 def train(model, ds, train_idx, optimizer, loss_fn):
@@ -114,35 +123,11 @@ def train_model(ds, model, evaluator, args):
     return run_accs
 
 
-def extract_model_weights(m, normalize=False):
-    dims, weights, biases = [], [], []
-    for name, param in m.named_parameters():
-        if "weight" in name:
-            weights.append(param.data.detach().cpu())
-            dims.append(weights[-1].shape[0])
-        if "bias" in name:
-            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
-
-    if normalize:
-        min_w = min([ch.min(x).item() for x in weights])
-        max_w = max([ch.max(x).item() for x in weights])
-        weights = [(w - min_w) / (max_w - min_w) for w in weights]
-        weights = [w / max_w for w in weights]
-
-    cctd = []
-    for w, b in zip(weights, biases):
-        cctd.append(ch.cat((w, b), 0).T)
-
-    return dims, cctd
-
-
 def get_model_features(model_dir, ds, args, max_read=None):
     vecs = []
     iterator = os.listdir(model_dir)
 
     if max_read is not None:
-        # Fix sample to see if bad performance comes from bad split
-        # np.random.seed(2021)
         np.random.shuffle(iterator)
         iterator = iterator[:max_read]
 
@@ -155,7 +140,7 @@ def get_model_features(model_dir, ds, args, max_read=None):
         model.eval()
 
         # Extract model weights
-        dims, fvec = extract_model_weights(model)
+        dims, fvec = get_weight_layers(model)
 
         # Shift to GPU, if requested
         if args.gpu:
@@ -186,4 +171,4 @@ if __name__ == "__main__":
     model.load_state_dict(ch.load(args.load_path))
 
     # Extract model weights
-    extract_model_weights(model)
+    get_weight_layers(model)

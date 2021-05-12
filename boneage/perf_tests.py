@@ -1,7 +1,6 @@
-import data_utils
-import pandas as pd
+from model_utils import load_model
+from data_utils import BoneWrapper, get_df, get_features
 import torch.nn as nn
-import torch as ch
 import numpy as np
 import utils
 from tqdm import tqdm
@@ -17,9 +16,7 @@ def get_accs(val_loader, folder_path):
 
     criterion = nn.BCEWithLogitsLoss().cuda()
     for mpath in tqdm(os.listdir(folder_path)):
-        model = data_utils.BoneModel(1024)
-        model.load_state_dict(ch.load(os.path.join(folder_path, mpath)))
-        model.eval()
+        model = load_model(os.path.join(folder_path, mpath))
         model = model.cuda()
 
         _, vacc = utils.validate_epoch(
@@ -40,23 +37,17 @@ if __name__ == "__main__":
 
     def filter(x): return x["gender"] == 1
 
-    # Get DF
-    df_train = pd.read_csv("./data/split_2/train.csv")
-    df_val = pd.read_csv("./data/split_2/val.csv")
-
-    # Load features
-    features = {}
-    features["train"] = ch.load("./data/split_2/features_train.pt")
-    features["val"] = ch.load("./data/split_2/features_val.pt")
+    # Ready data
+    df_train, df_val = get_df("adv")
+    features = get_features("adv")
 
     # Get data with ratio
     df = utils.heuristic(
         df_val, filter, ratio,
         10000, class_imbalance=1.0, n_tries=300)
 
-    ds = data_utils.BoneWrapper(
-        df, df,
-        features=features)
+    ds = BoneWrapper(
+        df, df, features=features)
 
     _, val_loader = ds.get_loaders(batch_size, shuffle=False)
 

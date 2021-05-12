@@ -487,6 +487,7 @@ class CelebACustomBinary(Dataset):
         return x, y
 
 
+# Function to extract model parameters
 def get_weight_layers(m, normalize=False):
     dims, weights, biases = [], [], []
     for name, param in m.named_parameters():

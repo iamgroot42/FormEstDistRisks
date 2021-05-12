@@ -2,6 +2,7 @@ from ogb.nodeproppred import Evaluator
 import data_utils
 import torch as ch
 import argparse
+import os
 import model_utils
 
 
@@ -75,8 +76,9 @@ def main():
     print("Test accuracy: %.2f" % (acc_te))
 
     # Save model
-    ch.save(model.state_dict(), args.savepath +
-            "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
+    model_utils.save_model(
+        model, args.split,
+        args.savepath + "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
 
 
 if __name__ == "__main__":

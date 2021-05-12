@@ -12,7 +12,7 @@ import os
 import utils
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_boneage/"
+BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/rsnabone/data"
 
 
 class BoneDataset(Dataset):
@@ -76,21 +76,6 @@ class BoneWrapper:
         return train_loader, val_loader
 
 
-class BoneModel(nn.Module):
-    def __init__(self, n_inp):
-        super(BoneModel, self).__init__()
-
-        self.layers = nn.Sequential(
-            nn.Linear(n_inp, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1))
-
-    def forward(self, x):
-        return self.layers(x)
-
-
 def stratified_df_split(df, second_ratio):
     # Get new column for stratification purposes
     def fn(row): return str(row.gender) + str(row.label)
@@ -132,6 +117,30 @@ def process_data(path, split_second_ratio=0.5):
 
     # Return stratified split
     return stratified_df_split(df, split_second_ratio)
+
+
+# Get DF file
+def get_df(split):
+    if split not in ["victim", "adv]":
+        raise ValueError("Invalid split specified!")
+
+    df_train = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/train.csv" % split))
+    df_val = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/val.csv" % split ))
+
+    return df_train, df_val
+
+
+# Load features file
+def get_features(split):
+    if split not in ["victim", "adv]":
+        raise ValueError("Invalid split specified!")
+
+    # Load features
+    features = {}
+    features["train"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/features_train.pt" % split))
+    features["val"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/val.pt" % split))
+
+    return features
 
 
 def useful_stats(df):

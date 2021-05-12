@@ -2,7 +2,8 @@ from data_utils import ArxivNodeDataset
 import torch as ch
 import argparse
 import numpy as np
-from model_utils import get_model_features
+import os
+from model_utils import get_model_features, BASE_MODELS_DIR
 from utils import PermInvModel, train_meta_model
 
 
@@ -25,18 +26,18 @@ def main():
     binary = len(degrees) == 2
 
     # Directories where saved models are stored
-    train_dirs = ["models/adv/deg" + x for x in degrees]
-    test_dirs = ["models/victim/deg" + x for x in degrees]
+    train_dirs = [os.path.join(BASE_MODELS_DIR, "adv", "deg" + x)
+                  for x in degrees]
+    test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", "deg" + x)
+                 for x in degrees]
 
     # Load models, convert to features
     train_vecs, test_vecs = [], []
     for trd, ted in zip(train_dirs, test_dirs):
         dims, vecs_train = get_model_features(
             trd, ds, args, max_read=700)
-            # trd, ds, args, max_read=50)
         _, vecs_test = get_model_features(
-            ted, ds, args, max_read=840)
-            # ted, ds, args, max_read=50)
+            ted, ds, args, max_read=1000)
 
         train_vecs.append(vecs_train)
         test_vecs.append(vecs_test)
@@ -76,9 +77,6 @@ def main():
     # Second experiment- run as a n-class classification problem
     # Cells added/modified above
 
-    # Set seed for weight init
-    ch.manual_seed(2021)
-
     # Train meta-classifier model
     if binary or args.regression:
         metamodel = PermInvModel(dims)
@@ -93,7 +91,7 @@ def main():
                                  (X_train, Y_train),
                                  (X_test, Y_test),
                                  # epochs=40,
-                                 epochs=70,
+                                 epochs=100,
                                  binary=binary,
                                  regression=args.regression,
                                  # lr=0.01,

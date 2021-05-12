@@ -23,17 +23,17 @@ def main(args):
     m1_dir = get_models_path(args.filter, "adv", str(args.focus_1))
     m2_dir = get_models_path(args.filter, "adv", str(args.focus_2))
     models_1 = [load_model(os.path.join(m1_dir, m))
-                for m in tqdm(os.listdir(m1_dir))]
+                for m in tqdm(os.listdir(m1_dir)[:50])]
     models_2 = [load_model(os.path.join(m2_dir, m))
-                for m in tqdm(os.listdir(m2_dir))]
+                for m in tqdm(os.listdir(m2_dir)[:50])]
 
     # Look at activations for particular layer
     acts_1 = np.array([layer_output(x_te, m, args.layer) for m in tqdm(models_1)])
     acts_2 = np.array([layer_output(x_te, m, args.layer) for m in tqdm(models_2)])
 
     # Count number of activations
-    acts_1 = np.sum(acts_1 > 0, 1)
-    acts_2 = np.sum(acts_2 > 0, 1)
+    acts_1 = np.sum(acts_1 > 0, 2)
+    acts_2 = np.sum(acts_2 > 0, 2)
 
     return acts_1, acts_2
 
@@ -59,7 +59,19 @@ if __name__ == "__main__":
 
     acts_1, acts_2 = main(args)
 
+    # for a1, a2 in tqdm(zip(acts_1, acts_2)):
+    #     plt.plot(np.arange(len(a1)), np.sort(a1), color='C0')
+    #     plt.plot(np.arange(len(a2)), np.sort(a2), color='C1')
+
+    # for a1, a2 in tqdm(zip(acts_1, acts_2)):
+    #     plt.hist(a1, bins=100, label="%s:%f" % (args.filter, args.focus_1), color='C0')
+    #     plt.hist(a2, bins=100, label="%s:%f" % (args.filter, args.focus_2), color='C1')
+
+    # Focus on any 2 models
+    acts_1, acts_2 = acts_1[0], acts_2[1]
+
     # Plot histograms of activations for these two models
-    plt.hist(acts_1, bins=100, label="%s:%f" % (args.filter, args.focus_1))
-    plt.hist(acts_2, bins=100, label="%s:%f" % (args.filter, args.focus_2))
+    # plt.hist(acts_1, bins=100, label="%s:%f" % (args.filter, args.focus_1))
+    # plt.hist(acts_2, bins=100, label="%s:%f" % (args.filter, args.focus_2))
+    # plt.legend()
     plt.savefig("./activations.png")

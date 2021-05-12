@@ -1,4 +1,5 @@
-import data_utils
+from model_utils import BoneModel, save_model
+from data_utils import BoneWrapper, get_df, get_features
 import pandas as pd
 import torch as ch
 import utils
@@ -10,24 +11,15 @@ if __name__ == "__main__":
 
     target_ratio = float(sys.argv[1])
     num_models = int(sys.argv[2])
-    split = int(sys.argv[3])
-    savepath_prefix = sys.argv[4]
+    split = sys.argv[3]
 
     batch_size = 256 * 32
 
     def filter(x): return x["gender"] == 1
 
-    # Make sure directory exists
-    utils.ensure_dir_exists(savepath_prefix)
-
-    # Get DF
-    df_train = pd.read_csv("./data/split_%d/train.csv" % (split))
-    df_val = pd.read_csv("./data/split_%d/val.csv" % (split))
-
-    # Load features
-    features = {}
-    features["train"] = ch.load("./data/split_%d/features_train.pt" % (split))
-    features["val"] = ch.load("./data/split_%d/features_val.pt" % (split))
+    # Ready data
+    df_train, df_val = get_df(split)
+    features = get_features(split)
 
     # Subsample to make sure dataset sizes are comparable across ratios
     # All while maintaining class balance
@@ -46,11 +38,11 @@ if __name__ == "__main__":
             n_test, class_imbalance=1.0, n_tries=300)
 
         # Define model
-        model = data_utils.BoneModel(1024)
+        model = BoneModel(1024)
         model = model.cuda()
 
         # Process datasets and get features
-        ds = data_utils.BoneWrapper(
+        ds = BoneWrapper(
             df_train_processed,
             df_val_processed,
             features=features)
@@ -64,7 +56,6 @@ if __name__ == "__main__":
                                   verbose=False)
 
         # Save model
-        ch.save(model.state_dict(), os.path.join(
-            savepath_prefix, "%d_%.3f.pth" % (i+1, vacc)))
+        save_model(model, "%d_%.3f.pth" % (i+1, vacc))
 
         print("[Status] %d/%d" % (i+1, num_models))
