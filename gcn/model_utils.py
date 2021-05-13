@@ -140,7 +140,7 @@ def get_model_features(model_dir, ds, args, max_read=None):
         model.eval()
 
         # Extract model weights
-        dims, fvec = get_weight_layers(model)
+        dims, fvec = get_weight_layers(model, transpose=False)
 
         # Shift to GPU, if requested
         if args.gpu:

@@ -488,11 +488,14 @@ class CelebACustomBinary(Dataset):
 
 
 # Function to extract model parameters
-def get_weight_layers(m, normalize=False):
+def get_weight_layers(m, normalize=False, transpose=True):
     dims, weights, biases = [], [], []
     for name, param in m.named_parameters():
         if "weight" in name:
-            weights.append(param.data.detach().cpu().T)
+            param_data = param.data.detach().cpu()
+            if transpose:
+                param_data = param_data.T
+            weights.append(param_data)
             dims.append(weights[-1].shape[0])
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
@@ -904,10 +907,10 @@ def train_meta_model(model, train_data, test_data,
                     print_acc = ""
                     if not regression:
                         running_acc += acc_fn(outputs, y_test[i:i+batch_size])
-                        print_acc = ", Accuracy: %.2f" % (
-                            100 * running_acc / num_samples)
+                        vacc = 100 * running_acc.item() / num_samples
+                        print_acc = ", Accuracy: %.2f" % (vacc)
 
             print("[Test] Loss: %.5f%s" % (loss / num_samples, print_acc))
 
     model.eval()
-    return model
+    return model, vacc

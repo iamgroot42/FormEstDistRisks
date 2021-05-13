@@ -11,6 +11,7 @@ def main():
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--batch_size', type=int, default=1000)
+    parser.add_argument('--train_sample', type=int, default=700)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
@@ -35,7 +36,7 @@ def main():
     train_vecs, test_vecs = [], []
     for trd, ted in zip(train_dirs, test_dirs):
         dims, vecs_train = get_model_features(
-            trd, ds, args, max_read=700)
+            trd, ds, args, max_read=args.train_sample)
         _, vecs_test = get_model_features(
             ted, ds, args, max_read=1000)
 
@@ -87,17 +88,17 @@ def main():
     if args.gpu:
         metamodel = metamodel.cuda()
 
-    metamodel = train_meta_model(metamodel,
-                                 (X_train, Y_train),
-                                 (X_test, Y_test),
-                                 # epochs=40,
-                                 epochs=100,
-                                 binary=binary,
-                                 regression=args.regression,
-                                 # lr=0.01,
-                                 lr=0.001,
-                                 batch_size=args.batch_size,
-                                 eval_every=5)
+    metamodel, _ = train_meta_model(metamodel,
+                                    (X_train, Y_train),
+                                    (X_test, Y_test),
+                                    # epochs=40,
+                                    epochs=100,
+                                    binary=binary,
+                                    regression=args.regression,
+                                    # lr=0.01,
+                                    lr=0.001,
+                                    batch_size=args.batch_size,
+                                    eval_every=5)
 
     # Sav emeta-model
     ch.save(metamodel.state_dict(), "./metamodel.pth")

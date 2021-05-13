@@ -1,5 +1,6 @@
 import dgl
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
+from dgl.dataloading import GraphDataLoader
 import torch as ch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -15,6 +16,12 @@ SUPPORTED_PROPERTIES = ["mean", "keep_below"]
 class GraphLevelGraphDataset:
     def __init__(self, name):
         self.data = dgl.data.TUDataset(name)
+
+    def get_loader(self, batch_size=512, shuffle=True):
+        return GraphDataLoader(
+                self.data, batch_size=batch_size,
+                drop_last=False,
+                shuffle=shuffle)
 
 
 class Reddit5KDataset(GraphLevelGraphDataset):
