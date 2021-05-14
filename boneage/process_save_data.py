@@ -19,6 +19,9 @@ def collect_features(loader, model):
 
 
 if __name__ == "__main__":
+    import sys
+    split = int(sys.argv[1])
+
     # Load model
     model = models.densenet121(pretrained=True)
     for param in model.parameters():
@@ -30,7 +33,6 @@ if __name__ == "__main__":
     model = nn.DataParallel(model)
 
     # Fetch indices for which features are wanted
-    split = 2
     og_train = pd.read_csv("./data/split_%d/train.csv" % split)
     og_val = pd.read_csv("./data/split_%d/val.csv" % split)
 
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     ds_val = data_utils.BoneDataset(og_val, data_transform)
 
     # Ready loaders
-    batch_size = 100 * 4
+    batch_size = 100 #* 4
     train_loader = DataLoader(
         ds_train, batch_size=batch_size,
         shuffle=False, num_workers=8)

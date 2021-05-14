@@ -1,7 +1,9 @@
 from re import L
 import torch as ch
 import numpy as np
+from collections import OrderedDict
 import torch.nn as nn
+import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import transforms
 from robustness.model_utils import make_and_restore_model
@@ -10,12 +12,8 @@ from robustness.tools import folder
 from robustness.tools.misc import log_statement
 from facenet_pytorch import InceptionResnetV1
 from torch.utils.data import Dataset
-from sklearn import preprocessing
 from PIL import Image
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import StratifiedShuffleSplit
 from tqdm import tqdm
-import requests
 import pandas as pd
 import os
 
@@ -338,139 +336,6 @@ def flash_utils(args):
         print(arg, " : ", getattr(args, arg))
 
 
-# US Income dataset
-class CensusIncome:
-    def __init__(self, path):
-        self.urls = ["http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
-                     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.names",
-                     "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"]
-        self.columns = ["age", "workClass", "fnlwgt", "education", "education-num",
-                        "marital-status", "occupation", "relationship",
-                        "race", "sex", "capital-gain", "capital-loss",
-                        "hours-per-week", "native-country", "income"]
-        self.path = path
-        self.download_dataset()
-
-    def download_dataset(self):
-        if not os.path.exists(self.path):
-            log_statement("==> Downloading US Census Income dataset")
-            os.mkdir(self.path)
-            log_statement(
-                "==> Please modify test file to remove stray dot characters")
-
-            for url in self.urls:
-                data = requests.get(url).content
-                filename = os.path.join(self.path, os.path.basename(url))
-                with open(filename, "wb") as file:
-                    file.write(data)
-
-    def process_df(self, df):
-        df['income'] = df['income'].apply(lambda x: 1 if '>50K' in x else 0)
-
-        def oneHotCatVars(x, colname):
-            df_1 = df.drop(columns=colname, axis=1)
-            df_2 = pd.get_dummies(df[colname], prefix=colname, prefix_sep=':')
-            return (pd.concat([df_1, df_2], axis=1, join='inner'))
-
-        # colnames = ['workClass', 'education', 'occupation', 'race', 'sex', 'marital-status', 'relationship', 'native-country']
-        colnames = ['workClass', 'occupation', 'race', 'sex',
-                    'marital-status', 'relationship', 'native-country']
-        # Drop education
-        df = df.drop(columns='education', axis=1)
-        for colname in colnames:
-            df = oneHotCatVars(df, colname)
-        return df
-
-    def load_data(self,
-                  train_filter=None,
-                  test_ratio=0.5,
-                  random_state=42,
-                  first=None,
-                  sample_ratio=1.):
-        train_data = pd.read_csv(os.path.join(self.path, 'adult.data'), names=self.columns,
-                                 sep=' *, *', na_values='?', engine='python')
-        test_data = pd.read_csv(os.path.join(self.path, 'adult.test'), names=self.columns,
-                                sep=' *, *', skiprows=1, na_values='?', engine='python')
-
-        # Add field to identify train/test, process together, split back
-        train_data['is_train'] = 1
-        test_data['is_train'] = 0
-        df = pd.concat([train_data, test_data], axis=0)
-        df = self.process_df(df)
-
-        train_df, test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
-
-        def s_split(this_df, rs=random_state):
-            sss = StratifiedShuffleSplit(n_splits=1,
-                                         test_size=test_ratio,
-                                         random_state=rs)
-            splitter = sss.split(
-                this_df, this_df[["sex:Female", "race:White", "income"]])
-            split_1, split_2 = next(splitter)
-            return this_df.iloc[split_1], this_df.iloc[split_2]
-
-        train_df_first, train_df_second = s_split(train_df)
-        test_df_first, test_df_second = s_split(test_df)
-
-        # Further sample data, if requested
-        if sample_ratio < 1:
-            # Don't fixed random seed (random sampling wanted)
-            # In this mode, train and test data are combined
-            train_df_first = pd.concat([train_df_first, test_df_first])
-            train_df_second = pd.concat([train_df_second, test_df_second])
-            _, train_df_first = s_split(train_df_first, None)
-            _, train_df_second = s_split(train_df_second, None)
-
-        def get_x_y(P):
-            # Scale X values
-            Y = P['income'].to_numpy()
-            X = P.drop(columns='income', axis=1)
-            cols = X.columns
-            X = X.to_numpy()
-            return (X.astype(float), np.expand_dims(Y, 1), cols)
-
-        def prepare_one_set(TRAIN_DF, TEST_DF):
-            # Apply filter to train data
-            # Efectively using different distribution to train it
-            if train_filter is not None:
-                TRAIN_DF = train_filter(TRAIN_DF)
-
-            (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
-                TRAIN_DF), get_x_y(TEST_DF)
-            # Preprocess data (scale)
-            X = np.concatenate((x_tr, x_te), 0)
-            X = preprocessing.scale(X)
-            x_tr = X[:x_tr.shape[0]]
-            x_te = X[x_tr.shape[0]:]
-
-            return (x_tr, y_tr), (x_te, y_te), cols
-
-        if first is None:
-            return prepare_one_set(train_df, test_df)
-        if first is True:
-            return prepare_one_set(train_df_first, test_df_first)
-        return prepare_one_set(train_df_second, test_df_second)
-
-    def split_on_col(self, x, y, cols,
-                     second_ratio, seed=42, debug=False):
-        # Temporarily combine cols and y for stratification
-        y_ = np.concatenate((y, x[:, cols]), 1)
-        x_1, x_2, y_1, y_2 = train_test_split(x,
-                                              y_,
-                                              test_size=second_ratio,
-                                              random_state=seed)
-        # If debugging enabled, print ratios of col_index
-        # Before and after splits
-        if debug:
-            print("Before:", np.mean(x[:, cols], 0), np.mean(y)) 
-            print("After:", np.mean(x_1[:, cols], 0), np.mean(y_1[:, 0]))
-            print("After:", np.mean(x_2[:, cols], 0), np.mean(y_2[:, 0]))
-        # Get rid of extra column in y
-        y_1, y_2 = y_1[:, 0], y_2[:, 0]
-        # Return split data
-        return (x_1, y_1), (x_2, y_2)
-
-
 # Classifier on top of face features
 class FaceModel(nn.Module):
     def __init__(self, n_feat, weight_init='vggface2', train_feat=False, hidden=[64, 16]):
@@ -622,11 +487,15 @@ class CelebACustomBinary(Dataset):
         return x, y
 
 
-def get_weight_layers(m, normalize=False):
+# Function to extract model parameters
+def get_weight_layers(m, normalize=False, transpose=True):
     dims, weights, biases = [], [], []
     for name, param in m.named_parameters():
         if "weight" in name:
-            weights.append(param.data.detach().cpu().T)
+            param_data = param.data.detach().cpu()
+            if transpose:
+                param_data = param_data.T
+            weights.append(param_data)
             dims.append(weights[-1].shape[0])
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
@@ -645,15 +514,19 @@ def get_weight_layers(m, normalize=False):
 
 
 # Currently works with a batch size of 1
-# Shouldn't be that big a deal, since here's only a few
-# Couple hundred models
+# Shouldn't be that big a deal, since here's only
+# a few thousand models :)
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims, inside_dims=[64, 8]):
+    def __init__(self, dims, inside_dims=[64, 8], n_classes=2):
         super(PermInvModel, self).__init__()
         self.dims = dims
         self.layers = []
         prev_layer = 0
+
+        # If binary, need only one output
+        if n_classes == 2:
+            n_classes = 1
 
         def make_mini(y):
             layers = [
@@ -677,7 +550,7 @@ class PermInvModel(nn.Module):
 
         self.layers = nn.ModuleList(self.layers)
         # Final network to combine them all together
-        self.rho = nn.Linear(inside_dims[-1] * len(dims), 1)
+        self.rho = nn.Linear(inside_dims[-1] * len(dims), n_classes)
 
     def forward(self, params):
         reps = []
@@ -774,9 +647,9 @@ def ensure_dir_exists(dir):
         os.makedirs(dir)
 
 
+@ch.no_grad()
 def acc_fn(x, y):
-    with ch.no_grad():
-        return ch.sum((y == (x >= 0)))
+    return ch.sum((y == (x >= 0)))
 
 
 def get_outputs(model, X, no_grad=False):
@@ -826,7 +699,8 @@ def heuristic(df, condition, ratio,
 
     vals = np.abs(np.array(vals) - ratio)
     # Pick the one closest to desired ratio
-    return pckds[np.argmin(vals)]
+    picked_df = pckds[np.argmin(vals)]
+    return picked_df.reset_index(drop=True)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
@@ -853,7 +727,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
         train_loss.update(loss.item())
 
         if verbose:
-            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f]' % (
+            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f' % (
                 epoch, train_loss.avg, train_acc.avg))
     return train_loss.avg, train_acc.avg
 
@@ -896,7 +770,147 @@ def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
     if not verbose:
         iterator = tqdm(iterator)
     for epoch in iterator:
-        train_epoch(train_loader, model, criterion, optimizer, epoch, verbose)
+        _, tacc = train_epoch(train_loader, model,
+                              criterion, optimizer, epoch, verbose)
         vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
+        if not verbose:
+            iterator.set_description(
+                "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
 
     return vloss, vacc
+
+
+def compute_metrics(dataset_true, dataset_pred,
+                    unprivileged_groups, privileged_groups):
+    """ Compute the key metrics """
+    from aif360.metrics import ClassificationMetric
+    classified_metric_pred = ClassificationMetric(
+        dataset_true,
+        dataset_pred,
+        unprivileged_groups=unprivileged_groups,
+        privileged_groups=privileged_groups)
+    metrics = OrderedDict()
+    metrics["Balanced accuracy"] = 0.5 * \
+        (classified_metric_pred.true_positive_rate() +
+         classified_metric_pred.true_negative_rate())
+    metrics["Statistical parity difference"] = \
+        classified_metric_pred.statistical_parity_difference()
+    metrics["Disparate impact"] = classified_metric_pred.disparate_impact()
+    metrics["Average odds difference"] = \
+        classified_metric_pred.average_odds_difference()
+    metrics["Equal opportunity difference"] = \
+        classified_metric_pred.equal_opportunity_difference()
+    metrics["Theil index"] = classified_metric_pred.theil_index()
+    metrics["False discovery rate difference"] = \
+        classified_metric_pred.false_discovery_rate_difference()
+    metrics["False discovery rate ratio"] = \
+        classified_metric_pred.false_discovery_rate_ratio()
+    metrics["False omission rate difference"] = \
+        classified_metric_pred.false_omission_rate_difference()
+    metrics["False omission rate ratio"] = \
+        classified_metric_pred.false_omission_rate_ratio()
+    metrics["False negative rate difference"] = \
+        classified_metric_pred.false_negative_rate_difference()
+    metrics["False negative rate ratio"] = \
+        classified_metric_pred.false_negative_rate_ratio()
+    metrics["False positive rate difference"] = \
+        classified_metric_pred.false_positive_rate_difference()
+    metrics["False positive rate ratio"] = \
+        classified_metric_pred.false_positive_rate_ratio()
+
+    return metrics
+
+
+# Function to train meta-classifier
+def train_meta_model(model, train_data, test_data,
+                     epochs, lr, eval_every=5,
+                     binary=True, regression=False,
+                     batch_size=1000):
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
+
+    if regression:
+        loss_fn = nn.MSELoss()
+    else:
+        if binary:
+            loss_fn = nn.BCEWithLogitsLoss()
+        else:
+            loss_fn = nn.CrossEntropyLoss()
+
+    params, y = train_data
+    params_test, y_test = test_data
+
+    def acc_fn(x, y):
+        if binary:
+            return ch.sum((y == (x >= 0)))
+        return ch.sum(y == ch.argmax(x, 1))
+
+    iterator = tqdm(range(epochs))
+    for e in iterator:
+        # Training
+        model.train()
+
+        # Shuffle train data
+        rp_tr = np.random.permutation(len(y))
+        params, y = params[rp_tr], y[rp_tr]
+
+        # Batch data to fit on GPU
+        running_acc, loss, num_samples = 0, 0, 0
+        for i in range(0, len(params), batch_size):
+
+            outputs = []
+            for param in params[i:i+batch_size]:
+                if binary or regression:
+                    outputs.append(model(param)[:, 0])
+                else:
+                    outputs.append(model(param))
+
+            outputs = ch.cat(outputs, 0)
+            optimizer.zero_grad()
+
+            loss = loss_fn(outputs, y[i:i+batch_size])
+            loss.backward()
+            optimizer.step()
+
+            num_samples += outputs.shape[0]
+            loss += loss.item() * num_samples
+
+            print_acc = ""
+            if not regression:
+                running_acc += acc_fn(outputs, y[i:i+batch_size])
+                print_acc = ", Accuracy: %.2f" % (
+                    100 * running_acc / num_samples)
+
+            iterator.set_description("Epoch %d : [Train] Loss: %.5f%s" % (
+                e, loss / num_samples, print_acc))
+
+        # Come to validation data now
+        if (e+1) % eval_every == 0:
+            # Validation
+            model.eval()
+
+            # Batch data to fit on GPU
+            loss, num_samples, running_acc = 0, 0, 0
+            for i in range(0, len(params_test), batch_size):
+                outputs = []
+                for param in params_test[i:i+batch_size]:
+                    if binary or regression:
+                        outputs.append(model(param)[:, 0])
+                    else:
+                        outputs.append(model(param))
+
+                outputs = ch.cat(outputs, 0)
+                with ch.no_grad():
+                    num_samples += outputs.shape[0]
+                    loss += loss_fn(outputs,
+                                    y_test[i:i+batch_size]).item() * num_samples
+
+                    print_acc = ""
+                    if not regression:
+                        running_acc += acc_fn(outputs, y_test[i:i+batch_size])
+                        vacc = 100 * running_acc.item() / num_samples
+                        print_acc = ", Accuracy: %.2f" % (vacc)
+
+            print("[Test] Loss: %.5f%s" % (loss / num_samples, print_acc))
+
+    model.eval()
+    return model, vacc

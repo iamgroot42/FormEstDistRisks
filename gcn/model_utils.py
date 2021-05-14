@@ -2,9 +2,15 @@ from dgl.nn.pytorch import GraphConv
 import torch as ch
 import torch.nn.functional as F
 import torch.nn as nn
+import os
+import numpy as np
 from tqdm import tqdm
 import argparse
 import data_utils
+from utils import get_weight_layers
+
+
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_arxiv/"
 
 
 class GCN(nn.Module):
@@ -43,6 +49,11 @@ def get_model(ds, args):
                 args.num_layers, args.dropout)
     model = model.cuda()
     return model
+
+
+def save_model(model, split, prop_and_name):
+    savepath = os.path.join(split, prop_and_name)
+    ch.save(model.state_dict(), os.path.join(BASE_MODELS_DIR, savepath))
 
 
 def train(model, ds, train_idx, optimizer, loss_fn):
@@ -112,26 +123,32 @@ def train_model(ds, model, evaluator, args):
     return run_accs
 
 
-def extract_model_weights(m, normalize=False):
-    dims, weights, biases = [], [], []
-    for name, param in m.named_parameters():
-        if "weight" in name:
-            weights.append(param.data.detach().cpu())
-            dims.append(weights[-1].shape[0])
-        if "bias" in name:
-            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
+def get_model_features(model_dir, ds, args, max_read=None):
+    vecs = []
+    iterator = os.listdir(model_dir)
 
-    if normalize:
-        min_w = min([ch.min(x).item() for x in weights])
-        max_w = max([ch.max(x).item() for x in weights])
-        weights = [(w - min_w) / (max_w - min_w) for w in weights]
-        weights = [w / max_w for w in weights]
+    if max_read is not None:
+        np.random.shuffle(iterator)
+        iterator = iterator[:max_read]
 
-    cctd = []
-    for w, b in zip(weights, biases):
-        cctd.append(ch.cat((w, b), 0).T)
+    for mpath in tqdm(iterator):
+        # Define model
+        model = get_model(ds, args)
 
-    return dims, cctd
+        # Load weights into model
+        model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
+        model.eval()
+
+        # Extract model weights
+        dims, fvec = get_weight_layers(model, transpose=False)
+
+        # Shift to GPU, if requested
+        if args.gpu:
+            fvec = [x.cuda() for x in fvec]
+
+        vecs.append(fvec)
+
+    return dims, vecs
 
 
 if __name__ == "__main__":
@@ -154,4 +171,4 @@ if __name__ == "__main__":
     model.load_state_dict(ch.load(args.load_path))
 
     # Extract model weights
-    extract_model_weights(model)
+    get_weight_layers(model)
