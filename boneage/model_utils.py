@@ -41,7 +41,7 @@ def load_model(path):
 
 
 # Function to extract model weights for all models in given directory
-def get_model_features(model_dir, max_read=None):
+def get_model_features(model_dir, max_read=None, first_n=np.inf):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -52,7 +52,7 @@ def get_model_features(model_dir, max_read=None):
         model = load_model(os.path.join(model_dir, mpath))
 
         # Get model params, shift to GPU
-        dims, fvec = get_weight_layers(model)
+        dims, fvec = get_weight_layers(model, first_n=first_n)
         fvec = [x.cuda() for x in fvec]
 
         vecs.append(fvec)

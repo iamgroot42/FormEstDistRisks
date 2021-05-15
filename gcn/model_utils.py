@@ -126,7 +126,6 @@ def train_model(ds, model, evaluator, args):
 def get_model_features(model_dir, ds, args, max_read=None):
     vecs = []
     iterator = os.listdir(model_dir)
-
     if max_read is not None:
         np.random.shuffle(iterator)
         iterator = iterator[:max_read]
@@ -141,10 +140,6 @@ def get_model_features(model_dir, ds, args, max_read=None):
 
         # Extract model weights
         dims, fvec = get_weight_layers(model, transpose=False)
-
-        # Shift to GPU, if requested
-        if args.gpu:
-            fvec = [x.cuda() for x in fvec]
 
         vecs.append(fvec)
 

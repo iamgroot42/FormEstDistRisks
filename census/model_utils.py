@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+import torch as ch
 import os
 from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
@@ -17,35 +18,30 @@ def layer_output(data, MLP, layer=0):
     return L
 
 
-def extract_model_features(paths, example_mode, multimode, sample):
-    w, b = [], []
-    labels = []
-    for i, path_seg in tqdm(enumerate(paths)):
-        models_in_folder = os.listdir(path_seg)
-        np.random.shuffle(models_in_folder)
-        if not multimode:
-            models_in_folder = models_in_folder[:sample]
-        for path in models_in_folder:
-            clf = load(os.path.join(path_seg, path))
-            # Look at initial layer weights, biases
+# Load models from directory, return feature representations
+def get_model_representations(folder_path, label):
+    models_in_folder = os.listdir(folder_path)
+    # np.random.shuffle(models_in_folder)
+    w, labels = [], []
+    for path in tqdm(models_in_folder):
+        clf = load_model(os.path.join(folder_path, path))
 
-            if example_mode is not None:
-                preds = layer_output(example_mode, clf, layer=3)
-                for pred in preds:
-                    w.append(pred)
-                    labels.append(i)
-            else:
-                processed = clf.coefs_[0]
-                processed = np.concatenate(
-                    (np.mean(processed, 1), np.mean(processed ** 2, 1)))
-                w.append(processed)
-                b.append(clf.intercepts_[0])
-                labels.append(i)
+        # Extract model parameters
+        weights = [ch.from_numpy(x) for x in clf.coefs_]
+        dims = [w.shape[0] for w in weights]
+        biases = [ch.from_numpy(x) for x in clf.intercepts_]
+        processed = [ch.cat((w, ch.unsqueeze(b, 0)), 0).float().T
+                     for (w, b) in zip(weights, biases)]
 
-    w = np.array(w)
-    b = np.array(w)
+        w.append(processed)
+        labels.append(label)
+
     labels = np.array(labels)
-    return (w, b), labels
+
+    w = np.array(w, dtype=object)
+    labels = ch.from_numpy(labels)
+
+    return w, labels, dims
 
 
 def get_model(max_iter=200,
