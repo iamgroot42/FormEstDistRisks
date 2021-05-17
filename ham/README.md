@@ -23,7 +23,7 @@ Tests models by determining number of incorrect predictions on filtered data (se
 
 
 
-###Activations
+### Activations
 Tests models by determining the number of neuron activations (on filtered data)
 
 1. To setup an experiment, first set the variable "base" in the main method to the path where the HAM dataset is located and the variable "folder_paths" to the locations of the trained models. Both are shown below
