@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 
-   # filters dataset so that all labels for sex are a value (1 or 0) 
+# filters dataset so that all labels for sex are a value (1 or 0) 
 def process_data_sex(path, value, split_second_ratio=0.5): 
     
 
@@ -27,7 +27,7 @@ def process_data_sex(path, value, split_second_ratio=0.5):
     return df
 
 
-    # filters dataset so that all labels for age are a value (1 or 0)
+# filters dataset so that all labels for age are a value (1 or 0)
 def process_data_age(path, value, split_second_ratio=0.5):
     
 
@@ -41,7 +41,7 @@ def process_data_age(path, value, split_second_ratio=0.5):
     # Return stratified split
     return df
     
-    # gets the number of activations in a model on a dataset
+# gets the number of activations in a model on a dataset
 def get_stats(mainmodel, dataloader, return_acts=True):
     
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     ax1 = fig.add_subplot(111)
 
 
-    #plots activations in histogram bins (unused subplots are commented out)
+    #plots activations in histogram bins (comment out either 150-151 or 152-153 depending on age or sex
     #ax1.hist(actsSex1, bins = 20, alpha = .5, label = "Sex 1") 
     #ax1.hist(actsSex0, bins = 20, alpha = .5, label = "Sex 0")
     ax1.hist(actsAge1, bins = 20, alpha = .5, label = "Age 1")
