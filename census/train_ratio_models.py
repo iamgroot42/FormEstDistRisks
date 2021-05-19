@@ -8,33 +8,25 @@ import utils
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--savepath', type=str, default='',
-                        help='folder where trained model(s) should be saved')
     parser.add_argument('--filter', type=str, default='',
-                        help='while filter to use (sex/race/income/none)')
+                        choices=data_utils.SUPPORTED_PROPERTIES,
+                        help='while filter to use')
     parser.add_argument('--ratio', type=float, default=0.5,
                         help='what ratio of the new sampled dataset should be true')
-    parser.add_argument('--num', type=int, default=20,
+    parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
-    parser.add_argument('--split_ratio', type=float, default=0.5,
-                        help='split original data into two (ratio for second)')
     parser.add_argument('--split', choices=["adv", "victim", "all"],
                         help='which split of data to use')
     parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')
-    parser.add_argument('--max_iter', type=int, default=100,
-                        help='number of iterations to train MLP for')
-    parser.add_argument('--subsample_ratio', type=float, default=1.,
-                        help='use sample of data')
+    parser.add_argument('--offset', type=int, default=0,
+                        help='start counting from here when saving models')
     args = parser.parse_args()
     utils.flash_utils(args)
 
-    # Get appropriate data filter
-    data_filter = data_utils.get_default_filter(
-        args.filter, args.ratio, args.verbose)
-
     # Census Income dataset
-    ds = data_utils.CensusWrapper(data_filter)
+    ds = data_utils.CensusWrapper(
+        filter_prop=args.filter, ratio=args.ratio, split=args.split)
 
     iterator = range(1, args.num + 1)
     if not args.verbose:
@@ -47,18 +39,18 @@ if __name__ == "__main__":
         # Sample to qualify ratio, ultimately coming from fixed split
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
-        (x, y), _, cols = ds.load_data(data_filter,
-                                       split=args.split,
-                                       test_ratio=args.split_ratio,
-                                       sample_ratio=args.subsample_ratio)
+        (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
 
-        clf = model_utils.get_model(max_iter=args.max_iter)
-        clf.fit(x, y.ravel())
-        train_acc = 100 * clf.score(x, y.ravel())
-        test_acc = 100 * clf.best_validation_score_
+        clf = model_utils.get_model()
+        clf.fit(x_tr, y_tr.ravel())
+        train_acc = 100 * clf.score(x_tr, y_tr.ravel())
+        test_acc = 100 * clf.score(x_te, y_te.ravel())
         if args.verbose:
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
 
-        save_path = os.path.join(args.savepath,  str(i) + "_%.2f" % test_acc)
+        save_path = os.path.join(
+            model_utils.BASE_MODELS_DIR,
+            args.split, args.filter, str(args.ratio),
+            str(i + args.offset) + "_%.2f" % test_acc)
         model_utils.save_model(clf, save_path)

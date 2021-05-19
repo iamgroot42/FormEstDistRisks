@@ -14,9 +14,9 @@ def load_stuff(model_dir, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
     parser.add_argument('--batch_size', type=int, default=1000)
-    parser.add_argument('--train_sample', type=int, default=20)
-    parser.add_argument('--val_sample', type=int, default=20)
-    parser.add_argument('--first_n', type=int, default=np.inf,
+    parser.add_argument('--train_sample', type=int, default=700)
+    parser.add_argument('--val_sample', type=int, default=50)
+    parser.add_argument('--first_n', type=int, default=3,
                         help="Only consider first N layers")
     args = parser.parse_args()
     print(args)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
                      metamodel,
                      (X_train, Y_train),
                      (X_test, Y_test),
-                     epochs=200, binary=True,
+                     epochs=150, binary=True,
                      lr=0.001, batch_size=args.batch_size,
                      val_data=(X_val, Y_val),
                      regression=True,
@@ -79,4 +79,9 @@ if __name__ == "__main__":
     print("Test loss %.4f" % (tloss))
 
     # Save meta-model
-    ch.save(metamodel.state_dict(), "./metamodel_%.3f.pth" % tloss)
+    ch.save(metamodel.state_dict(), "./metamodel_%d_%.3f.pth" %
+            (args.first_n, tloss))
+
+    # i=3: 0.011, 0.0026, 0.0044,
+    # i=2: 0.0038, 0.0022, 0.0023,
+    # i=1: 0.0028, 0.0042, 0.0034,

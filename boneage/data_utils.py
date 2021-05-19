@@ -121,7 +121,7 @@ def process_data(path, split_second_ratio=0.5):
 
 # Get DF file
 def get_df(split):
-    if split not in ["victim", "adv]":
+    if split not in ["victim", "adv"]:
         raise ValueError("Invalid split specified!")
 
     df_train = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/train.csv" % split))
@@ -132,13 +132,13 @@ def get_df(split):
 
 # Load features file
 def get_features(split):
-    if split not in ["victim", "adv]":
+    if split not in ["victim", "adv"]:
         raise ValueError("Invalid split specified!")
 
     # Load features
     features = {}
     features["train"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/features_train.pt" % split))
-    features["val"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/val.pt" % split))
+    features["val"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/features_val.pt" % split))
 
     return features
 

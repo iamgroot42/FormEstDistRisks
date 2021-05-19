@@ -527,9 +527,10 @@ def get_weight_layers(m, normalize=False, transpose=True, first_n=np.inf):
 # a few thousand models :)
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims, inside_dims=[64, 8], n_classes=2):
+    def __init__(self, dims, inside_dims=[64, 8], n_classes=2, dropout=0.5):
         super(PermInvModel, self).__init__()
         self.dims = dims
+        self.dropout = dropout
         self.layers = []
         prev_layer = 0
 
@@ -545,7 +546,7 @@ class PermInvModel(nn.Module):
             for i in range(1, len(inside_dims)):
                 layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
                 layers.append(nn.ReLU())
-            layers.append(nn.Dropout())
+            layers.append(nn.Dropout(self.dropout))
 
             return nn.Sequential(*layers)
 
@@ -682,19 +683,30 @@ def prepare_batched_data(X):
 def heuristic(df, condition, ratio,
               cwise_sample,
               class_imbalance=2.0,
-              n_tries=1000):
+              n_tries=1000,
+              class_col="label",
+              verbose=True):
     vals, pckds = [], []
-    iterator = tqdm(range(n_tries))
+    iterator = range(n_tries)
+    if verbose:
+        iterator = tqdm(iterator)
     for _ in iterator:
         pckd_df = filter(df, condition, ratio, verbose=False)
         # Class-balanced sampling
-        zero_ids = np.nonzero(pckd_df["label"].to_numpy() == 0)[0]
-        one_ids = np.nonzero(pckd_df["label"].to_numpy() == 1)[0]
+        zero_ids = np.nonzero(pckd_df[class_col].to_numpy() == 0)[0]
+        one_ids = np.nonzero(pckd_df[class_col].to_numpy() == 1)[0]
 
-        zero_ids = np.random.permutation(
-            zero_ids)[:int(class_imbalance * cwise_sample)]
-        one_ids = np.random.permutation(
-            one_ids)[:cwise_sample]
+        if class_imbalance >= 1:
+            zero_ids = np.random.permutation(
+                zero_ids)[:int(class_imbalance * cwise_sample)]
+            one_ids = np.random.permutation(
+                one_ids)[:cwise_sample]
+        else:
+            zero_ids = np.random.permutation(
+                zero_ids)[:cwise_sample]
+            one_ids = np.random.permutation(
+                one_ids)[:int(1 / class_imbalance * cwise_sample)]
+
         # Combine them together
         pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
         pckd_df = pckd_df.iloc[pckd]
@@ -703,8 +715,9 @@ def heuristic(df, condition, ratio,
         pckds.append(pckd_df)
 
         # Print best ratio so far in descripton
-        iterator.set_description(
-            "%.4f" % (ratio + np.min([np.abs(zz-ratio) for zz in vals])))
+        if verbose:
+            iterator.set_description(
+                "%.4f" % (ratio + np.min([np.abs(zz-ratio) for zz in vals])))
 
     vals = np.abs(np.array(vals) - ratio)
     # Pick the one closest to desired ratio
@@ -840,10 +853,16 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
     acc = None
     loss, num_samples, running_acc = 0, 0, 0
     i = 0
-    while i < len(X):
+
+    if combined:
+        n_samples = len(X[0])
+    else:
+        n_samples = len(X)
+
+    while i < n_samples:
         # Model features stored as list of objects
+        outputs = []
         if not combined:
-            outputs = []
             for param in X[i:i+batch_size]:
                 # Shift to GPU, if requested
                 if gpu:
@@ -853,10 +872,9 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
                     outputs.append(model(param)[:, 0])
                 else:
                     outputs.append(model(param))
-            outputs = ch.cat(outputs, 0)
         # Model features stored as normal list
         else:
-            param_batch = X[i:i+batch_size]
+            param_batch = [x[i:i+batch_size] for x in X]
             if gpu:
                 param_batch = [a.cuda() for a in param_batch]
 
@@ -864,6 +882,8 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
                 outputs.append(model(param_batch)[:, 0])
             else:
                 outputs.append(model(param_batch))
+
+        outputs = ch.cat(outputs, 0)
 
         num_samples += outputs.shape[0]
         loss += loss_fn(outputs,
@@ -921,16 +941,26 @@ def train_meta_model(model, train_data, test_data,
 
         # Shuffle train data
         rp_tr = np.random.permutation(y.shape[0])
-        params, y = params[rp_tr], y[rp_tr]
+        if not combined:
+            params, y = params[rp_tr], y[rp_tr]
+        else:
+            y = y[rp_tr]
+            params = [x[rp_tr] for x in params]
 
         # Batch data to fit on GPU
         running_acc, loss, num_samples = 0, 0, 0
         i = 0
-        while i < len(params):
+
+        if combined:
+            n_samples = len(params[0])
+        else:
+            n_samples = len(params)
+
+        while i < n_samples:
 
             # Model features stored as list of objects
+            outputs = []
             if not combined:
-                outputs = []
                 for param in params[i:i+batch_size]:
                     # Shift to GPU, if requested
                     if gpu:
@@ -940,11 +970,9 @@ def train_meta_model(model, train_data, test_data,
                         outputs.append(model(param)[:, 0])
                     else:
                         outputs.append(model(param))
-
-                outputs = ch.cat(outputs, 0)
             # Model features stored as normal list
             else:
-                param_batch = params[i:i+batch_size]
+                param_batch = [x[i:i+batch_size] for x in params]
                 if gpu:
                     param_batch = [a.cuda() for a in param_batch]
 
@@ -952,6 +980,8 @@ def train_meta_model(model, train_data, test_data,
                     outputs.append(model(param_batch)[:, 0])
                 else:
                     outputs.append(model(param_batch))
+
+            outputs = ch.cat(outputs, 0)
 
             # Clear accumulated gradients
             optimizer.zero_grad()
@@ -977,7 +1007,7 @@ def train_meta_model(model, train_data, test_data,
 
             iterator.set_description("Epoch %d : [Train] Loss: %.5f%s" % (
                 e, loss / num_samples, print_acc))
-            
+
             # Next batch
             i += batch_size
 
@@ -1017,7 +1047,7 @@ def train_meta_model(model, train_data, test_data,
         t_acc, t_loss = test_meta(best_model, loss_fn, params_test,
                                   y_test, batch_size, acc_fn,
                                   binary=binary, regression=regression,
-                                  gpu=gpu)
+                                  gpu=gpu, combined=combined)
         model = deepcopy(best_model)
 
     # Make sure model is in evaluation mode

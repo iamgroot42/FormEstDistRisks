@@ -4,20 +4,24 @@ import argparse
 import numpy as np
 import os
 from model_utils import get_model_features, BASE_MODELS_DIR
-from utils import PermInvModel, train_meta_model
+from utils import PermInvModel, train_meta_model, prepare_batched_data
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
     parser.add_argument('--num_layers', type=int, default=3)
-    parser.add_argument('--batch_size', type=int, default=1000)
+    parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--train_sample', type=int, default=700)
     parser.add_argument('--val_sample', type=int, default=50)
+    parser.add_argument('--iters', type=int, default=200)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
     parser.add_argument('--regression', action="store_true")
     parser.add_argument('--gpu', action="store_true")
+    parser.add_argument('--parallel', action="store_true")
+    parser.add_argument('--first_n', type=int, default=3,
+                        help="Only consider first N layers")
     args = parser.parse_args()
     print(args)
 
@@ -69,6 +73,11 @@ if __name__ == "__main__":
     Y_val = ch.from_numpy(np.concatenate(Y_val))
     Y_test = ch.from_numpy(np.concatenate(Y_test))
 
+    print("Batching data: hold on")
+    X_train = prepare_batched_data(X_train)
+    X_val = prepare_batched_data(X_val)
+    X_test = prepare_batched_data(X_test)
+
     if binary or args.regression:
         Y_train = Y_train.float()
         Y_val = Y_val.float()
@@ -94,20 +103,24 @@ if __name__ == "__main__":
     # Split across GPUs if flag specified
     if args.gpu:
         metamodel = metamodel.cuda()
+        if args.parallel:
+            metamodel = ch.nn.DataParallel(metamodel)
 
     metamodel, test_loss = train_meta_model(
-                            metamodel,
-                            (X_train, Y_train),
-                            (X_test, Y_test),
-                            epochs=200, binary=binary,
-                            regression=args.regression,
-                            # lr=0.001, batch_size=args.batch_size,
-                            lr=0.01, batch_size=args.batch_size,
-                            eval_every=10,
-                            val_data=(X_val, Y_val),
-                            gpu=args.gpu)
+        metamodel, (X_train, Y_train), (X_test, Y_test),
+        epochs=args.iters, binary=binary, regression=args.regression,
+        lr=0.01, batch_size=args.batch_size, eval_every=10,
+        combined=True,
+        val_data=(X_val, Y_val), gpu=args.gpu)
 
     print("[Test] Loss: %.4f" % test_loss)
 
     # Save meta-model
     ch.save(metamodel.state_dict(), "./metamodel_%.3f.pth" % test_loss)
+
+
+# Regression:
+# 256: 5.56
+# 512: 8.sth
+# 128: 37
+# 

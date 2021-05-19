@@ -4,11 +4,33 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 import os
-from model_utils import get_model, extract_model_weights
+from model_utils import get_model, BASE_MODELS_DIR
 from utils import PermInvModel
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
+
+
+def extract_model_weights(m, normalize=False):
+    dims, weights, biases = [], [], []
+    for name, param in m.named_parameters():
+        if "weight" in name:
+            weights.append(param.data.detach().cpu())
+            dims.append(weights[-1].shape[0])
+        if "bias" in name:
+            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
+
+    if normalize:
+        min_w = min([ch.min(x).item() for x in weights])
+        max_w = max([ch.max(x).item() for x in weights])
+        weights = [(w - min_w) / (max_w - min_w) for w in weights]
+        weights = [w / max_w for w in weights]
+
+    cctd = []
+    for w, b in zip(weights, biases):
+        cctd.append(ch.cat((w, b), 0).T)
+
+    return dims, cctd
 
 
 def get_model_features(model_dir, ds, args, max_read=None):
@@ -53,11 +75,15 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
+    parser.add_argument('--darkplot', action="store_true",
+                        help='Use dark background for plotting results')
+    parser.add_argument('--gpu', action="store_true")                        
     args = parser.parse_args()
     print(args)
 
-    # Set dark background
-    plt.style.use('dark_background')
+    if args.darkplot:
+        # Set dark background
+        plt.style.use('dark_background')
 
     # Get dataset ready (only need meta-data from this object)
     ds = ArxivNodeDataset('adv')
@@ -65,7 +91,8 @@ def main():
     # Directories where saved models are stored
     degrees = ["12.5", "13.5"]
     # degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
-    test_dirs = ["models/victim/deg" + x for x in degrees]
+    test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", "deg" + x)
+                 for x in degrees]
 
     # Load models, convert to features
     test_vecs = []
@@ -76,7 +103,8 @@ def main():
         test_vecs.append(vecs_test)
 
     model = PermInvModel(dims)
-    model.load_state_dict(ch.load("./metamodel_0.37.pth"))
+    # model.load_state_dict(ch.load("./metamodel_old_0.53.pth"))
+    model.load_state_dict(ch.load("./metamodel_old_200.pth"))
     model.eval()
 
     for i, vte in enumerate(test_vecs):

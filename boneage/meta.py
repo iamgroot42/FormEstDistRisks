@@ -8,8 +8,8 @@ from utils import PermInvModel, train_meta_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
-    parser.add_argument('--n_tries', type=int, default=10)
-    parser.add_argument('--batch_size', type=int, default=1000)
+    parser.add_argument('--n_tries', type=int, default=5)
+    parser.add_argument('--batch_size', type=int, default=1200)
     parser.add_argument('--train_sample', type=int, default=700)
     parser.add_argument('--val_sample', type=int, default=50)
     parser.add_argument('--first_n', type=int, default=np.inf,
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         metamodel = PermInvModel(dims)
         metamodel = metamodel.cuda()
 
-        _, vacc = train_meta_model(
+        _, test_acc = train_meta_model(
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),
@@ -80,7 +80,17 @@ if __name__ == "__main__":
             lr=0.001, batch_size=args.batch_size,
             val_data=val_data,
             eval_every=10, gpu=True)
-        accs.append(vacc)
-        print("Run %d: %.2f" % (i+1, vacc))
+        accs.append(test_acc)
+        print("Run %d: %.2f" % (i+1, test_acc))
 
     print(accs)
+
+
+# Test accuracies
+# Ratio | i = 1 | i = 2 | i = 3
+# 0.2 [98.7, 99.7, 99.75, 99.6, 99.3] [99.75, 98.6, 99.1, 98.8, 99.8]
+# 0.3 [92.7, 95.75, 95.65, 83.35, 93.7] [49.5, 95.9, 91.85, 92.45, 92.75]
+# 0.4 [58.45, 76.35, 64.35, 50.0, 73.55] [50.05, 84.3, 61.65, 69.9, 50.4] ?
+# 0.6 [55.75, 84.3, 52.95, 74.95, 52.65] [50.4, 77.45, 59.35, 56.95, 64.95] [57.3, 71.9, 51.15, 64.7, 61.55]
+# 0.7 [88.2, 85.45, 89.75, 88.35, 88.75] [78.05, 85.25, 73.15, 79.65, 82.1] 
+# 0.8 [98.4, 98.55, 96.4, 97.65, 98.8] [99.0, 97.2, 96.95, 95.2, 99.25]

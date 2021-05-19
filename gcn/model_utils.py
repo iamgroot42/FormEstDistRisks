@@ -35,19 +35,25 @@ class GCN(nn.Module):
         self.layers.append(GraphConv(n_hidden, ds.num_classes))
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, features):
+    def forward(self, features, latent=None):
+        if latent < 0 or latent > len(self.layers):
+            raise ValueError("Invald interal layer requested")
+
         h = features
         for i, layer in enumerate(self.layers):
             if i != 0:
                 h = self.dropout(h)
             h = layer(self.g, h)
+            if i == latent:
+                return h
         return h
 
 
 def get_model(ds, args):
     model = GCN(ds, args.hidden_channels,
                 args.num_layers, args.dropout)
-    model = model.cuda()
+    if args.gpu:
+        model = model.cuda()
     return model
 
 
@@ -135,11 +141,16 @@ def get_model_features(model_dir, ds, args, max_read=None):
         model = get_model(ds, args)
 
         # Load weights into model
-        model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
+        if args.gpu:
+            model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
+        else:
+            model.load_state_dict(ch.load(os.path.join(
+                model_dir, mpath), map_location=ch.device('cpu')))
         model.eval()
 
         # Extract model weights
-        dims, fvec = get_weight_layers(model, transpose=False)
+        dims, fvec = get_weight_layers(
+            model, transpose=False, first_n=args.first_n)
 
         vecs.append(fvec)
 

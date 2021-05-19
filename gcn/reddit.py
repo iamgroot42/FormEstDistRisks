@@ -1,5 +1,6 @@
 import dgl
 import torch.nn as nn
+import torch as ch
 import dgl.nn.pytorch as dglnn
 import torch.nn.functional as F
 from data_utils import Reddit5KDataset
@@ -8,10 +9,14 @@ from dgl.dataloading import GraphDataLoader
 
 ds = Reddit5KDataset()
 data = ds.data
-dataloader = GraphDataLoader(
-    data,  batch_size=512,
-    drop_last=False,
-    shuffle=True)
+
+embed = nn.Embedding(data.number_of_nodes(), 32)
+data.ndata['feat'] = embed.weight
+
+print(data)
+exit(0)
+
+dataloader = ds.get_loader()
 
 
 class Classifier(nn.Module):
@@ -34,7 +39,7 @@ class Classifier(nn.Module):
 
 # Only an example, 7 is the input feature size
 model = Classifier(7, 20, 5)
-opt = nn.optim.Adam(model.parameters())
+opt = ch.optim.Adam(model.parameters())
 for epoch in range(20):
     for batched_graph, labels in dataloader:
         feats = batched_graph.ndata['attr']

@@ -1,16 +1,19 @@
 import utils
-from data_utils import SUPPORTED_PROPERTIES, CensusIncome
+from data_utils import SUPPORTED_PROPERTIES
 from model_utils import get_models_path, get_model_representations
 import seaborn as sns
 import pandas as pd
 import argparse
 import numpy as np
-import os
 import torch as ch
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
+
+
+# WHY ARE RESULTS SUDDENLY SO EFFING BAD?!?!?!?
+# NOTHING MAKES SENSE!!
 
 
 if __name__ == "__main__":
@@ -24,8 +27,6 @@ if __name__ == "__main__":
                         help='number of repetitions for multimode')
     parser.add_argument('--filename', type=str, default="graph",
                         help='desired title for plot, sep by _')
-    parser.add_argument('--save_prefix', default="./loaded_census_models/",
-                        help='default basepath to store loaded model weights in')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--darkplot', action="store_true",
@@ -40,20 +41,17 @@ if __name__ == "__main__":
         # Set dark background
         plt.style.use('dark_background')
 
-    # Census Income dataset
-    prefix = os.path.join(args.save_prefix, args.filter)
-    ci = CensusIncome()
-
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
-    targets = filter(lambda x: x != "0.5", os.listdir(
-        get_models_path(args.filter, "adv")))
+    # targets = filter(lambda x: x != "0.5", os.listdir(
+    #     get_models_path(args.filter, "adv")))
+    targets = ["0.8"]
 
     # Load up positive-label test, test data
-    pos_w_test, pos_labels_test, dims = get_model_representations(
-        get_models_path(args.filter, "victim", "0.5"), 1)
     pos_w, pos_labels, _ = get_model_representations(
         get_models_path(args.filter, "adv", "0.5"), 1)
+    pos_w_test, pos_labels_test, dims = get_model_representations(
+        get_models_path(args.filter, "victim", "0.5"), 1)
 
     data = []
     columns = [
@@ -72,12 +70,10 @@ if __name__ == "__main__":
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
-
-        # Batch layer-wise inputs
-        # print("Batching data: hold on")
-        # X_te = utils.prepare_batched_data(X_te)
-
         Y_te = ch.cat((pos_labels_test, neg_labels_test)).cuda()
+
+        print("Batching data: hold on")
+        X_te = utils.prepare_batched_data(X_te)
 
         for _ in range(args.ntimes):
             # Random shuffles
@@ -112,27 +108,38 @@ if __name__ == "__main__":
                 # Combine them together
                 X_val = np.concatenate((pp_val_x, np_val_x))
                 Y_val = ch.cat((pp_val_y, np_val_y))
+
+                # Batch layer-wise inputs
+                print("Batching data: hold on")
+                X_val = utils.prepare_batched_data(X_val)
                 Y_val = Y_val.float()
 
                 val_data = (X_val, Y_val)
 
             metamodel = utils.PermInvModel(dims)
             metamodel = metamodel.cuda()
+            metamodel = ch.nn.DataParallel(metamodel)
 
+            # Float data
             Y_tr = Y_tr.float()
             Y_te = Y_te.float()
+
+            # Batch layer-wise inputs
+            print("Batching data: hold on")
+            X_tr = utils.prepare_batched_data(X_tr)
 
             clf, tacc = utils.train_meta_model(
                          metamodel,
                          (X_tr, Y_tr),
                          (X_te, Y_te),
-                         epochs=100, binary=binary,
+                         epochs=200, binary=binary,
                          regression=args.regression,
-                         lr=0.001, batch_size=args.batch_size,
+                         lr=1e-3, batch_size=args.batch_size,
                          val_data=val_data,
+                         combined=True,
                          eval_every=10, gpu=True)
 
-            data.append([float(tg), tacc.cpu().numpy()])
+            data.append([float(tg), tacc])
             print("Test accuracy: %.3f" % data[-1][1])
 
     # Add dividing line

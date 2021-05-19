@@ -20,8 +20,20 @@ class BoneModel(nn.Module):
             nn.ReLU(),
             nn.Linear(64, 1))
 
-    def forward(self, x):
-        return self.layers(x)
+    def forward(self, x, latent=None):
+        if latent is None:
+            return self.layers(x)
+
+        if latent not in [0, 1]:
+            raise ValueError("Invald interal layer requested")
+        # First, second hidden layers correspond to outputs of
+        # Model layers 1, 3
+        latent = (latent * 2) + 1
+
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if i == latent:
+                return x
 
 
 # Save model in specified directory

@@ -7,7 +7,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/75_25"
+# BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/75_25"
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/60_40"
 
 
 def layer_output(data, MLP, layer=0):
@@ -44,14 +45,10 @@ def get_model_representations(folder_path, label):
     return w, labels, dims
 
 
-def get_model(max_iter=200,
-              early_stopping=True,
-              hidden_layer_sizes=(32, 16, 8),
-              validation_fraction=0.25):
+def get_model(max_iter=40,
+              hidden_layer_sizes=(32, 16, 8),):
     clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes,
-                        max_iter=max_iter,
-                        early_stopping=early_stopping,
-                        validation_fraction=validation_fraction)
+                        max_iter=max_iter)
     return clf
 
 

@@ -37,10 +37,11 @@ class Reddit5KDataset(GraphLevelGraphDataset):
 
 
 class NodeLevelDataset:
-    def __init__(self, name, normalize=True):
+    def __init__(self, name, normalize=True, on_gpu=True):
         self.data = DglNodePropPredDataset(name=name)
 
         self.g, self.labels = self.data[0]
+        self.on_gpu = on_gpu
 
         # Extract node features
         self.features = self.g.ndata['feat']
@@ -64,7 +65,8 @@ class NodeLevelDataset:
         self.pre_process()
 
         # Shift data to GPU
-        self.shift_to_gpu()
+        if self.on_gpu:
+            self.shift_to_gpu()
 
     def before_init(self):
         pass
@@ -107,9 +109,9 @@ class NodeLevelDataset:
 
 
 class ArxivNodeDataset(NodeLevelDataset):
-    def __init__(self, split, normalize=True):
+    def __init__(self, split, normalize=True, on_gpu=True):
         super(ArxivNodeDataset, self).__init__(
-            'ogbn-arxiv', normalize=normalize)
+            'ogbn-arxiv', normalize=normalize, on_gpu=on_gpu)
 
         # 59:41 victim:adv data split
         # (all original data, including train/val/test)
@@ -141,7 +143,8 @@ class ArxivNodeDataset(NodeLevelDataset):
     def before_init(self):
         # Extract years
         self.years = ch.squeeze(self.g.ndata['year'], 1)
-        self.years = self.years.cuda()
+        if self.on_gpu:
+            self.years = self.years.cuda()
 
     def get_idx_split(self):
         return self.train_idx, self.test_idx
@@ -220,7 +223,8 @@ class ArxivNodeDataset(NodeLevelDataset):
                 keep[i] = mapping[x.item()]
 
             # Shift mask back to GPU
-            keep = keep.cuda()
+            if self.on_gpu:
+                keep = keep.cuda()
             return keep
 
         # Update masks to account for pruned nodes,  re-indexing
