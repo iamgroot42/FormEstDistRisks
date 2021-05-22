@@ -4,3 +4,5 @@ dataset/*
 settings.json
 *.pth
 *.sh
+LOGS_*
+perf_*

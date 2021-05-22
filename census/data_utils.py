@@ -27,7 +27,8 @@ class CensusIncome:
         self.dropped_cols = ["education", "native-country"]
         self.path = path
         self.download_dataset()
-        self.load_data(test_ratio=0.4)
+        # self.load_data(test_ratio=0.4)
+        self.load_data(test_ratio=0.5)
 
     # Download dataset, if not present
     def download_dataset(self):
@@ -55,12 +56,23 @@ class CensusIncome:
                     'marital-status', 'relationship']
         # Drop columns that do not help with task
         df = df.drop(columns=self.dropped_cols, axis=1)
+        # Club categories not directly relevant for property inference
+        df["race"] = df["race"].replace(
+            ['Asian-Pac-Islander', 'Amer-Indian-Eskimo'], 'Other')
         for colname in colnames:
             df = oneHotCatVars(df, colname)
+        # Drop features pruned via feature engineering
+        prune_feature = [
+            "workClass:Never-worked",
+            "workClass:Without-pay",
+            "occupation:Priv-house-serv",
+            "occupation:Armed-Forces"
+        ]
+        df = df.drop(columns=prune_feature, axis=1)
         return df
 
     # Return data with desired property ratios
-    def get_data(self, split, prop_ratio, filter_prop):
+    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
         def get_x_y(P):
             # Scale X values
             Y = P['income'].to_numpy()
@@ -72,9 +84,11 @@ class CensusIncome:
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
             TRAIN_DF = get_filter(TRAIN_DF, filter_prop,
-                                  split, prop_ratio, is_test=0)
+                                  split, prop_ratio, is_test=0,
+                                  custom_limit=custom_limit)
             TEST_DF = get_filter(TEST_DF, filter_prop,
-                                 split, prop_ratio, is_test=1)
+                                 split, prop_ratio, is_test=1,
+                                 custom_limit=custom_limit)
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
                 TRAIN_DF), get_x_y(TEST_DF)
@@ -103,18 +117,25 @@ class CensusIncome:
         df = pd.concat([train_data, test_data], axis=0)
         df = self.process_df(df)
 
-        # Take note of columns to scale
-        scale_cols = [
-            "age", "fnlwgt", "education-num", "capital-gain",
-            "capital-loss", "hours-per-week"
-        ]
-
-        for c in scale_cols:
+        # Take note of columns to scale with Z-score
+        z_scale_cols = ["fnlwgt", "capital-gain", "capital-loss"]
+        for c in z_scale_cols:
             # z-score normalization
             df[c] = (df[c] - df[c].mean()) / df[c].std()
 
+        # Take note of columns to scale with min-max normalization
+        minmax_scale_cols = ["age",  "hours-per-week", "education-num"]
+        for c in minmax_scale_cols:
+            # z-score normalization
+            df[c] = (df[c] - df[c].min()) / df[c].max()
+
         # Split back to train/test data
-        self.train_df, self.test_df = df[df['is_train'] == 1], df[df['is_train'] == 0]
+        self.train_df, self.test_df = df[df['is_train']
+                                         == 1], df[df['is_train'] == 0]
+
+        # Drop 'train/test' columns
+        self.train_df = self.train_df.drop(columns=['is_train'], axis=1)
+        self.test_df = self.test_df.drop(columns=['is_train'], axis=1)
 
         def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
@@ -134,7 +155,7 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test):
+def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
@@ -153,18 +174,34 @@ def get_filter(df, filter_prop, split, ratio, is_test):
     #     },
     # }
     # For recreating paper experiments and checking Z values
+    # prop_wise_subsample_sizes = {
+    #     "adv": {
+    #         # "sex": (1200, 550),
+    #         "sex": (1500, 750),
+    #         "race": (360, 175)
+    #     },
+    #     "victim": {
+    #         # "sex": (1800, 890),
+    #         "sex": (1500, 750),
+    #         "race": (520, 260)
+    #     },
+    # }
+    # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
         "adv": {
-            "sex": (1200, 550),
-            "race": (360, 175)
+            "sex": (1100, 500),
+            "race": (600, 300),
         },
         "victim": {
-            "sex": (1800, 890),
-            "race": (520, 260)
+            "sex": (1100, 500),
+            "race": (600, 300),
         },
     }
 
-    subsample_size = prop_wise_subsample_sizes[split][filter_prop][is_test]
+    if custom_limit is None:
+        subsample_size = prop_wise_subsample_sizes[split][filter_prop][is_test]
+    else:
+        subsample_size = custom_limit
     return utils.heuristic(df, lambda_fn, ratio,
                            subsample_size, class_imbalance=3,
                            n_tries=100, class_col='income',
@@ -179,7 +216,8 @@ class CensusWrapper:
         self.ratio = ratio
         self.filter_prop = filter_prop
 
-    def load_data(self):
+    def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
-                                filter_prop=self.filter_prop)
+                                filter_prop=self.filter_prop,
+                                custom_limit=custom_limit)

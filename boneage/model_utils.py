@@ -52,6 +52,11 @@ def load_model(path):
     return model
 
 
+# Get model path, given perameters
+def get_model_folder_path(split, ratio):
+    return os.path.join(BASE_MODELS_DIR, split, ratio)
+
+
 # Function to extract model weights for all models in given directory
 def get_model_features(model_dir, max_read=None, first_n=np.inf):
     vecs = []

@@ -1,8 +1,6 @@
 from ogb.nodeproppred import Evaluator
 import data_utils
-import torch as ch
 import argparse
-import os
 import model_utils
 
 
@@ -17,7 +15,10 @@ def main():
     parser.add_argument('--degree', type=float, default=None)
     parser.add_argument('--property', choices=data_utils.SUPPORTED_PROPERTIES)
     parser.add_argument('--prune', type=float, default=0)
+    parser.add_argument('--gpu', action="store_true")
     parser.add_argument("--savepath", help="path to save trained model")
+    parser.add_argument(
+        "--prefix", help="prefix for saving models", default=None)
     args = parser.parse_args()
     print(args)
 
@@ -78,7 +79,8 @@ def main():
     # Save model
     model_utils.save_model(
         model, args.split,
-        args.savepath + "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te))
+        args.savepath + "_tr%.2f_te%.2f.pth" % (acc_tr, acc_te),
+        prefix=args.prefix)
 
 
 if __name__ == "__main__":

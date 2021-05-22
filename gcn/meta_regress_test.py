@@ -1,3 +1,4 @@
+from functools import reduce
 from data_utils import ArxivNodeDataset
 import torch as ch
 import argparse
@@ -77,7 +78,8 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--darkplot', action="store_true",
                         help='Use dark background for plotting results')
-    parser.add_argument('--gpu', action="store_true")                        
+    parser.add_argument('--gpu', action="store_true")
+    parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
     args = parser.parse_args()
     print(args)
 
@@ -89,8 +91,7 @@ def main():
     ds = ArxivNodeDataset('adv')
 
     # Directories where saved models are stored
-    degrees = ["12.5", "13.5"]
-    # degrees = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
+    degrees = args.degrees.split(",")
     test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", "deg" + x)
                  for x in degrees]
 
@@ -107,9 +108,18 @@ def main():
     model.load_state_dict(ch.load("./metamodel_old_200.pth"))
     model.eval()
 
+    mse_loss, n_elems = 0, 0
     for i, vte in enumerate(test_vecs):
 
+        # Get model predictions
         output = test_model(model, vte)
+
+        # Compute MSE loss
+        loss_fn = ch.nn.MSELoss(reduction='sum')
+        gt = (ch.ones_like(output) * float(degrees[i]))
+        mse_loss += loss_fn(output, gt).item()
+        n_elems += output.shape[0]
+
         so, _ = ch.sort(output)
         so = so.numpy()
 
@@ -117,6 +127,8 @@ def main():
         plt.plot(np.arange(len(so)), so, label=degrees[i])
         # Reference line
         plt.axhline(y=float(degrees[i]), linewidth=1.0, linestyle='--', color='C%d' % i)
+
+    print("Mean MSE los: %.4f" % (mse_loss / n_elems))
 
     plt.xlabel("Models (1000), sorted by meta-classifier's predicted degree")
     plt.ylabel("Degree of graph predicted by meta-classifier")

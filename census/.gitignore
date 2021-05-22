@@ -4,3 +4,4 @@ census_models_mlp/*
 census_models_mlp_many/*
 census_data/*
 *.png
+train_fix*.sh

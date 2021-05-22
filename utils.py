@@ -692,20 +692,23 @@ def heuristic(df, condition, ratio,
         iterator = tqdm(iterator)
     for _ in iterator:
         pckd_df = filter(df, condition, ratio, verbose=False)
+
         # Class-balanced sampling
         zero_ids = np.nonzero(pckd_df[class_col].to_numpy() == 0)[0]
         one_ids = np.nonzero(pckd_df[class_col].to_numpy() == 1)[0]
 
-        if class_imbalance >= 1:
-            zero_ids = np.random.permutation(
-                zero_ids)[:int(class_imbalance * cwise_sample)]
-            one_ids = np.random.permutation(
-                one_ids)[:cwise_sample]
-        else:
-            zero_ids = np.random.permutation(
-                zero_ids)[:cwise_sample]
-            one_ids = np.random.permutation(
-                one_ids)[:int(1 / class_imbalance * cwise_sample)]
+        # Sub-sample data, if requested
+        if cwise_sample is not None:
+            if class_imbalance >= 1:
+                zero_ids = np.random.permutation(
+                    zero_ids)[:int(class_imbalance * cwise_sample)]
+                one_ids = np.random.permutation(
+                    one_ids)[:cwise_sample]
+            else:
+                zero_ids = np.random.permutation(
+                    zero_ids)[:cwise_sample]
+                one_ids = np.random.permutation(
+                    one_ids)[:int(1 / class_imbalance * cwise_sample)]
 
         # Combine them together
         pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
@@ -1006,7 +1009,7 @@ def train_meta_model(model, train_data, test_data,
                     100 * running_acc / num_samples)
 
             iterator.set_description("Epoch %d : [Train] Loss: %.5f%s" % (
-                e, loss / num_samples, print_acc))
+                e+1, loss / num_samples, print_acc))
 
             # Next batch
             i += batch_size
@@ -1023,11 +1026,12 @@ def train_meta_model(model, train_data, test_data,
 
         # Evaluate on test data now
         if (e+1) % eval_every == 0:
-            print_acc = ""
-            if not regression:
-                print_acc = ", Accuracy: %.2f" % (v_acc)
+            if val_data is not None:
+                print_acc = ""
+                if not regression:
+                    print_acc = ", Accuracy: %.2f" % (v_acc)
 
-            log("[Validation] Loss: %.5f%s" % (val_loss, print_acc))
+                log("[Validation] Loss: %.5f%s" % (val_loss, print_acc))
 
             # Also log test-data metrics
             t_acc, t_loss = test_meta(model, loss_fn, params_test,
@@ -1056,3 +1060,41 @@ def train_meta_model(model, train_data, test_data,
     if regression:
         return model, t_loss
     return model, t_acc
+
+
+def get_z_value(metric_1, metric_2):
+    assert len(metric_1) == len(metric_2), "Unequal sample sets!"
+    n_samples = 2 * len(metric_1)
+    m1, v1 = np.mean(metric_1), np.var(metric_1)
+    m2, v2 = np.mean(metric_2), np.var(metric_2)
+
+    mean_new = np.abs(m1 - m2)
+    var_new = (v1 + v2) / n_samples
+
+    Z = mean_new / np.sqrt(var_new)
+    return Z
+
+
+def get_threshold_acc(X, Y, threshold):
+    # Rule-1: everything above threshold is 1 class
+    acc_1 = np.mean((X >= threshold) == Y)
+    # Rule-2: everything below threshold is 1 class
+    acc_2 = np.mean((X <= threshold) == Y)
+    return max(acc_1, acc_2)
+
+
+def find_threshold_acc(accs_1, accs_2, granularity=0.1):
+    lower, upper = np.min(accs_1), np.max(accs_2)
+    combined = np.concatenate((accs_1, accs_2))
+    classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
+    best_acc = 0.0
+    best_threshold = 0
+    while lower < upper:
+        best_of_two = get_threshold_acc(combined, classes, lower)
+        if best_of_two > best_acc:
+            best_threshold = lower
+            best_acc = best_of_two
+
+        lower += granularity
+
+    return best_acc, best_threshold

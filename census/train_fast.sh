@@ -3,7 +3,7 @@
 N_PER_JOB=500
 N_JOBS=2
 for ((i=0;i<N_JOBS;i++)); do
-    OFFSET=$((N_PER_JOB * i))
+    OFFSET=$((N_PER_JOB * i + 1000))
     python train_ratio_models.py --filter $2 --num $N_PER_JOB --split $1 --ratio $3 --offset $OFFSET &
 done
 

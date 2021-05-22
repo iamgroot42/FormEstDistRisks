@@ -8,10 +8,11 @@ from utils import PermInvModel, train_meta_model
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
-    parser.add_argument('--n_tries', type=int, default=5)
+    parser.add_argument('--n_tries', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=1200)
     parser.add_argument('--train_sample', type=int, default=700)
     parser.add_argument('--val_sample', type=int, default=50)
+    parser.add_argument('--epochs', type=int, default=80)
     parser.add_argument('--first_n', type=int, default=np.inf,
                         help="Only consider first N layers")
     parser.add_argument('--first')
@@ -76,7 +77,7 @@ if __name__ == "__main__":
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),
-            epochs=80, binary=True,
+            epochs=args.epochs, binary=True,
             lr=0.001, batch_size=args.batch_size,
             val_data=val_data,
             eval_every=10, gpu=True)
@@ -94,3 +95,7 @@ if __name__ == "__main__":
 # 0.6 [55.75, 84.3, 52.95, 74.95, 52.65] [50.4, 77.45, 59.35, 56.95, 64.95] [57.3, 71.9, 51.15, 64.7, 61.55]
 # 0.7 [88.2, 85.45, 89.75, 88.35, 88.75] [78.05, 85.25, 73.15, 79.65, 82.1] 
 # 0.8 [98.4, 98.55, 96.4, 97.65, 98.8] [99.0, 97.2, 96.95, 95.2, 99.25]
+
+
+# 0.4 needs 100
+# 0.6 needs 150

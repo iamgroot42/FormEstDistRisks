@@ -36,8 +36,9 @@ class GCN(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, features, latent=None):
-        if latent < 0 or latent > len(self.layers):
-            raise ValueError("Invald interal layer requested")
+        if latent is not None:
+            if latent < 0 or latent > len(self.layers):
+                raise ValueError("Invald interal layer requested")
 
         h = features
         for i, layer in enumerate(self.layers):
@@ -57,9 +58,11 @@ def get_model(ds, args):
     return model
 
 
-def save_model(model, split, prop_and_name):
+def save_model(model, split, prop_and_name, prefix=None):
+    if prefix is None:
+        prefix = BASE_MODELS_DIR
     savepath = os.path.join(split, prop_and_name)
-    ch.save(model.state_dict(), os.path.join(BASE_MODELS_DIR, savepath))
+    ch.save(model.state_dict(), os.path.join(prefix, savepath))
 
 
 def train(model, ds, train_idx, optimizer, loss_fn):

@@ -125,7 +125,7 @@ def get_df(split):
         raise ValueError("Invalid split specified!")
 
     df_train = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/train.csv" % split))
-    df_val = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/val.csv" % split ))
+    df_val = pd.read_csv(os.path.join(BASE_DATA_DIR, "%s/val.csv" % split))
 
     return df_train, df_val
 
