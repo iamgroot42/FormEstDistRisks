@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     ratio_1 = sys.argv[1]
     ratio_2 = sys.argv[2]
-    focus_prop = "sex"
+    focus_prop = sys.argv[3]
 
     # Get victim models
     models_victim_1 = get_models(
@@ -74,8 +74,9 @@ if __name__ == "__main__":
     y_te_2 = y_te_2.ravel()
 
     # Iterate through data from both distrs
-    z_vals = []
+    z_vals, f_accs = [], []
     loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
+    allaccs_1, allaccs_2 = [], []
     for loader in loaders:
         # Load models and get accuracies
         accs_1 = get_accs(loader, models_1)
@@ -100,7 +101,7 @@ if __name__ == "__main__":
         print("Z value: %.3f" % Z)
         z_vals.append(Z)
 
-        tracc, threshold = find_threshold_acc(accs_1, accs_2)
+        tracc, threshold = find_threshold_acc(accs_1, accs_2, granularity=0.01)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
 
@@ -119,8 +120,28 @@ if __name__ == "__main__":
         specific_acc = get_threshold_acc(combined, classes, threshold)
         print("[Victim] Accuracy at specified threshold: %.2f" %
               (100 * specific_acc))
+        f_accs.append(100 * specific_acc)
+
+        # Collect all accuracies for basic baseline
+        allaccs_1.append(accs_victim_1)
+        allaccs_2.append(accs_victim_2)
 
     print("Z values:", z_vals)
+
+    # Basic baseline: look at model performance on test sets from both G_b
+    # Predict b for whichever b it is higher
+    allaccs_1 = np.array(allaccs_1)
+    allaccs_2 = np.array(allaccs_2)
+
+    preds_1 = (allaccs_1[0, :] > allaccs_1[1, :])
+    preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
+
+    basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
+    print("[Victim] Accuracy on chosen Z value: %.2f" %
+          f_accs[np.argmin(z_vals)])
+    print("Baseline for M_0: %.3f, Baseline for M_1: %.3f" %
+          (100 * np.mean(preds_1), 100 * np.mean(preds_2)))
+    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
 
     plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
     plt.plot(np.arange(len(accs_2)), np.sort(accs_2))

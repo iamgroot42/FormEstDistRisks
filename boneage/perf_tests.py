@@ -69,12 +69,6 @@ if __name__ == "__main__":
         cwise_sample=10000,
         class_imbalance=1.0, n_tries=300)
 
-    # Check ratios
-    print(df_1['label'].mean())
-    print(df_2['label'].mean())
-    print(len(df_1))
-    print(len(df_2))
-
     # Prepare data loaders
     ds_1 = BoneWrapper(
         df_1, df_1, features=features)
@@ -90,39 +84,40 @@ if __name__ == "__main__":
     models_victim_2 = get_models(get_model_folder_path("victim", ratio_2))
 
     # Load adv models
-    total_models = 100
-    models_1 = get_models(get_model_folder_path(
-        "adv", ratio_1), total_models // 2)
-    models_2 = get_models(get_model_folder_path(
-        "adv", ratio_2), total_models // 2)
+    # total_models = 100
+    # models_1 = get_models(get_model_folder_path(
+    #     "adv", ratio_1), total_models // 2)
+    # models_2 = get_models(get_model_folder_path(
+    #     "adv", ratio_2), total_models // 2)
 
     z_vals = []
+    allaccs_1, allaccs_2 = [], []
     for loader in loaders:
-        accs_1 = get_accs(loader, models_1)
-        accs_2 = get_accs(loader, models_2)
+        # accs_1 = get_accs(loader, models_1)
+        # accs_2 = get_accs(loader, models_2)
 
-        # Look at [0, 100]
-        accs_1 *= 100
-        accs_2 *= 100
+        # # Look at [0, 100]
+        # accs_1 *= 100
+        # accs_2 *= 100
 
-        # Calculate Z value
-        m1, v1 = np.mean(accs_1), np.var(accs_1)
-        m2, v2 = np.mean(accs_2), np.var(accs_2)
-        mean_new = np.abs(m1 - m2)
-        var_new = (v1 + v2) / total_models
-        Z = mean_new / np.sqrt(var_new)
+        # # Calculate Z value
+        # m1, v1 = np.mean(accs_1), np.var(accs_1)
+        # m2, v2 = np.mean(accs_2), np.var(accs_2)
+        # mean_new = np.abs(m1 - m2)
+        # var_new = (v1 + v2) / total_models
+        # Z = mean_new / np.sqrt(var_new)
 
-        prob = calculate_same_prob(mean_new, var_new)
-        print(prob)
+        # prob = calculate_same_prob(mean_new, var_new)
+        # print(prob)
 
-        print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
-        print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
-        print("Number of samples: %d" % total_models)
-        z_vals.append(Z)
+        # print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
+        # print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
+        # print("Number of samples: %d" % total_models)
+        # z_vals.append(Z)
 
-        tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)
-        print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
-              (100 * tracc, threshold))
+        # tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)
+        # print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
+        #       (100 * tracc, threshold))
 
         # Compute accuracies on this data for victim
         accs_victim_1 = get_accs(loader, models_victim_1)
@@ -133,18 +128,32 @@ if __name__ == "__main__":
         accs_victim_2 *= 100
 
         # Threshold based on adv models
-        combined = np.concatenate((accs_victim_1, accs_victim_2))
-        classes = np.concatenate(
-            (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-        specific_acc = utils.get_threshold_acc(combined, classes, threshold)
-        print("[Victim] Accuracy at specified threshold: %.2f" %
-              (100 * specific_acc))
+        # combined = np.concatenate((accs_victim_1, accs_victim_2))
+        # classes = np.concatenate(
+        #     (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
+        # specific_acc = utils.get_threshold_acc(combined, classes, threshold)
+        # print("[Victim] Accuracy at specified threshold: %.2f" %
+        #       (100 * specific_acc))
+
+        # Collect all accuracies for basic baseline
+        allaccs_1.append(accs_victim_1)
+        allaccs_2.append(accs_victim_2)
 
     print("Z values:", z_vals)
 
-    plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
-    plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
-    plt.savefig("./quick_see.png")
+    # Basic baseline: look at model performance on test sets from both G_b
+    # Predict b for whichever b it is higher
+    allaccs_1 = np.array(allaccs_1).T
+    allaccs_2 = np.array(allaccs_2).T
+
+    preds_1 = (allaccs_1[:, 0] > allaccs_1[:, 1])
+    preds_2 = (allaccs_2[:, 0] < allaccs_2[:, 1])
+    basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
+    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
+
+    # plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
+    # plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
+    # plt.savefig("./quick_see.png")
 
 
 # Z values

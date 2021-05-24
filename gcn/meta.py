@@ -11,8 +11,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--train_sample', type=int, default=700)
-    parser.add_argument('--val_sample', type=int, default=50)
+    parser.add_argument('--train_sample', type=int, default=800)
+    parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--iters', type=int, default=200)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
@@ -47,12 +47,13 @@ if __name__ == "__main__":
             ted, ds, args, max_read=1000)
 
         # Split train into train+val
-        vecs_val = vecs_train[:args.val_sample]
         vecs_train = vecs_train[args.val_sample:]
 
         X_train += vecs_train
-        X_val += vecs_val
         X_test += vecs_test
+        if args.val_sample > 0:
+            vecs_val = vecs_train[:args.val_sample]
+            X_val += vecs_val
 
         # Prepare labels too
         i_ = i
@@ -62,31 +63,37 @@ if __name__ == "__main__":
             i_ = float(i_)
 
         Y_train.append([i_] * len(vecs_train))
-        Y_val.append([i_] * len(vecs_val))
         Y_test.append([i_] * len(vecs_test))
 
+        if args.val_sample > 0:
+            Y_val.append([i_] * len(vecs_val))
+
     X_train = np.array(X_train, dtype='object')
-    X_val = np.array(X_val, dtype='object')
     X_test = np.array(X_test, dtype='object')
 
     Y_train = ch.from_numpy(np.concatenate(Y_train))
-    Y_val = ch.from_numpy(np.concatenate(Y_val))
     Y_test = ch.from_numpy(np.concatenate(Y_test))
 
     print("Batching data: hold on")
     X_train = prepare_batched_data(X_train)
-    X_val = prepare_batched_data(X_val)
     X_test = prepare_batched_data(X_test)
+
+    if args.val_sample > 0:
+        Y_val = ch.from_numpy(np.concatenate(Y_val))
+        X_val = np.array(X_val, dtype='object')
+        X_val = prepare_batched_data(X_val)
 
     if binary or args.regression:
         Y_train = Y_train.float()
-        Y_val = Y_val.float()
         Y_test = Y_test.float()
+        if args.val_sample > 0:
+            Y_val = Y_val.float()
 
     if args.gpu:
         Y_train = Y_train.cuda()
-        Y_val = Y_val.cuda()
         Y_test = Y_test.cuda()
+        if args.val_sample > 0:
+            Y_val = Y_val.cuda()
 
     # First experiment: shuffle labels and use those to train
     # np.random.shuffle(Y_train)
@@ -106,21 +113,29 @@ if __name__ == "__main__":
         if args.parallel:
             metamodel = ch.nn.DataParallel(metamodel)
 
+    if args.val_sample > 0:
+        val_data = (X_val, Y_val)
+    else:
+        val_data = None
+
     metamodel, test_loss = train_meta_model(
         metamodel, (X_train, Y_train), (X_test, Y_test),
         epochs=args.iters, binary=binary, regression=args.regression,
         lr=0.01, batch_size=args.batch_size, eval_every=10,
-        combined=True,
-        val_data=(X_val, Y_val), gpu=args.gpu)
+        combined=True, val_data=val_data, gpu=args.gpu)
 
     print("[Test] Loss: %.4f" % test_loss)
 
     # Save meta-model
-    ch.save(metamodel.state_dict(), "./metamodel_%.3f.pth" % test_loss)
+    # ch.save(metamodel.state_dict(), "./metamodel_%.3f.pth" % test_loss)
 
 
-# Regression:
-# 256: 5.56
-# 512: 8.sth
-# 128: 37
-# 
+# Classification results:
+# 9: 
+# 10:
+# 11:
+# 12:
+# 14: ?
+# 15: ?
+# 16: 95.84, 90, 100, 100, 100, 100, 100, 100, 100, 100
+# 17: 100, 100, 99.9, 99.3, 99.5, 98.3, 100, 98.5, 100

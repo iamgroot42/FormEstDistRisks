@@ -3,6 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 from model_utils import BASE_MODELS_DIR
+import matplotlib.patches as mpatches
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -40,11 +41,26 @@ if __name__ == "__main__":
             data.append([categories[i], raw_data[i][j]])
 
     df = pd.DataFrame(data, columns=columns)
-    sns_plot = sns.boxplot(x=columns[0], y=columns[1], data=df)
+    sns_plot = sns.boxplot(
+        x=columns[0], y=columns[1], data=df, color='C0', showfliers=False,)
     sns_plot.set(ylim=(50, 100))
 
-    # Add vertical dashed line to signal comparison ratio
-    plt.axvline(x=2.5, color='black', linewidth=1.0, linestyle='--')
+    # Add dividing line in centre
+    lower, upper = plt.gca().get_xlim()
+    print(upper, lower)
+    midpoint = (lower + upper) / 2
+    plt.axvline(x=midpoint, color='black',
+                linewidth=1.0, linestyle='--')
+
+    # Map range to numbers to be plotted
+    baselines = [64.9, 64.3, 59.0, 57.0, 56.8, 66.9]
+    targets_scaled = range(int((upper - lower)))
+    plt.plot(targets_scaled, baselines, color='C1', marker='x', linestyle='--')
+
+    # Custom legend
+    meta_patch = mpatches.Patch(color='C0', label=r'$Acc_{meta-classifier}$')
+    baseline_patch = mpatches.Patch(color='C1', label=r'$Acc_{baseline}$')
+    plt.legend(handles=[meta_patch, baseline_patch])
 
     # Make sure axis label not cut off
     plt.tight_layout()

@@ -8,6 +8,7 @@ import os
 
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
 SUPPORTED_PROPERTIES = ["sex", "race", "none"]
+PROPERTY_FOCUS = {"sex": "female", "race": "White"}
 
 
 # US Income dataset
