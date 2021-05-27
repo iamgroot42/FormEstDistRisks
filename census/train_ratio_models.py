@@ -8,14 +8,14 @@ import utils
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--filter', type=str, default='',
+    parser.add_argument('--filter', type=str,
                         choices=data_utils.SUPPORTED_PROPERTIES,
                         help='while filter to use')
     parser.add_argument('--ratio', type=float, default=0.5,
                         help='what ratio of the new sampled dataset should be true')
     parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
-    parser.add_argument('--split', choices=["adv", "victim", "all"],
+    parser.add_argument('--split', choices=["adv", "victim"],
                         help='which split of data to use')
     parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')

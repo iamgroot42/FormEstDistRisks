@@ -8,7 +8,7 @@ import os
 
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
 SUPPORTED_PROPERTIES = ["sex", "race", "none"]
-PROPERTY_FOCUS = {"sex": "female", "race": "White"}
+PROPERTY_FOCUS = {"sex": "Female", "race": "White"}
 
 
 # US Income dataset
@@ -163,30 +163,6 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
         def lambda_fn(x): return x['sex:Female'] == 1
     elif filter_prop == "race":
         def lambda_fn(x): return x['race:White'] == 0
-
-    # prop_wise_subsample_sizes = {
-    #     "adv": {
-    #         "sex": (750, 400),
-    #         "race": (400, 200),
-    #     },
-    #     "victim": {
-    #         "sex": (1100, 600),
-    #         "race": (600, 300),
-    #     },
-    # }
-    # For recreating paper experiments and checking Z values
-    # prop_wise_subsample_sizes = {
-    #     "adv": {
-    #         # "sex": (1200, 550),
-    #         "sex": (1500, 750),
-    #         "race": (360, 175)
-    #     },
-    #     "victim": {
-    #         # "sex": (1800, 890),
-    #         "sex": (1500, 750),
-    #         "race": (520, 260)
-    #     },
-    # }
     # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
         "adv": {

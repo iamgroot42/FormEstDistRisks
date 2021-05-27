@@ -7,8 +7,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
 
-# BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/75_25"
-# BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/60_40"
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
 
 
