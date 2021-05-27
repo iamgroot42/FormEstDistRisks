@@ -10,13 +10,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
     parser.add_argument('--n_tries', type=int, default=10)
     parser.add_argument('--batch_size', type=int, default=1200)
-    parser.add_argument('--train_sample', type=int, default=700)
-    parser.add_argument('--val_sample', type=int, default=50)
+    parser.add_argument('--train_sample', type=int, default=800)
+    parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=80)
     parser.add_argument('--first_n', type=int, default=np.inf,
                         help="Only consider first N layers")
-    parser.add_argument('--first')
-    parser.add_argument('--second')
+    parser.add_argument('--first', help="Ratio for D_0", default="0.5")
+    parser.add_argument('--second', help="Ratio for D_1")
     args = parser.parse_args()
     print(args)
 
