@@ -21,27 +21,27 @@ Run this command to extract features from images
 
 ### Training models
 
-Run this command to train 100 models on the adversary's split of data, setting the ratio of females to 0.5. Change arguments to train models whike varying ratios
+Run this command to train 100 models on the adversary's split of data, setting the ratio of females to 0.5. Change arguments to train models while varying ratios
 
 `python train_models.py --ratio 0.5 --split adv --num 100`
 
 
 ### Loss/Threshold tests
 
-Run this command to generate both loss-test and threshold-test numbers for two specified ratios for the specified attribute
+Run this command to generate both loss-test and threshold-test numbers for two specified ratios
 
-`python perf_tests.py --filter race --ratio_1 0.5 --ratio_2 0.2`
+`python perf_tests.py --ratio_1 0.5 --ratio_2 0.2`
 
 
 ### Meta-classifier
 
-Run this command to train 0.5 v/s X form meta-classifiers on the adversary's models and test them on the victim's models. Use 1000 epochs for sex, 500 for race.
+Run this command to train 0.5 v/s X form meta-classifiers on the adversary's models and test them on the victim's models.
 
-`python meta.py --filter sex`
+`python meta.py --second X`
 
 
 ### Plotting results
 
 Use the following file to plot graphs with experimental results. You can specify arguments to control legend plot, color of plot, and y-axis title (see file for more)
 
-`python make_boxplots.py --filter race`
+`python make_boxplots.py`

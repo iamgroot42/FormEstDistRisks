@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--iters', type=int, default=200)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
+    parser.add_argument('--degrees', default="12,13")
     parser.add_argument('--regression', action="store_true")
     parser.add_argument('--gpu', action="store_true")
     parser.add_argument('--parallel', action="store_true")
@@ -95,12 +95,6 @@ if __name__ == "__main__":
         if args.val_sample > 0:
             Y_val = Y_val.cuda()
 
-    # First experiment: shuffle labels and use those to train
-    # np.random.shuffle(Y_train)
-
-    # Second experiment- run as a n-class classification problem
-    # Cells added/modified above
-
     # Train meta-classifier model
     if binary or args.regression:
         metamodel = PermInvModel(dims)
@@ -127,15 +121,4 @@ if __name__ == "__main__":
     print("[Test] Loss: %.4f" % test_loss)
 
     # Save meta-model
-    # ch.save(metamodel.state_dict(), "./metamodel_%.3f.pth" % test_loss)
-
-
-# Classification results:
-# 9: 
-# 10:
-# 11:
-# 12:
-# 14: ?
-# 15: ?
-# 16: 95.84, 90, 100, 100, 100, 100, 100, 100, 100, 100
-# 17: 100, 100, 99.9, 99.3, 99.5, 98.3, 100, 98.5, 100
+    ch.save(metamodel.state_dict(), "./metamodel_new_%.3f.pth" % test_loss)

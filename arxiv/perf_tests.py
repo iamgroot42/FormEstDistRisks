@@ -14,7 +14,7 @@ mpl.rcParams['figure.dpi'] = 200
 def load_models(model_dir, ds, args, max_read=None):
     iterator = os.listdir(model_dir)
     if max_read is not None:
-        iterator = iterator[:max_read]
+        iterator = np.random.permutation(iterator)[:max_read]
 
     models = []
     for mpath in tqdm(iterator):
@@ -49,7 +49,8 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--property', choices=data_utils.SUPPORTED_PROPERTIES)
+    parser.add_argument(
+        '--property', choices=data_utils.SUPPORTED_PROPERTIES, default="mean")
     parser.add_argument('--deg', type=int)
     parser.add_argument('--gpu', action="store_true")
     args = parser.parse_args()
@@ -63,9 +64,9 @@ def main():
     if args.property == "mean":
         deg_1, deg_2 = 13, args.deg
 
-        # Modify mean degree
-        ds_1.change_mean_degree(deg_1)
-        ds_2.change_mean_degree(deg_2)
+        # Modify mean degree. prune random nodes
+        ds_1.change_mean_degree(deg_1, 0.01)
+        ds_2.change_mean_degree(deg_2, 0.01)
     else:
         deg_1, deg_2 = "og", args.deg
 
@@ -81,6 +82,7 @@ def main():
     z_vals, f_accs = [], []
     degrees = [deg_1, deg_2]
     loders = [ds_1, ds_2]
+    allaccs_1, allaccs_2 = [], []
     for j, loader in enumerate(loders):
 
         # Load victim models
@@ -149,35 +151,31 @@ def main():
               (100 * specific_acc))
         f_accs.append(100 * specific_acc)
 
+        # Collect all accuracies for basic baseline
+        allaccs_1.append(accs_victim_1)
+        allaccs_2.append(accs_victim_2)
+
     print("Z values:", ["%.2f" % x for x in z_vals])
     print("Maximum Z value:", max(z_vals))
+
+    # Basic baseline: look at model performance on test sets from both G_b
+    # Predict b for whichever b it is higher
+    allaccs_1 = np.array(allaccs_1)
+    allaccs_2 = np.array(allaccs_2)
+
+    preds_1 = (allaccs_1[0, :] > allaccs_1[1, :])
+    preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
+
+    basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
     print("[Victim] Accuracy on chosen Z value: %.2f" %
           f_accs[np.argmin(z_vals)])
+    print("Baseline for M_0: %.3f, Baseline for M_1: %.3f" %
+          (100 * np.mean(preds_1), 100 * np.mean(preds_2)))
+    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
+
     plt.legend()
     plt.savefig("./acc_distr_%s_%s.png" % (str(deg_1), str(deg_2)))
 
 
 if __name__ == "__main__":
     main()
-
-
-# Z values:
-# 9: 11.33
-# 10: 9.46
-# 11: 5.5
-# 12: 5.32
-# 14: 1.19
-# 15: 8.04
-# 16: 10.68
-# 17: 28.45
-
-
-# Accuracies:
-# 9: 50.4
-# 10: 50.08
-# 11: 50.15
-# 12: 50.15
-# 14: 50.95 
-# 15: 52.3
-# 16: 51.5
-# 17: 59.16

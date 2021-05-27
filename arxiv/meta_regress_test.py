@@ -79,9 +79,15 @@ def main():
     parser.add_argument('--darkplot', action="store_true",
                         help='Use dark background for plotting results')
     parser.add_argument('--gpu', action="store_true")
-    parser.add_argument('--degrees', default="9,10,11,12,13,14,15,16,17")
+    parser.add_argument('--legend', action="store_true",
+                        help='Add legend to plots')
+    parser.add_argument(
+        '--degrees', default="9,10,11,12,12.5,13,13.5,14,15,16,17")
     args = parser.parse_args()
     print(args)
+
+    # Set font size
+    plt.rcParams.update({'font.size': 12})
 
     if args.darkplot:
         # Set dark background
@@ -99,13 +105,14 @@ def main():
     test_vecs = []
     for ted in test_dirs:
         dims, vecs_test = get_model_features(
+            # ted, ds, args, max_read=10)
             ted, ds, args, max_read=1000)
 
         test_vecs.append(vecs_test)
 
     model = PermInvModel(dims)
     # model.load_state_dict(ch.load("./metamodel_old_0.53.pth"))
-    model.load_state_dict(ch.load("./metamodel_old_200.pth"))
+    model.load_state_dict(ch.load("./metamodel_old_400.pth"))
     model.eval()
 
     mse_loss, n_elems = 0, 0
@@ -117,23 +124,28 @@ def main():
         # Compute MSE loss
         loss_fn = ch.nn.MSELoss(reduction='sum')
         gt = (ch.ones_like(output) * float(degrees[i]))
-        mse_loss += loss_fn(output, gt).item()
+        loss_rn = loss_fn(output, gt).item()
+        mse_loss += loss_rn
         n_elems += output.shape[0]
 
         so, _ = ch.sort(output)
         so = so.numpy()
 
+        # Print individual losses
+        print("MSE loss:", loss_rn / output.shape[0])
+
         # Predictions
         plt.plot(np.arange(len(so)), so, label=degrees[i])
         # Reference line
-        plt.axhline(y=float(degrees[i]), linewidth=1.0, linestyle='--', color='C%d' % i)
+        plt.axhline(y=float(degrees[i]), linewidth=1.0,
+                    linestyle='--', color='C%d' % i)
 
-    print("Mean MSE los: %.4f" % (mse_loss / n_elems))
+    print("Mean MSE loss: %.4f" % (mse_loss / n_elems))
 
-    plt.xlabel("Models (1000), sorted by meta-classifier's predicted degree")
-    plt.ylabel("Degree of graph predicted by meta-classifier")
-    plt.savefig("./regression_plot_nolegend.png")
-    plt.legend()
+    plt.xlabel("Models, sorted by predicted degree")
+    plt.ylabel(r"Predicted mean-degree of training data ($\alpha$)")
+    if args.legend:
+        plt.legend(prop={'size': 13})
     plt.savefig("./regression_plot.png")
 
 

@@ -13,12 +13,13 @@ def main():
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--degree', type=float, default=None)
-    parser.add_argument('--property', choices=data_utils.SUPPORTED_PROPERTIES)
+    parser.add_argument(
+        '--property', choices=data_utils.SUPPORTED_PROPERTIES, default="mean")
     parser.add_argument('--prune', type=float, default=0)
     parser.add_argument('--gpu', action="store_true")
     parser.add_argument("--savepath", help="path to save trained model")
-    parser.add_argument(
-        "--prefix", help="prefix for saving models", default=None)
+    parser.add_argument("--prefix", help="prefix for saving models",
+                        default=model_utils.BASE_MODELS_DIR)
     args = parser.parse_args()
     print(args)
 

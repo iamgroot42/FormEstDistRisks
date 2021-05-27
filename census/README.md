@@ -9,7 +9,7 @@
 
 ### Training models
 
-Run this command to train 100 models on the adversary's split of data, setting the ratio of females to 0.5. Change arguments to train models whike varying other attributes and ratios
+Run this command to train 100 models on the adversary's split of data, setting the ratio of females to 0.5. Change arguments to train models while varying other attributes and ratios
 
 `python train_ratio_models.py --filter sex --ratio 0.5 --split adv --num 100`
 

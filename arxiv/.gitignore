@@ -7,3 +7,4 @@ settings.json
 LOGS_*
 perf_*
 !perf_tests.py
+.vscode/*

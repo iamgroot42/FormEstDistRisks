@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 import os
-from model_utils import get_model, BASE_MODELS_DIR, get_model_features
+from model_utils import BASE_MODELS_DIR, get_model_features
 from utils import PermInvModel
 
 
@@ -30,32 +30,6 @@ def extract_model_weights(m, normalize=False):
         cctd.append(ch.cat((w, b), 0).T)
 
     return dims, cctd
-
-
-# def get_model_features(model_dir, ds, args, max_read=None):
-#     vecs = []
-#     iterator = os.listdir(model_dir)
-#     if max_read is not None:
-#         np.random.shuffle(iterator)
-#         iterator = iterator[:max_read]
-
-#     for mpath in tqdm(iterator):
-#         # Define model
-#         model = get_model(ds, args)
-
-#         # Load weights into model
-#         model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
-#         model.eval()
-
-#         dims, fvec = extract_model_weights(model)
-
-#         if args.gpu:
-#             fvec = [x.cuda() for x in fvec]
-
-#         vecs.append(fvec)
-
-#     return dims, vecs
-
 
 # Function to train meta-classifier
 def train_model(model, train_data, test_data,
