@@ -1,9 +1,8 @@
-from torchvision import transforms, models
+from torchvision import models
 import torch.nn as nn
+import os
 import torch as ch
-import pandas as pd
-from torch.utils.data import DataLoader
-import data_utils
+from data_utils import BoneWrapper, get_df, BASE_DATA_DIR
 
 
 def collect_features(loader, model):
@@ -19,8 +18,10 @@ def collect_features(loader, model):
 
 
 if __name__ == "__main__":
-    import sys
-    split = int(sys.argv[1])
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--split', choices=["victim", "adv"])
+    args = parser.parse_args()
 
     # Load model
     model = models.densenet121(pretrained=True)
@@ -33,29 +34,14 @@ if __name__ == "__main__":
     model = nn.DataParallel(model)
 
     # Fetch indices for which features are wanted
-    og_train = pd.read_csv("./data/split_%d/train.csv" % split)
-    og_val = pd.read_csv("./data/split_%d/val.csv" % split)
-
-    # Define data transforms
-    input_size = 224
-    data_transform = transforms.Compose([
-        transforms.Resize((input_size, input_size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])])
+    og_train, og_val = get_df(args.split)
 
     # Ready dataset objects
-    ds_train = data_utils.BoneDataset(og_train, data_transform)
-    ds_val = data_utils.BoneDataset(og_val, data_transform)
+    wrapper = BoneWrapper(og_train, og_val)
 
     # Ready loaders
-    batch_size = 100 #* 4
-    train_loader = DataLoader(
-        ds_train, batch_size=batch_size,
-        shuffle=False, num_workers=8)
-    val_loader = DataLoader(
-        ds_val, batch_size=batch_size * 2,
-        shuffle=False, num_workers=8)
+    batch_size = 100
+    train_loader, val_loader = wrapper.get_loaders(100, shuffle=False)
 
     # Collect features
     print("Collecting train-data features")
@@ -71,5 +57,7 @@ if __name__ == "__main__":
                for i in range(len(og_val))}
 
     # Save features
-    ch.save(train_map, "./data/split_%d/features_train.pt" % split)
-    ch.save(val_map, "./data/split_%d/features_val.pt" % split)
+    ft_path = os.path.join(BASE_DATA_DIR, args.split, "features_train.pt")
+    fv_path = os.path.join(BASE_DATA_DIR, args.split, "features_val.pt")
+    ch.save(train_map, ft_path)
+    ch.save(val_map, fv_path)

@@ -1,14 +1,10 @@
-# import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset, DataLoader
-import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 import torch as ch
-import torch.nn as nn
 import os
-# from glob import glob
 import utils
 
 
@@ -137,8 +133,10 @@ def get_features(split):
 
     # Load features
     features = {}
-    features["train"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/features_train.pt" % split))
-    features["val"] = ch.load(os.path.join(BASE_DATA_DIR, "%s/features_val.pt" % split))
+    features["train"] = ch.load(os.path.join(
+        BASE_DATA_DIR, "%s/features_train.pt" % split))
+    features["val"] = ch.load(os.path.join(
+        BASE_DATA_DIR, "%s/features_val.pt" % split))
 
     return features
 
@@ -151,7 +149,7 @@ def useful_stats(df):
 
 
 if __name__ == "__main__":
-    base = "/p/adversarialml/as9rw/datasets/rsnabone"
+    base = os.path.abspath(os.path.join(BASE_DATA_DIR, os.pardir))
 
     # First split of data, only visible to victim
     # Second split of data, only visible to adversary
@@ -171,12 +169,12 @@ if __name__ == "__main__":
         train_df, val_df = stratified_df_split(df, 0.2)
 
         # Ensure directory exists
-        dir_prefix = "./data/split_%d/" % split
+        dir_prefix = os.path.join(BASE_DATA_DIR, "data", split)
         utils.ensure_dir_exists(dir_prefix)
 
         # Save train-test splits
         train_df.to_csv(os.path.join(dir_prefix, "train.csv"))
         val_df.to_csv(os.path.join(dir_prefix, "val.csv"))
 
-    save_split(df_victim, 1)
-    save_split(df_adv, 2)
+    save_split(df_victim, "victim")
+    save_split(df_adv, "adv")
