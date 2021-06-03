@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument('--regression', action="store_true")
     parser.add_argument('--gpu', action="store_true")
     parser.add_argument('--parallel', action="store_true")
-    parser.add_argument('--first_n', type=int, default=3,
+    parser.add_argument('--first_n', type=int, default=4,
                         help="Only consider first N layers")
     args = parser.parse_args()
     print(args)

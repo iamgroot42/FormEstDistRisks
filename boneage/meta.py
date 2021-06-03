@@ -3,7 +3,7 @@ import numpy as np
 import os
 import argparse
 from model_utils import get_model_features, BASE_MODELS_DIR
-from utils import PermInvModel, train_meta_model
+from utils import PermInvModel, train_meta_model, flash_utils
 
 
 if __name__ == "__main__":
@@ -18,13 +18,12 @@ if __name__ == "__main__":
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
     args = parser.parse_args()
-    print(args)
+    flash_utils(args)
 
     train_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.first)
     train_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.second)
     test_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.first)
     test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
-    features_avail = False
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(train_dir_1, first_n=args.first_n)

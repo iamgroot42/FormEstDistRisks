@@ -39,7 +39,7 @@ class BoneModel(nn.Module):
 # Save model in specified directory
 def save_model(model, split, prop_and_name):
     savepath = os.path.join(split, prop_and_name)
-    # Make sure cirectory exists
+    # Make sure directory exists
     ensure_dir_exists(savepath)
     ch.save(model.state_dict(), os.path.join(BASE_MODELS_DIR, savepath))
 

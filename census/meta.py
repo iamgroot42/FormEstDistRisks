@@ -27,6 +27,8 @@ if __name__ == "__main__":
     # Race: 500* epochs, 1e-3
     parser.add_argument('--epochs', type=int, default=1000,
                         help="Number of epochs to train meta-classifier")
+    parser.add_argument('--first_n', type=int, default=np.inf,
+                        help="Use only first N layers' parameters")
     parser.add_argument('--ntimes', type=int, default=10,
                         help='number of repetitions for multimode')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
@@ -42,17 +44,17 @@ if __name__ == "__main__":
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
-        get_models_path(args.filter, "adv", d_0), 1)
+        get_models_path(args.filter, "adv", d_0), 1, args.first_n)
     pos_w_test, pos_labels_test, dims = get_model_representations(
-        get_models_path(args.filter, "victim", d_0), 1)
+        get_models_path(args.filter, "victim", d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
         # Load up negative-label train, test data
         neg_w, neg_labels, _ = get_model_representations(
-                get_models_path(args.filter, "adv", tg), 0)
+                get_models_path(args.filter, "adv", tg), 0, args.first_n)
         neg_w_test, neg_labels_test, _ = get_model_representations(
-            get_models_path(args.filter, "victim", tg), 0)
+            get_models_path(args.filter, "victim", tg), 0, args.first_n)
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))

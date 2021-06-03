@@ -853,7 +853,6 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
     model.eval()
 
     # Batch data to fit on GPU
-    acc = None
     loss, num_samples, running_acc = 0, 0, 0
     i = 0
 
@@ -892,13 +891,12 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         loss += loss_fn(outputs,
                         Y[i:i+batch_size]).item() * num_samples
         if not regression:
-            running_acc += accuracy(outputs, Y[i:i+batch_size])
-            acc = 100 * running_acc.item() / num_samples
+            running_acc += accuracy(outputs, Y[i:i+batch_size]).item()
 
         # Next batch
         i += batch_size
 
-    return acc, loss / num_samples
+    return 100 * running_acc / num_samples, loss / num_samples
 
 
 # Function to train meta-classifier
@@ -1000,7 +998,7 @@ def train_meta_model(model, train_data, test_data,
 
             # Keep track of total loss, samples processed so far
             num_samples += outputs.shape[0]
-            loss += loss.item() * num_samples
+            loss += loss.item() * outputs.shape[0]
 
             print_acc = ""
             if not regression:
@@ -1098,3 +1096,9 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
         lower += granularity
 
     return best_acc, best_threshold
+
+
+# Fix for repeated random augmentation issue
+# https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
+def worker_init_fn(worker_id):                                                          
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
