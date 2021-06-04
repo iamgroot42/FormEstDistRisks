@@ -1,0 +1,13 @@
+name: phd
+channels:
+  - http://conda.anaconda.org/gurobi
+  - defaults
+dependencies:
+  - python=3.6
+  - torchvision
+  - pylint
+  - flake8
+  - torchaudio
+  - cudatoolkit=11.1
+  - pytorch
+prefix: /u/as9rw/anaconda3/envs/phd
