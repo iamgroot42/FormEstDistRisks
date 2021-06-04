@@ -1,17 +1,13 @@
-from re import L
 import torch as ch
 import numpy as np
 from collections import OrderedDict
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 from torchvision import transforms
 from robustness.model_utils import make_and_restore_model
-from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR, CelebA
+from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
-from facenet_pytorch import InceptionResnetV1
-from torch.utils.data import Dataset
 from copy import deepcopy
 from PIL import Image
 from tqdm import tqdm
@@ -128,23 +124,6 @@ class ImageNet1000(DataPaths):
         self.models['nat'] = "imagenet_nat.pt"
         self.models['l2'] = "imagenet_l2_3_0.pt"
         self.models['linf'] = "imagenet_linf_4.pt"
-
-
-class Celeb(DataPaths):
-    def __init__(self, data_path=None):
-        self.dataset_type = CelebA
-        datapath = "/p/adversarialml/as9rw/datasets/celeba/" if data_path is None else data_path
-        super(Celeb, self).__init__('celeb',
-                                    datapath,
-                                    "/p/adversarialml/as9rw/celeba_stats/")
-        self.attr_names = ['5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive', 'Bags_Under_Eyes',
-                           'Bald', 'Bangs', 'Big_Lips', 'Big_Nose', 'Black_Hair', 'Blond_Hair', 'Blurry', 'Brown_Hair',
-                           'Bushy_Eyebrows', 'Chubby', 'Double_Chin', 'Eyeglasses', 'Goatee', 'Gray_Hair', 'Heavy_Makeup',
-                           'High_Cheekbones', 'Male', 'Mouth_Slightly_Open', 'Mustache', 'Narrow_Eyes', 'No_Beard',
-                           'Oval_Face', 'Pale_Skin', 'Pointy_Nose', 'Receding_Hairline', 'Rosy_Cheeks', 'Sideburns',
-                           'Smiling', 'Straight_Hair', 'Wavy_Hair', 'Wearing_Earrings', 'Wearing_Hat', 'Wearing_Lipstick',
-                           'Wearing_Necklace', 'Wearing_Necktie', 'Young']
-        # self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_celeba/"
 
 
 def read_given_dataset(data_path):
@@ -337,76 +316,6 @@ def flash_utils(args):
         print(arg, " : ", getattr(args, arg))
 
 
-# Classifier on top of face features
-class FaceModel(nn.Module):
-    def __init__(self, n_feat, weight_init='vggface2', train_feat=False, hidden=[64, 16]):
-        super(FaceModel, self).__init__()
-        self.train_feat = train_feat
-        if weight_init == "none":
-            weight_init = None
-        self.feature_model = InceptionResnetV1(
-            pretrained=weight_init)  # .eval()
-        if not self.train_feat:
-            self.feature_model.eval()
-        # for param in self.feature_model.parameters(): param.requires_grad = False
-
-        layers = []
-        # Input features -> hidden layer
-        layers.append(nn.Linear(n_feat, hidden[0]))
-        layers.append(nn.ReLU())
-        # layers.append(nn.Dropout())
-        for i in range(len(hidden)-1):
-            layers.append(nn.Linear(hidden[i], hidden[i+1]))
-            layers.append(nn.ReLU())
-
-        # Last hidden -> binary classification layer
-        layers.append(nn.Linear(hidden[-1], 1))
-        self.dnn = nn.Sequential(*layers)
-
-    def forward(self, x, only_latent=False,
-                deep_latent=None, within_block=None,
-                flatmode=False):
-        if self.train_feat:
-            x_ = self.feature_model(
-                # x, with_latent=deep_latent)
-                x, with_latent=deep_latent,
-                within_block=within_block,
-                flatmode=flatmode)
-        else:
-            with ch.no_grad():
-                x_ = self.feature_model(
-                    # x, with_latent=deep_latent)
-                    x, with_latent=deep_latent,
-                    within_block=within_block,
-                    flatmode=flatmode)
-
-        # Check if Tuple
-        if type(x_) is tuple and x_[1] is not None:
-            return x_[1]
-        if only_latent:
-            return x_
-        return self.dnn(x_)
-
-
-class FlatFaceModel(nn.Module):
-    def __init__(self, n_feat):
-        super(FlatFaceModel, self).__init__()
-        self.fc1 = nn.Linear(n_feat, 64)
-        self.fc2 = nn.Linear(64, 16)
-        self.fc3 = nn.Linear(16, 1)
-
-        # Weight init
-        ch.nn.init.xavier_uniform(self.fc1.weight)
-        ch.nn.init.xavier_uniform(self.fc2.weight)
-        ch.nn.init.xavier_uniform(self.fc3.weight)
-
-    def forward(self, x):
-        x = F.dropout(F.relu(self.fc1(x)), 0.5)
-        x = F.dropout(F.relu(self.fc2(x)), 0.5)
-        x = self.fc3(x)
-        return x
-
-
 class MNISTFlatModel(nn.Module):
     def __init__(self):
         super(MNISTFlatModel, self).__init__()
@@ -461,32 +370,6 @@ def get_cropped_faces(cropmodel, x):
             indices.append(j)
 
     return ch.stack(x_cropped, 0), indices
-
-
-class CelebACustomBinary(Dataset):
-    def __init__(self, root_dir, shuffle=False, transform=None):
-        self.root_dir = root_dir
-        self.transform = transform
-        # Get filenames
-        path_0, path_1 = os.path.join(
-            self.root_dir, "0"), os.path.join(self.root_dir, "1")
-        filenames_0 = [os.path.join(path_0, x) for x in os.listdir(path_0)]
-        filenames_1 = [os.path.join(path_1, x) for x in os.listdir(path_1)]
-        self.filenames = filenames_0 + filenames_1
-        if shuffle:
-            np.random.shuffle(self.filenames)
-
-    def __len__(self):
-        return len(self.filenames)
-
-    def __getitem__(self, idx):
-        filename = self.filenames[idx]
-        x = Image.open(filename)
-        y = os.path.basename(os.path.normpath(filename)).split("_")[0]
-        y = np.array([int(c) for c in y])
-        if self.transform:
-            x = self.transform(x)
-        return x, y
 
 
 # Function to extract model parameters

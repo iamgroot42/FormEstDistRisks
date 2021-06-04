@@ -3,11 +3,35 @@ import os
 import numpy as np
 from facenet_pytorch import InceptionResnetV1
 import torch.nn as nn
+import torchvision.models as models
 import torch.nn.functional as F
 from sklearn.preprocessing import normalize
+from utils import ensure_dir_exists
 
 
-BASE_MODELS_DIR = "/u/as9rw/work/fnb/celeba/celeba_models_split/70_30/"
+BASE_MODELS_DIR = "/u/as9rw/work/fnb/celeba/celeba_models/70_30/"
+
+
+class VGG11BN(nn.Module):
+    def __init__(self, num_classes: int = 1):
+        super(VGG11BN, self).__init__()
+        self.model = models.vgg11_bn(num_classes=num_classes)
+        self.model.classifier = nn.Sequential(
+            nn.Linear(512 * 7 * 7, 512),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(512, 64),
+            nn.ReLU(True),
+            nn.Dropout(),
+            nn.Linear(64, num_classes),
+        )
+
+    def forward(self, x: ch.Tensor, latent=None):
+        x = self.model.features(x)
+        x = self.model.avgpool(x)
+        x = ch.flatten(x, 1)
+        x = self.model.classifier(x)
+        return x
 
 
 # Classifier on top of face features
@@ -19,10 +43,11 @@ class FaceModel(nn.Module):
         if weight_init == "none":
             weight_init = None
         self.feature_model = InceptionResnetV1(
-            pretrained=weight_init)  # .eval()
+            pretrained=weight_init)
         if not self.train_feat:
             self.feature_model.eval()
-        # for param in self.feature_model.parameters(): param.requires_grad = False
+            for param in self.feature_model.parameters():
+                param.requires_grad = False
 
         layers = []
         # Input features -> hidden layer
@@ -40,19 +65,11 @@ class FaceModel(nn.Module):
     def forward(self, x, only_latent=False,
                 deep_latent=None, within_block=None,
                 flatmode=False):
-        if self.train_feat:
+        with ch.set_grad_enabled(not self.train_feat):
             x_ = self.feature_model(
-                # x, with_latent=deep_latent)
                 x, with_latent=deep_latent,
                 within_block=within_block,
                 flatmode=flatmode)
-        else:
-            with ch.no_grad():
-                x_ = self.feature_model(
-                    # x, with_latent=deep_latent)
-                    x, with_latent=deep_latent,
-                    within_block=within_block,
-                    flatmode=flatmode)
 
         # Check if Tuple
         if type(x_) is tuple and x_[1] is not None:
@@ -81,21 +98,43 @@ class FlatFaceModel(nn.Module):
         return x
 
 
+def create_model(dim, hidden, weight_init, train_feat=True, parallel=True):
+    model = FaceModel(dim, weight_init=weight_init,
+                      train_feat=train_feat, hidden=hidden).cuda()
+    if parallel:
+        model = nn.DataParallel(model)
+    return model
+
+
 def get_model(path, dim=512,
               hidden=[64, 16],
               weight_init=None,
-              use_prefix=True):
+              use_prefix=True,
+              train_feat=True,
+              parallel=True):
     if use_prefix:
         path = os.path.join(BASE_MODELS_DIR, path)
 
-    model = FaceModel(dim,
-                      train_feat=True,
-                      weight_init=weight_init,
-                      hidden=hidden).cuda()
-    model = nn.DataParallel(model)
+    model = create_model(dim, hidden, weight_init,
+                         train_feat=train_feat, parallel=parallel)
     model.load_state_dict(ch.load(path), strict=False)
+
+    if parallel:
+        model = nn.DataParallel(model)
+
     model.eval()
     return model
+
+
+def save_model(model, split, property, ratio, name, dataparallel=True):
+    savepath = os.path.join(split, property, ratio, name)
+    # Make sure directory exists
+    ensure_dir_exists(savepath)
+    if dataparallel:
+        state_dict = model.module.state_dict()
+    else:
+        state_dict = model.state_dict()
+    ch.save(state_dict, os.path.join(BASE_MODELS_DIR, savepath))
 
 
 def get_latents(mainmodel, dataloader, method_type, to_normalize=False):

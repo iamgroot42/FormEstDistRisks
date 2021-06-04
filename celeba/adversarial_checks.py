@@ -22,11 +22,8 @@ if __name__ == "__main__":
     batch_size = 900
 
     paths = [
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/augment_none/20_0.9235165574046058.pth",
         "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/all/64_16/none/10_0.9233484619263742.pth",
         "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/none/20_0.9108834827144686.pth",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/male/64_16/augment_none/20_0.9065300896286812.pth",
-        # "/u/as9rw/work/fnb/implems/celeba_models_split/70_30/split_2/attractive/64_16/none/15_0.9120626151012892.pth"
     ]
 
     models = []
