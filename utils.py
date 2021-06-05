@@ -665,7 +665,8 @@ def validate_epoch(val_loader, model, criterion, verbose=True):
     return val_loss.avg, val_acc.avg
 
 
-def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
+def train(model, loaders, lr=1e-3, epoch_num=10,
+          weight_decay=0, verbose=True, get_best=False):
     # Get data loaders
     train_loader, val_loader = loaders
     # Define optimizer, loss function
@@ -677,6 +678,8 @@ def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
     iterator = range(1, epoch_num+1)
     if not verbose:
         iterator = tqdm(iterator)
+
+    best_model, best_loss = None, np.inf
     for epoch in iterator:
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch, verbose)
@@ -685,6 +688,12 @@ def train(model, loaders, lr=1e-3, epoch_num=10, weight_decay=0, verbose=True):
             iterator.set_description(
                 "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
 
+        if get_best and vloss < best_loss:
+            best_loss = vloss
+            best_model = deepcopy(model)
+
+    if get_best:
+        return best_model, (vloss, vacc)
     return vloss, vacc
 
 

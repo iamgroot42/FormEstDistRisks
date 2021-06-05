@@ -3,34 +3,47 @@ import os
 import numpy as np
 from facenet_pytorch import InceptionResnetV1
 import torch.nn as nn
-import torchvision.models as models
 import torch.nn.functional as F
 from sklearn.preprocessing import normalize
 from utils import ensure_dir_exists
 
 
-BASE_MODELS_DIR = "/u/as9rw/work/fnb/celeba/celeba_models/70_30/"
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
 
 
-class VGG11BN(nn.Module):
-    def __init__(self, num_classes: int = 1):
-        super(VGG11BN, self).__init__()
-        self.model = models.vgg11_bn(num_classes=num_classes)
-        self.model.classifier = nn.Sequential(
-            nn.Linear(512 * 7 * 7, 512),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(512, 64),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(64, num_classes),
+class MyAlexNet(nn.Module):
+    def __init__(self, num_classes: int = 1) -> None:
+        # 218,178
+        super(MyAlexNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 128, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+        self.classifier = nn.Sequential(
+            nn.Linear(64 * 6 * 6, 64),
+            nn.ReLU(inplace=True),
+            nn.Linear(64, 32),
+            nn.ReLU(inplace=True),
+            nn.Linear(32, num_classes),
         )
 
-    def forward(self, x: ch.Tensor, latent=None):
-        x = self.model.features(x)
-        x = self.model.avgpool(x)
+    def forward(self, x: ch.Tensor) -> ch.Tensor:
+        x = self.features(x)
+        x = self.avgpool(x)
         x = ch.flatten(x, 1)
-        x = self.model.classifier(x)
+        x = self.classifier(x)
         return x
 
 
@@ -98,9 +111,8 @@ class FlatFaceModel(nn.Module):
         return x
 
 
-def create_model(dim, hidden, weight_init, train_feat=True, parallel=True):
-    model = FaceModel(dim, weight_init=weight_init,
-                      train_feat=train_feat, hidden=hidden).cuda()
+def create_model(parallel=True):
+    model = MyAlexNet().cuda()
     if parallel:
         model = nn.DataParallel(model)
     return model

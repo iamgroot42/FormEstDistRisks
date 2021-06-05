@@ -182,10 +182,10 @@ class CelebaWrapper:
         if classify not in PRESERVE_PROPERTIES:
             raise ValueError("Specified label not available for images")
 
-        train_transforms = transforms.Compose([
+        train_transforms = [
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
-        ])
+        ]
         test_transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
@@ -199,6 +199,7 @@ class CelebaWrapper:
                 transforms.RandomHorizontalFlip()
             ]
             train_transforms = augment_transforms + train_transforms
+        train_transforms = transforms.Compose(train_transforms)
 
         # Read attributes file to get attribute names
         attrs, _ = get_attributes()
