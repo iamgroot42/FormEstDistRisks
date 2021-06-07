@@ -1,11 +1,10 @@
 import torch as ch
 import os
 import numpy as np
-from facenet_pytorch import InceptionResnetV1
 import torch.nn as nn
-import torch.nn.functional as F
+from tqdm import tqdm
 from sklearn.preprocessing import normalize
-from utils import ensure_dir_exists
+from utils import ensure_dir_exists, get_weight_layers
 
 
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
@@ -47,88 +46,18 @@ class MyAlexNet(nn.Module):
         return x
 
 
-# Classifier on top of face features
-class FaceModel(nn.Module):
-    def __init__(self, n_feat, weight_init='vggface2',
-                 train_feat=False, hidden=[64, 16]):
-        super(FaceModel, self).__init__()
-        self.train_feat = train_feat
-        if weight_init == "none":
-            weight_init = None
-        self.feature_model = InceptionResnetV1(
-            pretrained=weight_init)
-        if not self.train_feat:
-            self.feature_model.eval()
-            for param in self.feature_model.parameters():
-                param.requires_grad = False
-
-        layers = []
-        # Input features -> hidden layer
-        layers.append(nn.Linear(n_feat, hidden[0]))
-        layers.append(nn.ReLU())
-        # layers.append(nn.Dropout())
-        for i in range(len(hidden)-1):
-            layers.append(nn.Linear(hidden[i], hidden[i+1]))
-            layers.append(nn.ReLU())
-
-        # Last hidden -> binary classification layer
-        layers.append(nn.Linear(hidden[-1], 1))
-        self.dnn = nn.Sequential(*layers)
-
-    def forward(self, x, only_latent=False,
-                deep_latent=None, within_block=None,
-                flatmode=False):
-        with ch.set_grad_enabled(not self.train_feat):
-            x_ = self.feature_model(
-                x, with_latent=deep_latent,
-                within_block=within_block,
-                flatmode=flatmode)
-
-        # Check if Tuple
-        if type(x_) is tuple and x_[1] is not None:
-            return x_[1]
-        if only_latent:
-            return x_
-        return self.dnn(x_)
-
-
-class FlatFaceModel(nn.Module):
-    def __init__(self, n_feat):
-        super(FlatFaceModel, self).__init__()
-        self.fc1 = nn.Linear(n_feat, 64)
-        self.fc2 = nn.Linear(64, 16)
-        self.fc3 = nn.Linear(16, 1)
-
-        # Weight init
-        ch.nn.init.xavier_uniform(self.fc1.weight)
-        ch.nn.init.xavier_uniform(self.fc2.weight)
-        ch.nn.init.xavier_uniform(self.fc3.weight)
-
-    def forward(self, x):
-        x = F.dropout(F.relu(self.fc1(x)), 0.5)
-        x = F.dropout(F.relu(self.fc2(x)), 0.5)
-        x = self.fc3(x)
-        return x
-
-
-def create_model(parallel=True):
+def create_model(parallel=False):
     model = MyAlexNet().cuda()
     if parallel:
         model = nn.DataParallel(model)
     return model
 
 
-def get_model(path, dim=512,
-              hidden=[64, 16],
-              weight_init=None,
-              use_prefix=True,
-              train_feat=True,
-              parallel=True):
+def get_model(path, use_prefix=True, parallel=False):
     if use_prefix:
         path = os.path.join(BASE_MODELS_DIR, path)
 
-    model = create_model(dim, hidden, weight_init,
-                         train_feat=train_feat, parallel=parallel)
+    model = create_model(parallel=parallel)
     model.load_state_dict(ch.load(path), strict=False)
 
     if parallel:
@@ -138,7 +67,7 @@ def get_model(path, dim=512,
     return model
 
 
-def save_model(model, split, property, ratio, name, dataparallel=True):
+def save_model(model, split, property, ratio, name, dataparallel=False):
     savepath = os.path.join(split, property, ratio, name)
     # Make sure directory exists
     ensure_dir_exists(savepath)
@@ -186,11 +115,9 @@ def get_latents(mainmodel, dataloader, method_type, to_normalize=False):
     return all_latent, all_stats
 
 
-def get_features_for_model(dataloader, MODELPATH, weight_init,
-                           method_type, layers=[64, 16],):
+def get_features_for_model(dataloader, MODELPATH, method_type):
     # Load model
-    model = get_model(MODELPATH, dim=512, hidden=layers,
-                      weight_init=weight_init)
+    model = get_model(MODELPATH)
 
     # Get latent representations
     lat, sta = get_latents(model, dataloader, method_type)
@@ -213,3 +140,26 @@ def extract_dl_model_weights(model):
 
     feature_vec = np.concatenate(feature_vec)
     return feature_vec
+
+
+# Function to extract model weights for all models in given directory
+def get_model_features(model_dir, max_read=None,
+                       first_n=np.inf, conv_focus=False):
+    vecs = []
+    iterator = os.listdir(model_dir)
+    if max_read is not None:
+        np.random.shuffle(iterator)
+        iterator = iterator[:max_read]
+
+    for mpath in tqdm(iterator):
+        model = get_model(os.path.join(model_dir, mpath))
+
+        if conv_focus:
+            dims, fvec = get_weight_layers(
+                model.features, first_n=first_n, conv=True)
+        else:
+            dims, fvec = get_weight_layers(model.classifier, first_n=first_n)
+
+        vecs.append(fvec)
+
+    return dims, vecs

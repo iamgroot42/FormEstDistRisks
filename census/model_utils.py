@@ -10,11 +10,16 @@ from sklearn.neural_network._base import ACTIVATIONS
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
 
 
-def layer_output(data, MLP, layer=0):
+def layer_output(data, MLP, layer=0, get_all=False):
     L = data.copy()
+    all = []
     for i in range(layer):
         L = ACTIVATIONS['relu'](
             np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
+        if get_all:
+            all.append(L)
+    if get_all:
+        return all
     return L
 
 

@@ -373,16 +373,25 @@ def get_cropped_faces(cropmodel, x):
 
 
 # Function to extract model parameters
-def get_weight_layers(m, normalize=False, transpose=True, first_n=np.inf):
-    dims, weights, biases = [], [], []
+def get_weight_layers(m, normalize=False, transpose=True,
+                      first_n=np.inf, conv=False):
+    dims, dim_kernels, weights, biases = [], [], [], []
     i = 0
+
+    # print(list(m.named_parameters()))
+    # exit(0)
+
     for name, param in m.named_parameters():
         if "weight" in name:
             param_data = param.data.detach().cpu()
             if transpose:
                 param_data = param_data.T
             weights.append(param_data)
-            dims.append(weights[-1].shape[0])
+            if conv:
+                dims.append(weights[-1].shape[2])
+                dim_kernels.append(weights[-1].shape[0] * weights[-1].shape[1])
+            else:
+                dims.append(weights[-1].shape[0])
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
 
@@ -400,14 +409,136 @@ def get_weight_layers(m, normalize=False, transpose=True, first_n=np.inf):
 
     cctd = []
     for w, b in zip(weights, biases):
-        cctd.append(ch.cat((w, b), 0).T)
+        if conv:
+            b_exp = b.unsqueeze(0).unsqueeze(0)
+            b_exp = b_exp.expand(w.shape[0], w.shape[1], 1, -1)
+            combined = ch.cat((w, b_exp), 2).transpose(2, 3)
+            combined = combined.view(-1, combined.shape[2], combined.shape[3])
+        else:
+            combined = ch.cat((w, b), 0).T
 
+        cctd.append(combined)
+
+    if conv:
+        return (dims, dim_kernels), cctd
     return dims, cctd
 
 
-# Currently works with a batch size of 1
-# Shouldn't be that big a deal, since here's only
-# a few thousand models :)
+class PermInvConvModel(nn.Module):
+    def __init__(self, dim_channels, dim_kernels, inside_dims=[64, 8], n_classes=2, dropout=0.5):
+        super(PermInvConvModel, self).__init__()
+        self.dim_channels = dim_channels
+        self.dim_kernels = dim_kernels
+
+        assert len(dim_channels) == len(
+            dim_kernels), "Kernel size information missing!"
+
+        self.dropout = dropout
+        self.layers = []
+        self.pixelwise_layers = []
+        prev_layer = 0
+
+        # If binary, need only one output
+        if n_classes == 2:
+            n_classes = 1
+
+        # One network per kernel location
+        def make_mini(y):
+            layers = [
+                nn.Linear(y, inside_dims[0]),
+                nn.ReLU()
+            ]
+            for i in range(1, len(inside_dims)):
+                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
+                layers.append(nn.ReLU())
+            layers.append(nn.Dropout(self.dropout))
+
+            return nn.Sequential(*layers)
+
+        # For each layer of kernels
+        for i, dim in enumerate(self.dim_channels):
+            # +1 for bias
+            # prev_layer for previous layer
+            if i > 0:
+                prev_layer = inside_dims[-1] * dim
+
+            # For each pixel in the kernel
+            pixelwise_layers = nn.ModuleList(
+                [make_mini(prev_layer + 1 + dim) for _ in range(dim_kernels[i])])
+            self.layers.append(pixelwise_layers)
+
+            # Models to combine all pixel features into representation
+            self.pixelwise_layers.append(
+                nn.Linear(inside_dims[-1] * dim_kernels[i], inside_dims[-1]))
+
+        self.layers = nn.ModuleList(self.layers)
+        self.pixelwise_layers = nn.ModuleList(self.pixelwise_layers)
+
+        # Final network to combine them all
+        # layer representations together
+        self.rho = nn.Linear(
+            inside_dims[-1] * len(self.dim_channels), n_classes)
+
+    def forward(self, params):
+        reps = []
+        prev_layer_reps = None
+
+        for param, layer, pwise in zip(params, self.layers, self.pixelwise_layers):
+            # Param expected to be in this shape:
+            # (n_samples, n_pixels_in_kernel, channels_out, channels_in)
+
+            batch_size = param.shape[0]
+
+            # Process pixel-wise
+            pixel_processed = []
+            for_prevs = []
+            for i, lp in enumerate(layer):
+
+                if prev_layer_reps is None:
+                    # shape: (n_samples, channels_out, channels_in)
+                    param_eff = param[:, i]
+                else:
+                    # shape: (n_samples, channels_out, channels_out_prev * inside_dims[-1])
+                    prev_rep = prev_layer_reps[i].repeat(
+                        1, param[:, i].shape[1], 1)
+
+                    # shape: (n_samples, channels_out, channels_in + channels_out_prev * inside_dims[-1])
+                    param_eff = ch.cat((param[:, i], prev_rep), -1)
+
+                prev_shape = param_eff.shape
+
+                # shape: (n_samples, channels_out, inside_dims[-1])
+                pp = lp(param_eff.reshape(-1, param_eff.shape[-1]))
+
+                # shape: (n_samples, channels_out, inside_dims[-1])
+                pp = pp.view(batch_size, prev_shape[1], -1)
+
+                for_prevs.append(pp)
+                pixel_processed.append(ch.sum(pp, -2))
+
+            # Combine them together using pixelwise-network
+            # Shape: (n_pixels_in_kernel, N, inside_dims[-1])
+            pixel_processed = ch.stack(pixel_processed, 0)
+
+            # Reshape to get (N, n_pixels_in_kernel, inside_dims[-1])
+            pixel_processed = pixel_processed.transpose(0, 1)
+
+            # Concatenate to produce shape (N, n_pixels_in_kernel * inside_dims[-1])
+            pixel_processed = pixel_processed.reshape(batch_size, -1)
+
+            # Get combined representation
+            processed = pwise(pixel_processed)
+
+            # Store representation for this layer
+            reps.append(processed)
+
+            # Store previous layer's representation
+            prev_layer_reps = [
+                pr.view(pr.shape[0], -1).unsqueeze(-2) for pr in for_prevs]
+
+        logits = self.rho(ch.cat(reps, 1))
+        return logits
+
 
 class PermInvModel(nn.Module):
     def __init__(self, dims, inside_dims=[64, 8], n_classes=2, dropout=0.5):
@@ -451,32 +582,29 @@ class PermInvModel(nn.Module):
         is_batched = len(params[0].shape) > 2
 
         for param, layer in zip(params, self.layers):
-            # Process nodes in this layer
-            if prev_layer_reps is None:
-                if is_batched:
-                    prev_shape = param.shape
-                    processed = layer(param.view(-1, param.shape[-1]))
-                    processed = processed.view(
-                        prev_shape[0], prev_shape[1], -1)
+
+            # Case where data is batched per layer
+            if is_batched:
+                if prev_layer_reps is None:
+                    param_eff = param
                 else:
-                    processed = layer(param)
-            else:
-                # Handle per-data/batched-data case together
-                if is_batched:
                     prev_layer_reps = prev_layer_reps.repeat(
                         1, param.shape[1], 1)
+                    param_eff = ch.cat((param, prev_layer_reps), -1)
+
+                prev_shape = param_eff.shape
+                processed = layer(param_eff.view(-1, param_eff.shape[-1]))
+                processed = processed.view(
+                    prev_shape[0], prev_shape[1], -1)
+
+            else:
+                if prev_layer_reps is None:
+                    param_eff = param
                 else:
                     prev_layer_reps = prev_layer_reps.repeat(param.shape[0], 1)
-
-                # Include previous layer representation
-                param_eff = ch.cat((param, prev_layer_reps), -1)
-                if is_batched:
-                    prev_shape = param_eff.shape
-                    processed = layer(param_eff.view(-1, param_eff.shape[-1]))
-                    processed = processed.view(
-                        prev_shape[0], prev_shape[1], -1)
-                else:
-                    processed = layer(param_eff)
+                    # Include previous layer representation
+                    param_eff = ch.cat((param, prev_layer_reps), -1)
+                processed = layer(param_eff)
 
             # Store this layer's representation
             reps.append(ch.sum(processed, -2))
