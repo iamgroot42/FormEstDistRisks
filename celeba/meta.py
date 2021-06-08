@@ -2,16 +2,16 @@ import torch as ch
 import numpy as np
 import os
 import argparse
+import utils
 from data_utils import SUPPORTED_PROPERTIES
 from model_utils import get_model_features, BASE_MODELS_DIR
-from utils import PermInvModel, PermInvConvModel, train_meta_model, flash_utils, prepare_batched_data
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
     parser.add_argument('--n_tries', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=150)
-    parser.add_argument('--train_sample', type=int, default=500)
+    parser.add_argument('--train_sample', type=int, default=600)
     parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('--conv_focus', action="store_true",
                         help="Extract CONV features")
     args = parser.parse_args()
-    flash_utils(args)
+    utils.flash_utils(args)
 
     train_dir_1 = os.path.join(
         BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     # Batch layer-wise inputs
     print("Batching data: hold on")
-    X_test = prepare_batched_data(X_test)
+    X_test = utils.prepare_batched_data(X_test)
 
     accs = []
     for i in range(args.n_tries):
@@ -87,18 +87,23 @@ if __name__ == "__main__":
 
         # Batch layer-wise inputs
         print("Batching data: hold on")
-        X_train = prepare_batched_data(X_train)
+        X_train = utils.prepare_batched_data(X_train)
 
         # Train meta-classifier model
         if args.conv_focus:
+            # 590225 params
             dim_channels, dim_kernels = dims
-            metamodel = PermInvConvModel(dim_channels, dim_kernels)
+            metamodel = utils.PermInvConvModel(dim_channels, dim_kernels)
         else:
-            metamodel = PermInvModel(dims)
+            # 204721 params
+            metamodel = utils.PermInvModel(dims)
+
+        print("Total parameters:", utils.get_param_count(metamodel))
+
         metamodel = metamodel.cuda()
 
         # Train PIM model
-        _, test_acc = train_meta_model(
+        _, test_acc = utils.train_meta_model(
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),

@@ -445,8 +445,9 @@ class PermInvConvModel(nn.Module):
         # One network per kernel location
         def make_mini(y):
             layers = [
+                nn.Dropout(self.dropout),
                 nn.Linear(y, inside_dims[0]),
-                nn.ReLU()
+                nn.ReLU(),
             ]
             for i in range(1, len(inside_dims)):
                 layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
@@ -463,16 +464,12 @@ class PermInvConvModel(nn.Module):
                 prev_layer = inside_dims[-1] * dim
 
             # For each pixel in the kernel
-            pixelwise_layers = nn.ModuleList(
-                [make_mini(prev_layer + 1 + dim) for _ in range(dim_kernels[i])])
-            self.layers.append(pixelwise_layers)
-
-            # Models to combine all pixel features into representation
-            self.pixelwise_layers.append(
-                nn.Linear(inside_dims[-1] * dim_kernels[i], inside_dims[-1]))
+            # Concatenated along pixels in kernel
+            self.layers.append(
+                make_mini(prev_layer + (1 + dim) * dim_kernels[i]))
 
         self.layers = nn.ModuleList(self.layers)
-        self.pixelwise_layers = nn.ModuleList(self.pixelwise_layers)
+        # self.pixelwise_layers = nn.ModuleList(self.pixelwise_layers)
 
         # Final network to combine them all
         # layer representations together
@@ -481,60 +478,50 @@ class PermInvConvModel(nn.Module):
 
     def forward(self, params):
         reps = []
-        prev_layer_reps = None
+        for_prev = None
 
-        for param, layer, pwise in zip(params, self.layers, self.pixelwise_layers):
-            # Param expected to be in this shape:
-            # (n_samples, n_pixels_in_kernel, channels_out, channels_in)
+        for param, layer in zip(params, self.layers):
+            # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
+            prev_shape = param.shape
 
-            batch_size = param.shape[0]
+            # shape: (n_samples, channels_out, n_pixels_in_kernel, channels_in)
+            param = param.transpose(1, 2)
 
-            # Process pixel-wise
-            pixel_processed = []
-            for_prevs = []
-            for i, lp in enumerate(layer):
+            # shape: (n_samples, channels_out, n_pixels_in_kernel * channels_in)
+            param = ch.flatten(param, 2)
 
-                if prev_layer_reps is None:
-                    # shape: (n_samples, channels_out, channels_in)
-                    param_eff = param[:, i]
-                else:
-                    # shape: (n_samples, channels_out, channels_out_prev * inside_dims[-1])
-                    prev_rep = prev_layer_reps[i].repeat(
-                        1, param[:, i].shape[1], 1)
+            if for_prev is None:
+                # channels_in_eff = n_pixels_in_kernel * channels_in
+                param_eff = param
+            else:
+                # channels_in_eff = channels_out_prev * inside_dims[-1]
+                prev_rep = for_prev.repeat(1, param.shape[1], 1)
 
-                    # shape: (n_samples, channels_out, channels_in + channels_out_prev * inside_dims[-1])
-                    param_eff = ch.cat((param[:, i], prev_rep), -1)
+                # channels_in_eff += n_pixels_in_kernel * channels_in
+                param_eff = ch.cat((param, prev_rep), -1)
 
-                prev_shape = param_eff.shape
+            # shape: (n_samples * channels_out, channels_in_eff)
+            param_eff = param_eff.view(
+                param_eff.shape[0] * param_eff.shape[1], -1)
 
-                # shape: (n_samples, channels_out, inside_dims[-1])
-                pp = lp(param_eff.reshape(-1, param_eff.shape[-1]))
+            # shape: (n_samples * channels_out, inside_dims[-1])
+            pp = layer(param_eff.reshape(-1, param_eff.shape[-1]))
 
-                # shape: (n_samples, channels_out, inside_dims[-1])
-                pp = pp.view(batch_size, prev_shape[1], -1)
+            # shape: (n_samples, channels_out, inside_dims[-1])
+            pp = pp.view(prev_shape[0], prev_shape[2], -1)
 
-                for_prevs.append(pp)
-                pixel_processed.append(ch.sum(pp, -2))
+            # shape: (n_samples, inside_dims[-1])
+            processed = ch.sum(pp, -2)
 
-            # Combine them together using pixelwise-network
-            # Shape: (n_pixels_in_kernel, N, inside_dims[-1])
-            pixel_processed = ch.stack(pixel_processed, 0)
+            # Store previous layer's representation
+            # shape: (n_samples, channels_out * inside_dims[-1])
+            for_prev = pp.view(pp.shape[0], -1)
 
-            # Reshape to get (N, n_pixels_in_kernel, inside_dims[-1])
-            pixel_processed = pixel_processed.transpose(0, 1)
-
-            # Concatenate to produce shape (N, n_pixels_in_kernel * inside_dims[-1])
-            pixel_processed = pixel_processed.reshape(batch_size, -1)
-
-            # Get combined representation
-            processed = pwise(pixel_processed)
+            # shape: (n_samples, 1, channels_out * inside_dims[-1])
+            for_prev = for_prev.unsqueeze(-2)
 
             # Store representation for this layer
             reps.append(processed)
-
-            # Store previous layer's representation
-            prev_layer_reps = [
-                pr.view(pr.shape[0], -1).unsqueeze(-2) for pr in for_prevs]
 
         logits = self.rho(ch.cat(reps, 1))
         return logits
@@ -1122,3 +1109,7 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
 def worker_init_fn(worker_id):                                                          
     np.random.seed(np.random.get_state()[1][0] + worker_id)
+
+
+def get_param_count(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
