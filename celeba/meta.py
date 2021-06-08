@@ -20,8 +20,8 @@ if __name__ == "__main__":
                         help="Only consider first N layers")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
-    parser.add_argument('--conv_focus', action="store_true",
-                        help="Extract CONV features")
+    parser.add_argument('--focus', choices=["fc", "conv", "all"],
+                        required=True, help="Which layer paramters to use")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -36,14 +36,14 @@ if __name__ == "__main__":
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
-        train_dir_1, first_n=args.first_n, conv_focus=args.conv_focus)
+        train_dir_1, first_n=args.first_n, focus=args.focus)
     _, vecs_train_2 = get_model_features(
-        train_dir_2, first_n=args.first_n, conv_focus=args.conv_focus)
+        train_dir_2, first_n=args.first_n, focus=args.focus)
 
     _, vecs_test_1 = get_model_features(
-        test_dir_1, first_n=args.first_n, conv_focus=args.conv_focus)
+        test_dir_1, first_n=args.first_n, focus=args.focus)
     _, vecs_test_2 = get_model_features(
-        test_dir_2, first_n=args.first_n, conv_focus=args.conv_focus)
+        test_dir_2, first_n=args.first_n, focus=args.focus)
 
     vecs_train_1 = np.array(vecs_train_1, dtype='object')
     vecs_train_2 = np.array(vecs_train_2, dtype='object')
@@ -90,7 +90,13 @@ if __name__ == "__main__":
         X_train = utils.prepare_batched_data(X_train)
 
         # Train meta-classifier model
-        if args.conv_focus:
+        if args.focus == "all":
+            # 795035 params
+            dims_conv, dims_fc = dims
+            dim_channels, dim_kernels = dims_conv
+            metamodel = utils.CombinedPermInvModel(
+                dims_fc, dim_channels, dim_kernels)
+        elif args.focus == "conv":
             # 590225 params
             dim_channels, dim_kernels = dims
             metamodel = utils.PermInvConvModel(dim_channels, dim_kernels)

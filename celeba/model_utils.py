@@ -124,27 +124,9 @@ def get_features_for_model(dataloader, MODELPATH, method_type):
     return (lat, sta)
 
 
-def extract_dl_model_weights(model):
-    # Get sequential-layer weights
-    attr_accessor = model.module
-    weights, biases = [], []
-    for layer in attr_accessor.dnn.modules():
-        if isinstance(layer, nn.Linear):
-            weights.append(layer.weight.detach().cpu().numpy())
-            biases.append(layer.bias.detach().cpu().numpy())
-
-    feature_vec = []
-    for w, b in zip(weights, biases):
-        feature_vec.append(w)
-        feature_vec.append(b)
-
-    feature_vec = np.concatenate(feature_vec)
-    return feature_vec
-
-
 # Function to extract model weights for all models in given directory
 def get_model_features(model_dir, max_read=None,
-                       first_n=np.inf, conv_focus=False):
+                       first_n=np.inf, focus="all"):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -154,12 +136,21 @@ def get_model_features(model_dir, max_read=None,
     for mpath in tqdm(iterator):
         model = get_model(os.path.join(model_dir, mpath))
 
-        if conv_focus:
+        if focus == "all":
+            dims_conv, fvec_conv = get_weight_layers(
+                model.features, first_n=first_n, conv=True)
+            dims_fc, fvec_fc = get_weight_layers(
+                model.classifier, first_n=first_n)
+
+            vecs.append(fvec_conv + fvec_fc)
+        elif focus == "conv":
             dims, fvec = get_weight_layers(
                 model.features, first_n=first_n, conv=True)
+            vecs.append(fvec)
         else:
             dims, fvec = get_weight_layers(model.classifier, first_n=first_n)
+            vecs.append(fvec)
 
-        vecs.append(fvec)
-
+    if focus == "all":
+        return (dims_conv, dims_fc), vecs
     return dims, vecs
