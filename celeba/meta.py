@@ -20,7 +20,7 @@ if __name__ == "__main__":
                         help="Only consider first N layers")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
-    parser.add_argument('--focus', choices=["fc", "conv", "all"],
+    parser.add_argument('--focus', choices=["fc", "conv", "all", "combined"],
                         required=True, help="Which layer paramters to use")
     args = parser.parse_args()
     utils.flash_utils(args)
@@ -96,6 +96,12 @@ if __name__ == "__main__":
             dim_channels, dim_kernels = dims_conv
             metamodel = utils.CombinedPermInvModel(
                 dims_fc, dim_channels, dim_kernels)
+        elif args.focus == "combined":
+            # 827713 params
+            dims_conv, dims_fc = dims
+            dim_channels, dim_kernels, middle_dim = dims_conv
+            metamodel = utils.FullPermInvModel(
+                dims_fc, middle_dim, dim_channels, dim_kernels,)
         elif args.focus == "conv":
             # 590225 params
             dim_channels, dim_kernels = dims

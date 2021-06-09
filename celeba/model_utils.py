@@ -136,9 +136,10 @@ def get_model_features(model_dir, max_read=None,
     for mpath in tqdm(iterator):
         model = get_model(os.path.join(model_dir, mpath))
 
-        if focus == "all":
+        if focus in ["all", "combined"]:
             dims_conv, fvec_conv = get_weight_layers(
-                model.features, first_n=first_n, conv=True)
+                model.features, first_n=first_n, conv=True,
+                include_all=focus == "combined")
             dims_fc, fvec_fc = get_weight_layers(
                 model.classifier, first_n=first_n)
 
@@ -151,6 +152,6 @@ def get_model_features(model_dir, max_read=None,
             dims, fvec = get_weight_layers(model.classifier, first_n=first_n)
             vecs.append(fvec)
 
-    if focus == "all":
+    if focus in ["all", "combined"]:
         return (dims_conv, dims_fc), vecs
     return dims, vecs

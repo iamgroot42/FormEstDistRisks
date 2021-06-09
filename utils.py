@@ -12,6 +12,7 @@ from copy import deepcopy
 from PIL import Image
 from tqdm import tqdm
 import pandas as pd
+from typing import List
 import os
 
 
@@ -374,12 +375,9 @@ def get_cropped_faces(cropmodel, x):
 
 # Function to extract model parameters
 def get_weight_layers(m, normalize=False, transpose=True,
-                      first_n=np.inf, conv=False):
+                      first_n=np.inf, conv=False, include_all=False):
     dims, dim_kernels, weights, biases = [], [], [], []
     i = 0
-
-    # print(list(m.named_parameters()))
-    # exit(0)
 
     for name, param in m.named_parameters():
         if "weight" in name:
@@ -401,6 +399,12 @@ def get_weight_layers(m, normalize=False, transpose=True,
         if i // 2 > first_n - 1:
             break
 
+    if include_all:
+        if conv:
+            middle_dim = weights[-1].shape[3]
+        else:
+            middle_dim = weights[-1].shape[1]
+
     if normalize:
         min_w = min([ch.min(x).item() for x in weights])
         max_w = max([ch.max(x).item() for x in weights])
@@ -420,7 +424,11 @@ def get_weight_layers(m, normalize=False, transpose=True,
         cctd.append(combined)
 
     if conv:
+        if include_all:
+            return (dims, dim_kernels, middle_dim), cctd
         return (dims, dim_kernels), cctd
+    if include_all:
+        return (dims, middle_dim), cctd
     return dims, cctd
 
 
@@ -470,7 +478,6 @@ class PermInvConvModel(nn.Module):
                 make_mini(prev_layer + (1 + dim) * dim_kernels[i]))
 
         self.layers = nn.ModuleList(self.layers)
-        # self.pixelwise_layers = nn.ModuleList(self.pixelwise_layers)
 
         # Final network to combine them all
         # layer representations together
@@ -493,13 +500,9 @@ class PermInvConvModel(nn.Module):
             param = ch.flatten(param, 2)
 
             if for_prev is None:
-                # channels_in_eff = n_pixels_in_kernel * channels_in
                 param_eff = param
             else:
-                # channels_in_eff = channels_out_prev * inside_dims[-1]
                 prev_rep = for_prev.repeat(1, param.shape[1], 1)
-
-                # channels_in_eff += n_pixels_in_kernel * channels_in
                 param_eff = ch.cat((param, prev_rep), -1)
 
             # shape: (n_samples * channels_out, channels_in_eff)
@@ -621,6 +624,137 @@ class PermInvModel(nn.Module):
             return reps_c
 
         logits = self.rho(reps_c)
+        return logits
+
+
+class FullPermInvModel(nn.Module):
+    def __init__(self, dims, middle_dim, dim_channels, dim_kernels,
+                 inside_dims=[64, 8], n_classes=2, dropout=0.5):
+        super(FullPermInvModel, self).__init__()
+        self.dim_channels = dim_channels
+        self.dim_kernels = dim_kernels
+        self.middle_dim = middle_dim
+        self.dims = dims
+        self.total_layers = len(dim_channels) + len(dims)
+
+        assert len(dim_channels) == len(
+            dim_kernels), "Kernel size information missing!"
+
+        self.dropout = dropout
+        self.layers = []
+        self.pixelwise_layers = []
+        prev_layer = 0
+
+        # If binary, need only one output
+        if n_classes == 2:
+            n_classes = 1
+
+        # One network per kernel location
+        def make_mini(y, add_drop=False):
+            layers = []
+            if add_drop:
+                layers += [nn.Dropout(self.dropout)]
+            layers += [
+                nn.Linear(y, inside_dims[0]),
+                nn.ReLU()
+            ]
+            for i in range(1, len(inside_dims)):
+                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
+                layers.append(nn.ReLU())
+            layers.append(nn.Dropout(self.dropout))
+
+            return nn.Sequential(*layers)
+
+        # For each layer
+        for i in range(self.total_layers):
+            is_conv = i < len(self.dim_channels)
+
+            if is_conv:
+                dim = self.dim_channels[i]
+            else:
+                dim = self.dims[i - len(self.dim_channels)]
+
+            # +1 for bias
+            # prev_layer for previous layer
+            if i > 0:
+                prev_layer = inside_dims[-1] * dim
+
+            if is_conv:
+                # Concatenated along pixels in kernel
+                self.layers.append(
+                    make_mini(prev_layer + (1 + dim) * dim_kernels[i], add_drop=True))
+            else:
+                # FC layer
+                if i == len(self.dim_channels):
+                    prev_layer = inside_dims[-1] * middle_dim
+                self.layers.append(make_mini(prev_layer + 1 + dim))
+
+        self.layers = nn.ModuleList(self.layers)
+
+        # Final network to combine them all
+        # layer representations together
+        self.rho = nn.Linear(
+            inside_dims[-1] * self.total_layers, n_classes)
+
+    def forward(self, params: List[ch.Tensor]) -> ch.Tensor:
+        reps = []
+        for_prev = None
+        i = 0
+
+        for i, (param, layer) in enumerate(zip(params, self.layers)):
+            is_conv = i < len(self.dim_channels)
+
+            if is_conv:
+                # Convolutional layer
+
+                # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
+                prev_shape = param.shape
+
+                # shape: (n_samples, channels_out, n_pixels_in_kernel, channels_in)
+                param = param.transpose(1, 2)
+
+                # shape: (n_samples, channels_out, n_pixels_in_kernel * channels_in)
+                param = ch.flatten(param, 2)
+
+            # Concatenate previous layer representation, if available
+            if for_prev is None:
+                param_eff = param
+            else:
+                prev_rep = for_prev.repeat(1, param.shape[1], 1)
+                param_eff = ch.cat((param, prev_rep), -1)
+
+            if is_conv:
+                # Convolutional layer
+
+                # shape: (n_samples * channels_out, channels_in_eff)
+                param_eff = param_eff.view(
+                    param_eff.shape[0] * param_eff.shape[1], -1)
+
+                # print(param_eff.reshape(-1, param_eff.shape[-1]).shape)
+
+                # shape: (n_samples * channels_out, inside_dims[-1])
+                pp = layer(param_eff.reshape(-1, param_eff.shape[-1]))
+
+                # shape: (n_samples, channels_out, inside_dims[-1])
+                pp = pp.view(prev_shape[0], prev_shape[2], -1)
+
+            else:
+                # FC layer
+                prev_shape = param_eff.shape
+                pp = layer(param_eff.view(-1, param_eff.shape[-1]))
+                pp = pp.view(prev_shape[0], prev_shape[1], -1)
+
+            processed = ch.sum(pp, -2)
+
+            # Store previous layer's representation
+            for_prev = pp.view(pp.shape[0], -1)
+            for_prev = for_prev.unsqueeze(-2)
+
+            # Store representation for this layer
+            reps.append(processed)
+
+        reps = ch.cat(reps, 1)
+        logits = self.rho(reps)
         return logits
 
 
@@ -1154,7 +1288,7 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
 
 # Fix for repeated random augmentation issue
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
-def worker_init_fn(worker_id):                                                          
+def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
