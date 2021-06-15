@@ -126,7 +126,9 @@ def get_features_for_model(dataloader, MODELPATH, method_type):
 
 # Function to extract model weights for all models in given directory
 def get_model_features(model_dir, max_read=None,
-                       first_n=np.inf, focus="all"):
+                       first_n_conv=np.inf,
+                       first_n_fc=np.inf,
+                       focus="all"):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -138,18 +140,18 @@ def get_model_features(model_dir, max_read=None,
 
         if focus in ["all", "combined"]:
             dims_conv, fvec_conv = get_weight_layers(
-                model.features, first_n=first_n, conv=True,
+                model.features, first_n=first_n_conv, conv=True,
                 include_all=focus == "combined")
             dims_fc, fvec_fc = get_weight_layers(
-                model.classifier, first_n=first_n)
+                model.classifier, first_n=first_n_fc)
 
             vecs.append(fvec_conv + fvec_fc)
         elif focus == "conv":
             dims, fvec = get_weight_layers(
-                model.features, first_n=first_n, conv=True)
+                model.features, first_n=first_n_conv, conv=True)
             vecs.append(fvec)
         else:
-            dims, fvec = get_weight_layers(model.classifier, first_n=first_n)
+            dims, fvec = get_weight_layers(model.classifier, first_n=first_n_fc)
             vecs.append(fvec)
 
     if focus in ["all", "combined"]:

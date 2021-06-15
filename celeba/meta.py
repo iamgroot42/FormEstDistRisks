@@ -9,15 +9,17 @@ from model_utils import get_model_features, BASE_MODELS_DIR
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
-    parser.add_argument('--n_tries', type=int, default=1)
+    parser.add_argument('--n_tries', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=150)
-    parser.add_argument('--train_sample', type=int, default=600)
+    parser.add_argument('--train_sample', type=int, default=800)
     parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
-    parser.add_argument('--epochs', type=int, default=80)
-    parser.add_argument('--first_n', type=int, default=np.inf,
-                        help="Only consider first N layers")
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--first_n_conv', type=int, default=np.inf,
+                        help="Only consider first N layers of conv part")
+    parser.add_argument('--first_n_fc', type=int, default=np.inf,
+                        help="Only consider first N layers of fc part")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
     parser.add_argument('--focus', choices=["fc", "conv", "all", "combined"],
@@ -36,14 +38,18 @@ if __name__ == "__main__":
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
-        train_dir_1, first_n=args.first_n, focus=args.focus)
+        train_dir_1, first_n_conv=args.first_n_conv,
+        first_n_fc=args.first_n_fc, focus=args.focus)
     _, vecs_train_2 = get_model_features(
-        train_dir_2, first_n=args.first_n, focus=args.focus)
+        train_dir_2, first_n_conv=args.first_n_conv,
+        first_n_fc=args.first_n_fc, focus=args.focus)
 
     _, vecs_test_1 = get_model_features(
-        test_dir_1, first_n=args.first_n, focus=args.focus)
+        test_dir_1, first_n_conv=args.first_n_conv,
+        first_n_fc=args.first_n_fc, focus=args.focus)
     _, vecs_test_2 = get_model_features(
-        test_dir_2, first_n=args.first_n, focus=args.focus)
+        test_dir_2, first_n_conv=args.first_n_conv,
+        first_n_fc=args.first_n_fc, focus=args.focus)
 
     vecs_train_1 = np.array(vecs_train_1, dtype='object')
     vecs_train_2 = np.array(vecs_train_2, dtype='object')
