@@ -176,7 +176,8 @@ class CelebACustomBinary(Dataset):
 
 class CelebaWrapper:
     def __init__(self, prop, ratio, split,
-                 classify="Smiling", augment=False, features=None):
+                 classify="Smiling", augment=False,
+                 cwise_samples=None):
 
         # Make sure specified label is valid
         if classify not in PRESERVE_PROPERTIES:
@@ -212,16 +213,6 @@ class CelebaWrapper:
         filelist_test = os.path.join(
             BASE_DATA_DIR, "splits", "75_25", split, "test.txt")
 
-        # TODO: Handle pre-processed feature case
-        # if features is None:
-        #     self.ds_train = CelebACustomBinary(self.df_train, train_transforms)
-        #     self.ds_val = CelebACustomBinary(self.df_val, test_transforms)
-        # else:
-        #     self.ds_train = CelebACustomBinary(
-        #         self.df_train, features["train"], processed=True)
-        #     self.ds_val = CelebACustomBinary(
-        #         self.df_val, features["val"], processed=True)
-
         # TODO: Define cwise_samples appropriately
         # Define number of sub-samples
         prop_wise_subsample_sizes = {
@@ -238,7 +229,11 @@ class CelebaWrapper:
                 }
             }
         }
-        cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
+
+        if cwise_samples is None:
+            cwise_sample = cwise_samples
+        else:
+            cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
 
         self.ds_train = CelebACustomBinary(
             classify, filelist_train, attr_dict,

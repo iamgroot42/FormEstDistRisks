@@ -38,12 +38,44 @@ class MyAlexNet(nn.Module):
             nn.Linear(32, num_classes),
         )
 
-    def forward(self, x: ch.Tensor) -> ch.Tensor:
-        x = self.features(x)
-        x = self.avgpool(x)
-        x = ch.flatten(x, 1)
-        x = self.classifier(x)
-        return x
+    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+
+        if latent is None:
+            x = self.features(x)
+            x = self.avgpool(x)
+            x = ch.flatten(x, 1)
+            x = self.classifier(x)
+            return x
+
+        if latent not in list(range(7)):
+            raise ValueError("Invald interal layer requested")
+
+        # Pick activations just before previous layers
+        # Since any intermediate functions that pool activations
+        # Introduce invariance to further layers, so should be
+        # Clubbed according to pooling
+
+        if latent < 4:
+            # Latent from Conv part of model
+            mapping = {0: 2, 1: 5, 2: 7, 3: 9}
+            for i, layer in enumerate(self.features):
+                x = layer(x)
+                if i == mapping[latent]:
+                    return x.view(x.shape[0], -1)
+
+        elif latent == 4:
+            x = self.features(x)
+            x = self.avgpool(x)
+            x = ch.flatten(x, 1)
+            return x
+        else:
+            x = self.features(x)
+            x = self.avgpool(x)
+            x = ch.flatten(x, 1)
+            for i, layer in enumerate(self.classifier):
+                x = layer(x)
+                if i == 2 * (latent - 5) + 1:
+                    return x
 
 
 def create_model(parallel=False):
