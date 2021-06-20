@@ -6,7 +6,7 @@ import model_utils
 
 def main():
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
-    parser.add_argument('--split', choices=['victim', 'adv'])
+    parser.add_argument('--split', required=True, choices=['victim', 'adv'])
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)

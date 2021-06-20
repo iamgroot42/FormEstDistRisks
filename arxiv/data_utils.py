@@ -1,7 +1,6 @@
+import torch as ch
 import dgl
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
-from dgl.dataloading import GraphDataLoader
-import torch as ch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,29 +10,6 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 SUPPORTED_PROPERTIES = ["mean", "keep_below"]
-
-
-class GraphLevelGraphDataset:
-    def __init__(self, name):
-        self.data = dgl.data.TUDataset(name)
-
-    def get_loader(self, batch_size=512, shuffle=True):
-        return GraphDataLoader(
-                self.data, batch_size=batch_size,
-                drop_last=False,
-                shuffle=shuffle)
-
-
-class Reddit5KDataset(GraphLevelGraphDataset):
-    def __init__(self):
-        super(Reddit5KDataset, self).__init__(
-            'REDDIT-MULTI-5K')
-
-        # Average degrees of data
-        self.degs = []
-
-    def pre_process(self):
-        pass
 
 
 class NodeLevelDataset:
