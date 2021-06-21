@@ -5,10 +5,11 @@ import numpy as np
 
 
 LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet"
+SPLIT_INFO_PATH = "/p/adversarialml/as9rw/datasets/botnet"
 
 
-class BotNetWrapper():
-    def __init__(self, dataset_name="chord", split=None):
+class BotNetWrapper:
+    def __init__(self, dataset_name="chord", split=None, feat_len=40):
         self.dataset_name = dataset_name
         self.split = split
 
@@ -26,26 +27,26 @@ class BotNetWrapper():
 
         self.train_data = BotnetDataset(
             name=dataset_name, root=data_dir,
-            add_nfeat_ones=True, in_memory=True,
+            add_features_dgl=feat_len, in_memory=True,
             split='train', graph_format='dgl',
             partial_load=split_info[0])
 
         self.val_data = BotnetDataset(
             name=dataset_name, root=data_dir,
-            add_nfeat_ones=True, in_memory=True,
+            add_features_dgl=feat_len, in_memory=True,
             split='val', graph_format='dgl',
             partial_load=split_info[1])
 
         self.test_data = BotnetDataset(
             name=dataset_name, root=data_dir,
-            add_nfeat_ones=True, in_memory=True,
+            add_features_dgl=feat_len, in_memory=True,
             split='test', graph_format='dgl',
             partial_load=split_info[2])
 
     def get_splits(self, split):
         splitname = "split_70_30.npz"
         splitfile = np.load(os.path.join(
-            LOCAL_DATA_DIR, self.dataset_name, splitname),
+            SPLIT_INFO_PATH, self.dataset_name, splitname),
             allow_pickle=True)
         return splitfile[split]
 
@@ -54,7 +55,7 @@ class BotNetWrapper():
         self.train_loader = GraphDataLoader(
             self.train_data, batch_size, shuffle, num_workers)
         self.test_loader = GraphDataLoader(
-            self.test_data, batch_size, shuffle, num_workers)
+            self.test_data, batch_size, False, num_workers)
 
         return self.train_loader, self.test_loader
 
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     print(len(adv_train), len(adv_val), len(adv_test))
 
     # Save split information
-    np.savez(os.path.join(LOCAL_DATA_DIR, dataset_name, "split_70_30"),
+    np.savez(os.path.join(SPLIT_INFO_PATH, dataset_name, "split_70_30"),
              adv=splits["adv"], victim=splits["victim"])
     print("Saved split information!")
 
