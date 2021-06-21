@@ -117,4 +117,5 @@ if __name__ == "__main__":
         #plt.plot(accs_2, [0,1,2])
         plt.xticks(np.arange(min(x), max(x)+1, 1.0))
         plt.title("Activations on models with ratios 0.5 (red) vs 0.0 (green)")
-        plt.savefig("/u/jyc9fyf/celebGraphs/0.5_vs_0_ds_" + point + "_.png")
+        plt.savefig("/u/jyc9fyf/celebGraphs/0.5_vs_0_ds_" + str(point) + "_.png")
+        plt.clf()
