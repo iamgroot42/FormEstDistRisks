@@ -9,9 +9,11 @@ SPLIT_INFO_PATH = "/p/adversarialml/as9rw/datasets/botnet"
 
 
 class BotNetWrapper:
-    def __init__(self, dataset_name="chord", split=None, feat_len=40):
+    def __init__(self, dataset_name="chord", split=None,
+                 feat_len=1, subsample=1.0):
         self.dataset_name = dataset_name
         self.split = split
+        assert subsample >= 0 and subsample <= 1
 
         # Use local storage (much faster)
         if not os.path.exists(LOCAL_DATA_DIR):
@@ -23,6 +25,14 @@ class BotNetWrapper:
         if split is not None:
             splits = self.get_splits(split)
             for i, spl in enumerate(splits):
+
+                # Further subsample graphs from these splits
+                if subsample < 1:
+                    print(spl)
+                    perm_ = np.random.permutation(len(spl))
+                    perm_ = perm_[:int(len(spl) * subsample)]
+                    spl = spl[perm_]
+
                 split_info[i] = [str(x) for x in spl]
 
         self.train_data = BotnetDataset(
@@ -42,6 +52,8 @@ class BotNetWrapper:
             add_features_dgl=feat_len, in_memory=True,
             split='test', graph_format='dgl',
             partial_load=split_info[2])
+
+        # TODO: Combine val and test data
 
     def get_splits(self, split):
         splitname = "split_70_30.npz"
