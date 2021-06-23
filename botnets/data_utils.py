@@ -1,6 +1,8 @@
 from botdet.data.dataset_botnet import BotnetDataset
 from botdet.data.dataloader import GraphDataLoader
+from tqdm import tqdm
 import os
+import torch as ch
 import numpy as np
 
 
@@ -70,6 +72,33 @@ class BotNetWrapper:
             self.test_data, batch_size, False, num_workers)
 
         return self.train_loader, self.test_loader
+
+
+def get_pairwise_distances(graph):
+    # Complexity O(V*(V+E))
+    # Average graph has ~143K nodes, ~1.5M edges
+    # Not scalable to compute diamater, certainly not to
+    # Manipulate graph to get desired diameter
+    import networkx as nx
+    from networkx.algorithms import single_source_shortest_path_length
+    nwg = graph.to_networkx().to_undirected()
+
+    # Get degrees
+    print("Calculating degrees")
+    degrees = [val for (node, val) in nwg.degree()]
+
+    # Find max-degree node
+    max_degree_node = np.argmax(degrees)
+
+    # Remove node (and its edges)
+    print("Remove most dense node")
+    nwg.remove_node(max_degree_node)
+
+    # Get number of connected components
+    print(nwg.number_connected_components())
+
+    # for n in nwg:
+    #     single_source_shortest_path_length(nwg, n)
 
 
 if __name__ == "__main__":

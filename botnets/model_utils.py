@@ -3,6 +3,9 @@ import torch.optim as optim
 import torch as ch
 from tqdm import tqdm
 from dgl.nn.pytorch import GraphConv
+import os
+
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
 
 
 # TODO: Find out why right norm method fails
@@ -147,3 +150,10 @@ def train_model(net, ds, args):
         scheduler.step(tr_loss)
 
         print()
+
+
+def save_model(model, split, prop_and_name, prefix=None):
+    if prefix is None:
+        prefix = BASE_MODELS_DIR
+    savepath = os.path.join(split, prop_and_name)
+    ch.save(model.state_dict(), os.path.join(prefix, savepath))

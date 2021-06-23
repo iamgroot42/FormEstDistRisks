@@ -1,5 +1,5 @@
-from data_utils import BotNetWrapper
-from model_utils import GCN, train_model
+from data_utils import BotNetWrapper, get_pairwise_distances
+from model_utils import GCN, train_model, save_model
 import argparse
 
 
@@ -15,10 +15,16 @@ def main(args):
     if args.gpu:
         model.cuda()
 
+    _, loader = ds.get_loaders(batch_size=1)
+
+    for graph in loader:
+        get_pairwise_distances(graph)
+    exit(0)
+
     # Train model
     train_model(model, ds, args)
 
-    # TODO: Save model
+    save_model(model, args.split, args.savename)
 
 
 if __name__ == "__main__":
@@ -36,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--verbose', action="store_true",
                         help="Print out batch-sise metrics")
-    parser.add_argument("--savepath", help="path to save trained model")
+    parser.add_argument("--savename", help="name to save trained model with")
     args = parser.parse_args()
     print(args)
 
