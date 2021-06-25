@@ -49,21 +49,22 @@ def get_stats(mainmodel, dataloader, return_acts=True, mask=None):
                 print(activationCount)
                 return activationCount                    #Returns total # of activations in model
 
-    for (x_te, y, _) in (dataloader):
-        
-        for i in range(0,7):
+    else:
+        for (x_te, y, _) in (dataloader):
+            
+            for i in range(0,7):
 
-            #y_ = y_te.cuda()
+                #y_ = y_te.cuda()
 
-            acts = mainmodel(x_te.cuda(), latent=i).detach() #Get activation values for data at x_te[index]
+                acts = mainmodel(x_te.cuda(), latent=i).detach() #Get activation values for data at x_te[index]
 
-            activationCount = activationCount + ch.sum(acts > 0, 1).cpu().numpy()   #Count positive activations
+                activationCount = activationCount + ch.sum(acts > 0, 1).cpu().numpy()   #Count positive activations
 
-            #if return_acts:
-            #    activationCount = activationCount
-        if (i == 6):
-            print(activationCount)
-            return activationCount                    #Returns total # of activations in model
+                #if return_acts:
+                #    activationCount = activationCount
+            if (i == 6):
+                print(activationCount)
+                return activationCount                    #Returns total # of activations in model
 
 
 def get_acts(loader, models, model_data, ratio, mask = None): #applies masking in get_stats
@@ -144,7 +145,11 @@ def main(args):
         point_wise_importances = [
             clf.feature_importances_[:n_points],
             clf.feature_importances_[n_points:2*n_points],
-            clf.feature_importances_[n_points*2:]
+            clf.feature_importances_[n_points*2:3*n_points],
+            clf.feature_importances_[n_points*3:4*n_points],
+            clf.feature_importances_[n_points*4:5*n_points],
+            clf.feature_importances_[n_points*5:6*n_points],
+            clf.feature_importances_[n_points*6:],
         ]
         # Account all activations for a point in importance calculation
         print(point_wise_importances)
