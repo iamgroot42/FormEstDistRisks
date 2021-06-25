@@ -1,8 +1,7 @@
 from sklearn.ensemble import RandomForestClassifier
+from sympy import E
 from model_utils import get_model, BASE_MODELS_DIR
-from model_utils import create_model, save_model
 from data_utils import CelebaWrapper, SUPPORTED_PROPERTIES, PRESERVE_PROPERTIES
-import model_utils
 import numpy as np
 from tqdm import tqdm
 import os
@@ -13,7 +12,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import model_utils
 
 mpl.rcParams['figure.dpi'] = 200
 
@@ -27,53 +25,33 @@ def get_models(folder_path, n_models=100):
         models.append(model)
     return models
 
-def get_stats(mainmodel, dataloader, return_acts=True, mask=None):
 
-    all_acts = [] if return_acts else None
-    activationCount = 0
-    #x_te, y_te, _ = dataloader
-    if mask is not None:
-        for (x_te, y, _) in (dataloader): #only purpose is to extract x_te
-        
-            for i in range(0,7):
+def get_stats(mainmodel, dataloader, mask=None):
+    activationCounts = []
 
-                #y_ = y_te.cuda()
+    # only purpose is to extract x_te
+    for (x_te, y, _) in (dataloader):
 
-                acts = mainmodel(x_te[mask:mask+1].cuda(), latent=i).detach() #Get activation values for data at x_te[index]
+        for i in range(7):
+            if mask is not None:
+                x_eff = x_te[mask:mask+1]
+            else:
+                x_eff = x_te
+            # Get activation values for data at x_te[index]
+            acts = mainmodel(x_eff.cuda(), latent=i).detach()
 
-                activationCount = activationCount + ch.sum(acts > 0, 1).cpu().numpy()   #Count positive activations
+            # Count positive activations
+            activationCounts.append(ch.sum(acts > 0, 1).cpu().numpy())
 
-                #if return_acts:
-                #    activationCount = activationCount
-            if (i == 6):
-                print(activationCount)
-                return activationCount                    #Returns total # of activations in model
-
-    else:
-        for (x_te, y, _) in (dataloader):
-            
-            for i in range(0,7):
-
-                #y_ = y_te.cuda()
-
-                acts = mainmodel(x_te.cuda(), latent=i).detach() #Get activation values for data at x_te[index]
-
-                activationCount = activationCount + ch.sum(acts > 0, 1).cpu().numpy()   #Count positive activations
-
-                #if return_acts:
-                #    activationCount = activationCount
-            if (i == 6):
-                print(activationCount)
-                return activationCount                    #Returns total # of activations in model
+        return np.concatenate(activationCounts)
 
 
-def get_acts(loader, models, model_data, ratio, mask = None): #applies masking in get_stats
-    
+# applies masking in get_stats
+def get_acts(loader, models, model_data, ratio, mask=None):
     for model in tqdm(models):
         acts = get_stats(model, loader, mask)
         model_data[0].append(acts)
         model_data[1].append(ratio)
-
 
     return np.array(acts)
 
@@ -81,7 +59,7 @@ def get_acts(loader, models, model_data, ratio, mask = None): #applies masking i
 def extract_and_prepare(loaders, models_1, models_2, mask=None):
     model_data = [[], []]
 
-    for loader in loaders:        
+    for loader in loaders:
         get_acts(loader, models_1, model_data, ratio=args.ratio_1, mask=mask)
         get_acts(loader, models_2, model_data, ratio=args.ratio_2, mask=mask)
 
@@ -103,7 +81,6 @@ def main(args):
         args.ratio_1), "adv", cwise_samples=1e6)
     ds_2 = CelebaWrapper(args.filter, float(
         args.ratio_2), "adv", cwise_samples=1e6)
-
 
     loaders = [
         ds_1.get_loaders(batch_size=400, shuffle=False)[1],
@@ -141,16 +118,13 @@ def main(args):
 
         # Then, look at feature importances used by the model
         # And pick the top 100 points
-        n_points = len(clf.feature_importances_) // 7
-        point_wise_importances = [
-            clf.feature_importances_[:n_points],
-            clf.feature_importances_[n_points:2*n_points],
-            clf.feature_importances_[n_points*2:3*n_points],
-            clf.feature_importances_[n_points*3:4*n_points],
-            clf.feature_importances_[n_points*4:5*n_points],
-            clf.feature_importances_[n_points*5:6*n_points],
-            clf.feature_importances_[n_points*6:],
-        ]
+        num_layers = 7
+        n_points = len(clf.feature_importances_) // num_layers
+        point_wise_importances = []
+        for i in range(num_layers):
+            point_wise_importances.append(clf.feature_importances_[
+                                          n_points * i:n_points * (i+1)])
+
         # Account all activations for a point in importance calculation
         print(point_wise_importances)
         fis = np.sum(point_wise_importances, 0)
@@ -229,4 +203,5 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # Save plot
-    sns_plot.figure.savefig("/u/jyc9fyf/celebaModels/activations_meta_%d.png" % args.num_models)
+    sns_plot.figure.savefig(
+        "/u/jyc9fyf/celebaModels/activations_meta_%d.png" % args.num_models)
