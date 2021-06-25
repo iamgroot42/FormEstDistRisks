@@ -80,25 +80,32 @@ def get_pairwise_distances(graph):
     # Not scalable to compute diamater, certainly not to
     # Manipulate graph to get desired diameter
     import networkx as nx
-    from networkx.algorithms import single_source_shortest_path_length
+    from networkx.algorithms.shortest_paths.unweighted import single_source_shortest_path_length
+    from networkx.algorithms.components import number_connected_components
     nwg = graph.to_networkx().to_undirected()
 
     # Get degrees
     print("Calculating degrees")
-    degrees = [val for (node, val) in nwg.degree()]
+    degrees = np.array([val for (node, val) in nwg.degree()])
 
-    # Find max-degree node
-    max_degree_node = np.argmax(degrees)
+    print("Start with:", number_connected_components(nwg) / nwg.number_of_nodes())
+    top_k = 5
+    max_degree_nodes = np.argsort(-degrees)
+    for i in range(top_k):
 
-    # Remove node (and its edges)
-    print("Remove most dense node")
-    nwg.remove_node(max_degree_node)
+        # Remove node (and its edges)
+        print("Remove most dense node")
+        nwg.remove_node(max_degree_nodes[i])
 
-    # Get number of connected components
-    print(nwg.number_connected_components())
+        # Get number of connected components
+        print(number_connected_components(nwg) / nwg.number_of_nodes())
 
-    # for n in nwg:
-    #     single_source_shortest_path_length(nwg, n)
+    print("Start")
+    import time
+    st = time.time()
+    length = single_source_shortest_path_length(nwg, 0)
+    et = time.time()
+    print("BFS took %.2f seconds" % (et - st))
 
 
 if __name__ == "__main__":
