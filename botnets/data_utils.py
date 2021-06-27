@@ -82,7 +82,66 @@ def get_pairwise_distances(graph):
     import networkx as nx
     from networkx.algorithms.shortest_paths.unweighted import single_source_shortest_path_length
     from networkx.algorithms.components import number_connected_components
+    from networkx.algorithms import approximation
+    from networkx.algorithms.assortativity.pairs import node_degree_xy
+    from networkx.algorithms.distance_measures import diameter
+    import time
+
+    print("Creating networkX graph")
     nwg = graph.to_networkx().to_undirected()
+
+    # Create SNAP graph
+    print("Creating SNAP graph")
+    import snap
+    sng = snap.TUNGraph.New()
+    for i in nwg.nodes:
+        sng.AddNode(int(i))
+    for (e, v, _) in nwg.edges:
+        sng.AddEdge(int(e), int(v))
+
+    print(sng.GetNodes())
+    print(sng.GetEdges())
+
+    # Actual diam
+    # start = time.time()
+    # efd = diameter(nwg)
+    # end = time.time()
+    # print(efd, "took", end - start)
+
+    # Diam stats
+    start = time.time()
+    efd = sng.GetBfsEffDiamAll(10, False)
+    end = time.time()
+    print(efd, "took", end - start)
+
+    start = time.time()
+    efd = sng.GetBfsFullDiam(10, False)
+    end = time.time()
+    print(efd, "took", end - start)
+
+    # Diameter approx
+    start = time.time()
+    efd = sng.GetAnfEffDiam(1, -1)
+    end = time.time()
+    print(efd, "took", end - start)
+
+    # Average clustering coefficient (heuristic)
+    start = time.time()
+    ca = approximation.clustering_coefficientaverage_clustering(
+        nwg, trials=10000)
+    end = time.time()
+    print(ca, "took", end - start)
+    # exit(0)
+
+    # Mixing-rate computation
+    start = time.time()
+    xy_iter = node_degree_xy(nwg)
+    matrix = np.zeros((nwg.number_of_nodes(), nwg.number_of_nodes()))
+    for x, y in xy_iter:
+        matrix[x][y] += 1
+    end = time.time()
+    print(ca, "mixmat", end - start)
+    exit(0)
 
     # Get degrees
     print("Calculating degrees")

@@ -3,7 +3,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
 from utils import flash_utils
-import numpy as np
 from data_utils import SUPPORTED_PROPERTIES
 import matplotlib.patches as mpatches
 import matplotlib as mpl
