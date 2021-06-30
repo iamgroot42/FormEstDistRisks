@@ -1,9 +1,14 @@
-from botdet.data.dataset_botnet import BotnetDataset
+from torch.utils.data import Dataset
 from botdet.data.dataloader import GraphDataLoader
+from networkx.algorithms.components import connected_components
+from networkx.algorithms.cluster import triangles
+from networkx.algorithms import approximation
 from tqdm import tqdm
 import os
 import torch as ch
+import random
 import numpy as np
+import dgl
 
 
 LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet"
@@ -74,97 +79,154 @@ class BotNetWrapper:
         return self.train_loader, self.test_loader
 
 
-def get_pairwise_distances(graph):
-    # Complexity O(V*(V+E))
-    # Average graph has ~143K nodes, ~1.5M edges
-    # Not scalable to compute diamater, certainly not to
-    # Manipulate graph to get desired diameter
-    import networkx as nx
-    from networkx.algorithms.shortest_paths.unweighted import single_source_shortest_path_length
-    from networkx.algorithms.components import number_connected_components
-    from networkx.algorithms import approximation
-    from networkx.algorithms.assortativity.pairs import node_degree_xy
-    from networkx.algorithms.distance_measures import diameter
-    import time
+def chord(num_node, num_edge, interval):
+    edge = [[i % num_node, (i+1) % num_node]for i in range(num_node)]
 
-    print("Creating networkX graph")
-    nwg = graph.to_networkx().to_undirected()
+    fingers = [x for x in range(0, num_node, interval)]
+    for (i, finger) in enumerate(fingers):
+        for j in range(i+1, len(fingers)):
+            edge.append([finger, fingers[j]])
 
-    # Create SNAP graph
-    print("Creating SNAP graph")
-    import snap
-    sng = snap.TUNGraph.New()
-    for i in nwg.nodes:
-        sng.AddNode(int(i))
-    for (e, v, _) in nwg.edges:
-        sng.AddEdge(int(e), int(v))
+    edge_select = random.sample(edge, num_edge)
+    return np.array(edge_select)
 
-    print(sng.GetNodes())
-    print(sng.GetEdges())
 
-    # Actual diam
-    # start = time.time()
-    # efd = diameter(nwg)
-    # end = time.time()
-    # print(efd, "took", end - start)
+def overlay_botnet_on_graph(graph, botnet_edges):
+    # select evil node randomly
+    evil_edges = np.array(botnet_edges).T
+    evil_original = list(
+        set(evil_edges[0, :].tolist()+evil_edges[1, :].tolist()))
+    num_evil = len(evil_original)
+    evil = random.sample(range(graph.number_of_nodes()), num_evil)
 
-    # Diam stats
-    start = time.time()
-    efd = sng.GetBfsEffDiamAll(10, False)
-    end = time.time()
-    print(efd, "took", end - start)
+    evil_dict = {evil_original[i]: evil[i] for i in range(num_evil)}
+    for row in range(evil_edges.shape[0]):
+        for col in range(evil_edges.shape[1]):
+            evil_edges[row, col] = evil_dict[evil_edges[row, col]]
 
-    start = time.time()
-    efd = sng.GetBfsFullDiam(10, False)
-    end = time.time()
-    print(efd, "took", end - start)
+    return evil_edges, evil
 
-    # Diameter approx
-    start = time.time()
-    efd = sng.GetAnfEffDiam(1, -1)
-    end = time.time()
-    print(efd, "took", end - start)
 
-    # Average clustering coefficient (heuristic)
-    start = time.time()
-    ca = approximation.clustering_coefficientaverage_clustering(
-        nwg, trials=10000)
-    end = time.time()
-    print(ca, "took", end - start)
-    # exit(0)
+class BotnetDataset(Dataset):
+    def __init__(self, split, num_node, num_edge, interval, property, value, num_features=1):
+        super(BotnetDataset, self).__init__()
+        self.num_node = num_node
+        self.num_edge = num_edge
+        self.interval = interval
+        self.value = value
+        self.split = split
+        self.num_features = num_features
 
-    # Mixing-rate computation
-    start = time.time()
-    xy_iter = node_degree_xy(nwg)
-    matrix = np.zeros((nwg.number_of_nodes(), nwg.number_of_nodes()))
-    for x, y in xy_iter:
-        matrix[x][y] += 1
-    end = time.time()
-    print(ca, "mixmat", end - start)
-    exit(0)
+        if property == "mcc":
+            self.property_fn = modify_clustering_coefficient
+        else:
+            raise ValueError("%s property not implemented" % property)
 
-    # Get degrees
-    print("Calculating degrees")
-    degrees = np.array([val for (node, val) in nwg.degree()])
+        # TODO: Load all graphs from memory based on split
+        # Process them to get desired property
+        self.graphs = []
+        for g in tqdm(graphs):
+            x, y = self.pre_process_graph(g)
 
-    print("Start with:", number_connected_components(nwg) / nwg.number_of_nodes())
-    top_k = 5
-    max_degree_nodes = np.argsort(-degrees)
-    for i in range(top_k):
+            # Convert to DGL graph, assign features and labels
+            dg_graph = dgl.from_networkx(x)
+            features = ch.ones(dg_graph.num_nodes(), self.num_features,)
+            dg_graph.ndata['feat'] = features
+            dg_graph.ndata['y'] = ch.from_numpy(y)
 
-        # Remove node (and its edges)
-        print("Remove most dense node")
-        nwg.remove_node(max_degree_nodes[i])
+            # Add to graphs
+            self.graphs.append(dg_graph)
 
-        # Get number of connected components
-        print(number_connected_components(nwg) / nwg.number_of_nodes())
+    def generate_botnet_graph(self, graph):
+        # Generate botnet edges
+        botnet_edges = chord(self.num_node, self.num_edge, self.interval)
 
-    print("Start")
-    import time
-    st = time.time()
-    length = single_source_shortest_path_length(nwg, 0)
-    et = time.time()
-    print("BFS took %.2f seconds" % (et - st))
+        # OVerlay botnets on graph
+        evil_edges, evil = overlay_botnet_on_graph(graph, botnet_edges)
+        graph.add_edges_from(evil_edges)
+
+        # Create node labels
+        y = np.zeros(graph.number_of_nodes())
+        y[evil] = 1
+
+        return (graph, evil)
+
+    def pre_process_graph(self, graph):
+        # Change property according to specification
+        graph = self.property_fn(graph, self.value)
+
+        # OVerlay botnet
+        graph, label = self.generate_botnet_graph(graph)
+        return graph, label
+
+    def __len__(self):
+        return len(self.graphs)
+
+    def __item__(self, index):
+        return self.graphs(index)
+
+
+def modify_clustering_coefficient(graph, coeff,
+                                  n_trials=20000, together=10,
+                                  m_trials=10, p_check=0.9,
+                                  random_permute=0.1,
+                                  at_most=5000, verbose=False):
+
+    # Get counts for all triangles
+    trians = np.array([triangles(graph, x) for x in graph.nodes])
+    sorted_ids = np.argsort(-trians)
+
+    # Add slight perturbation to sorted order
+    # To increase variation in generated graphs
+    # Randomly pick X% of data and permute order of indices
+    random_ids = np.random.choice(len(trians), size=int(
+        random_permute * len(trians)), replace=False)
+    sorted_ids[random_ids] = sorted_ids[np.random.permutation(random_ids)]
+
+    # Iterate through nodes
+    iterator = tqdm(range(0, at_most, together))
+    for i in iterator:
+
+        # Remove 'together' nodes together to process faster
+        for j in range(i, i + together):
+            graph.remove_node(sorted_ids[j])
+
+        # Get approximate clustering coefficient
+        ca = approximation.clustering_coefficient.average_clustering(
+                graph, trials=n_trials)
+
+        if verbose:
+            iterator.set_description(
+                "Clustering-coefficient: %.3f | %d" %
+                (ca, graph.number_of_nodes()))
+
+        # If coefficient drops to desired value, run 'm_trials' more trials
+        # if all of them satisfy desired coefficient, return graph
+        if ca <= coeff:
+
+            satisfy = 0
+            for j in range(m_trials):
+                ca_ = approximation.clustering_coefficient.average_clustering(
+                    graph, trials=n_trials)
+                satisfy += (ca_ <= coeff)
+
+            # If 'p_check' of them satisfy required coefficient requirement
+            # return current graph
+            if (satisfy / m_trials) >= p_check:
+
+                # Consider only largest component of pruned graph
+                largest_cc = max(connected_components(graph), key=len)
+                graph_ = graph.subgraph(largest_cc).copy()
+                if verbose:
+                    print("Numer of nodes decreased from %d to %d" %
+                    (graph.number_of_nodes(), graph_.number_of_nodes()))
+
+                return graph_
+
+    # If nothing happened until this point, desired coefficient
+    # was nto achieved - raise error
+    raise ValueError("Desired coefficient not achieved!")
+
 
 
 if __name__ == "__main__":
