@@ -2,6 +2,7 @@ from torch.utils.data import Dataset
 from botdet.data.dataloader import GraphDataLoader
 from networkx.algorithms.components import connected_components
 from networkx.algorithms.cluster import triangles
+import deepdish as dd
 from networkx.algorithms import approximation
 from tqdm import tqdm
 import os
@@ -16,58 +17,29 @@ SPLIT_INFO_PATH = "/p/adversarialml/as9rw/datasets/botnet"
 
 
 class BotNetWrapper:
-    def __init__(self, dataset_name="chord", split=None,
-                 feat_len=1, subsample=1.0):
-        self.dataset_name = dataset_name
-        self.split = split
-        assert subsample >= 0 and subsample <= 1
-
-        # Use local storage (much faster)
-        if not os.path.exists(LOCAL_DATA_DIR):
-            raise FileNotFoundError("Local data not found")
-        data_dir = os.path.join(LOCAL_DATA_DIR, dataset_name)
-
-        # Use adv/victim split
-        split_info = [None] * 3
-        if split is not None:
-            splits = self.get_splits(split)
-            for i, spl in enumerate(splits):
-
-                # Further subsample graphs from these splits
-                if subsample < 1:
-                    print(spl)
-                    perm_ = np.random.permutation(len(spl))
-                    perm_ = perm_[:int(len(spl) * subsample)]
-                    spl = spl[perm_]
-
-                split_info[i] = [str(x) for x in spl]
+    def __init__(self, split, prop_val, dataset_name="chord",
+                 feat_len=1, botnet_size=1000, interval=2,
+                 property="mcc"):
+        if split == "victim":
+            num_train_graphs = 200
+            num_test_graphs = 50
+        else:
+            num_train_graphs = 100
+            num_test_graphs = 25
 
         self.train_data = BotnetDataset(
-            name=dataset_name, root=data_dir,
-            add_features_dgl=feat_len, in_memory=True,
-            split='train', graph_format='dgl',
-            partial_load=split_info[0])
-
-        self.val_data = BotnetDataset(
-            name=dataset_name, root=data_dir,
-            add_features_dgl=feat_len, in_memory=True,
-            split='val', graph_format='dgl',
-            partial_load=split_info[1])
+            dataset_name, split, num_node=botnet_size,
+            num_edge=botnet_size, interval=interval,
+            property=property, value=prop_val,
+            num_features=feat_len,
+            num_graphs=num_train_graphs, is_train=True)
 
         self.test_data = BotnetDataset(
-            name=dataset_name, root=data_dir,
-            add_features_dgl=feat_len, in_memory=True,
-            split='test', graph_format='dgl',
-            partial_load=split_info[2])
-
-        # TODO: Combine val and test data
-
-    def get_splits(self, split):
-        splitname = "split_70_30.npz"
-        splitfile = np.load(os.path.join(
-            SPLIT_INFO_PATH, self.dataset_name, splitname),
-            allow_pickle=True)
-        return splitfile[split]
+            dataset_name, split, num_node=botnet_size,
+            num_edge=botnet_size, interval=interval,
+            property=property, value=prop_val,
+            num_features=feat_len,
+            num_graphs=num_test_graphs, is_train=False)
 
     def get_loaders(self, batch_size, shuffle=False, num_workers=0):
         # Create loaders
@@ -77,6 +49,100 @@ class BotNetWrapper:
             self.test_data, batch_size, False, num_workers)
 
         return self.train_loader, self.test_loader
+
+
+class BotnetDataset(Dataset):
+    def __init__(self, dataset_name, split, num_node, num_edge, interval,
+                 num_graphs, property, value, is_train, num_features=1):
+        super(BotnetDataset, self).__init__()
+        self.graph_format = "dgl"
+        self.num_node = num_node
+        self.num_edge = num_edge
+        self.interval = interval
+        self.value = value
+        self.split = split
+        self.num_features = num_features
+        self.num_graphs = num_graphs
+        self.is_train = is_train
+        self.dataset_name = dataset_name
+
+        # Use local storage (much faster)
+        if not os.path.exists(LOCAL_DATA_DIR):
+            raise FileNotFoundError("Local data not found")
+        self.path = os.path.join(
+            LOCAL_DATA_DIR, self.dataset_name, "graph.hdf5")
+
+        if property == "mcc":
+            self.property_fn = modify_clustering_coefficient
+        else:
+            raise ValueError("%s property not implemented" % property)
+
+        graphs = self.load_graphs()
+
+        self.graphs = []
+        for g in tqdm(graphs):
+            x, y = self.pre_process_graph(g)
+
+            # Convert to DGL graph, assign features and labels
+            dg_graph = dgl.from_networkx(x)
+            features = ch.ones(dg_graph.num_nodes(), self.num_features,)
+            dg_graph.ndata['feat'] = features
+            dg_graph.ndata['y'] = ch.from_numpy(y)
+
+            # Add to graphs
+            self.graphs.append(dg_graph)
+
+    def get_splits(self):
+        splitname = "split_70_30.npz"
+        splitfile = np.load(os.path.join(
+            SPLIT_INFO_PATH, self.dataset_name, splitname),
+            allow_pickle=True)
+        return splitfile[self.split]
+
+    def load_graphs(self):
+        # TODO: Fetch indices according to split
+        train_split, test_split = self.get_splits()
+        if self.is_train:
+            indices = train_split
+        else:
+            indices = test_split
+
+        # Pick random sample of graph IDs from these indices
+        wanted_ids = np.random.choice(indices, self.num_graphs, replace=False)
+        wanted_ids = [str(x) for x in wanted_ids]
+
+        # Load graphs from memory
+        graphs = dd.io.load(self.path, group=wanted_ids)
+
+        return graphs
+
+    def generate_botnet_graph(self, graph):
+        # Generate botnet edges
+        botnet_edges = chord(self.num_node, self.num_edge, self.interval)
+
+        # OVerlay botnets on graph
+        evil_edges, evil = overlay_botnet_on_graph(graph, botnet_edges)
+        graph.add_edges_from(evil_edges)
+
+        # Create node labels
+        y = np.zeros(graph.number_of_nodes())
+        y[evil] = 1
+
+        return (graph, evil)
+
+    def pre_process_graph(self, graph):
+        # Change property according to specification
+        graph = self.property_fn(graph, self.value)
+
+        # OVerlay botnet
+        graph, label = self.generate_botnet_graph(graph)
+        return graph, label
+
+    def __len__(self):
+        return self.num_graphs
+
+    def __item__(self, index):
+        return self.graphs(index)
 
 
 def chord(num_node, num_edge, interval):
@@ -105,65 +171,6 @@ def overlay_botnet_on_graph(graph, botnet_edges):
             evil_edges[row, col] = evil_dict[evil_edges[row, col]]
 
     return evil_edges, evil
-
-
-class BotnetDataset(Dataset):
-    def __init__(self, split, num_node, num_edge, interval, property, value, num_features=1):
-        super(BotnetDataset, self).__init__()
-        self.num_node = num_node
-        self.num_edge = num_edge
-        self.interval = interval
-        self.value = value
-        self.split = split
-        self.num_features = num_features
-
-        if property == "mcc":
-            self.property_fn = modify_clustering_coefficient
-        else:
-            raise ValueError("%s property not implemented" % property)
-
-        # TODO: Load all graphs from memory based on split
-        # Process them to get desired property
-        self.graphs = []
-        for g in tqdm(graphs):
-            x, y = self.pre_process_graph(g)
-
-            # Convert to DGL graph, assign features and labels
-            dg_graph = dgl.from_networkx(x)
-            features = ch.ones(dg_graph.num_nodes(), self.num_features,)
-            dg_graph.ndata['feat'] = features
-            dg_graph.ndata['y'] = ch.from_numpy(y)
-
-            # Add to graphs
-            self.graphs.append(dg_graph)
-
-    def generate_botnet_graph(self, graph):
-        # Generate botnet edges
-        botnet_edges = chord(self.num_node, self.num_edge, self.interval)
-
-        # OVerlay botnets on graph
-        evil_edges, evil = overlay_botnet_on_graph(graph, botnet_edges)
-        graph.add_edges_from(evil_edges)
-
-        # Create node labels
-        y = np.zeros(graph.number_of_nodes())
-        y[evil] = 1
-
-        return (graph, evil)
-
-    def pre_process_graph(self, graph):
-        # Change property according to specification
-        graph = self.property_fn(graph, self.value)
-
-        # OVerlay botnet
-        graph, label = self.generate_botnet_graph(graph)
-        return graph, label
-
-    def __len__(self):
-        return len(self.graphs)
-
-    def __item__(self, index):
-        return self.graphs(index)
 
 
 def modify_clustering_coefficient(graph, coeff,
@@ -226,7 +233,6 @@ def modify_clustering_coefficient(graph, coeff,
     # If nothing happened until this point, desired coefficient
     # was nto achieved - raise error
     raise ValueError("Desired coefficient not achieved!")
-
 
 
 if __name__ == "__main__":
