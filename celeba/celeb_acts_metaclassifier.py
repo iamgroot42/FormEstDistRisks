@@ -34,7 +34,7 @@ def get_stats(mainmodel, dataloader, mask=None):
 
         for i in range(7):
             if mask is not None:
-                x_eff = x_te[mask:mask+1]
+                x_eff = x_te[mask]
             else:
                 x_eff = x_te
             # Get activation values for data at x_te[index]
@@ -98,7 +98,7 @@ def main(args):
             BASE_MODELS_DIR, "adv", args.filter, args.ratio_2), total_models // 2)
 
         # First train classifier using ALL test data
-        clf = RandomForestClassifier(max_depth=3)
+        clf = RandomForestClassifier(n_estimators = 10, max_depth=3)
 
         # Data that will store x and y values
         model_data = extract_and_prepare(loaders, models_1, models_2)
@@ -132,7 +132,7 @@ def main(args):
 
         # Knowing which data points are best to be used, repeat process all over again
         # Data that will store x and y values
-        clf = RandomForestClassifier(max_depth=3)
+        clf = RandomForestClassifier(n_estimators = 10, max_depth=3)
 
         # Data that will store x and y values
         model_data = extract_and_prepare(
@@ -158,7 +158,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    # Example command: python celeb_acts_metaclassifier.py --filter Male --trials 2 --ratio_1 0.5 --ratio_2 1.0
+    # Example command: python celeb_acts_metaclassifier.py --filter Male --trials 1 --total_models 10
     parser = argparse.ArgumentParser()
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
@@ -183,7 +183,7 @@ if __name__ == "__main__":
             data.append([float(rt), acc])
 
     columns = [
-        r'%s proportion of training data ($\alpha$)' % PRESERVE_PROPERTIES[args.filter],
+        r'%s proportion of training data ($\alpha$)' % args.filter,
         "Accuracy (%)"
     ]
     df = pd.DataFrame(data, columns=columns)
@@ -204,4 +204,4 @@ if __name__ == "__main__":
 
     # Save plot
     sns_plot.figure.savefig(
-        "/u/jyc9fyf/celebaModels/activations_meta_%d.png" % args.num_models)
+        "/u/jyc9fyf/celebaModels/activations_meta_estimators_%d.png" % args.total_models)
