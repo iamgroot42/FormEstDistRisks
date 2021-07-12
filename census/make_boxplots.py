@@ -91,7 +91,7 @@ if __name__ == "__main__":
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
     midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint, color='black',
+    plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
                 linewidth=1.0, linestyle='--')
 
     # Map range to numbers to be plotted

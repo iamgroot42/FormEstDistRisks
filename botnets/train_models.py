@@ -1,4 +1,4 @@
-from data_utils import BotNetWrapper, get_pairwise_distances
+from data_utils import BotNetWrapper
 from model_utils import GCN, train_model, save_model
 import argparse
 
@@ -11,15 +11,11 @@ def main(args):
     # Define model
     model = GCN(n_inp=args.n_feat, n_hidden=args.hidden_channels,
                 n_layers=args.num_layers, dropout=args.dropout,
-                residual=True, norm=args.norm)
+                residual=True)
     if args.gpu:
         model.cuda()
 
     _, loader = ds.get_loaders(batch_size=1)
-
-    for graph in loader:
-        get_pairwise_distances(graph)
-    exit(0)
 
     # Train model
     train_model(model, ds, args)
@@ -30,7 +26,6 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (GNN)')
     parser.add_argument('--split', required=True, choices=['victim', 'adv'])
-    parser.add_argument('--norm', default='both', choices=['right', 'both'])
     parser.add_argument('--num_layers', type=int, default=12)
     parser.add_argument('--batch_size', type=int, default=2)
     parser.add_argument('--hidden_channels', type=int, default=32)

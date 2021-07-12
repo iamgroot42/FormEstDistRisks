@@ -2,34 +2,93 @@ import torch.nn as nn
 import torch.optim as optim
 import torch as ch
 from tqdm import tqdm
-from dgl.nn.pytorch import GraphConv
 import os
+
+import dgl.function as fn
+from dgl.utils import expand_as_pair
+from torch.nn import init
+
 
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
 
 
-# TODO: Find out why right norm method fails
+class RightNormGraphConv(nn.Module):
+    def __init__(self, in_feats, out_feats):
+        super(RightNormGraphConv, self).__init__()
+        self._in_feats = in_feats
+        self._out_feats = out_feats
+
+        self.weight = nn.Parameter(ch.Tensor(in_feats, out_feats))
+        self.bias = nn.Parameter(ch.Tensor(out_feats))
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        init.xavier_uniform_(self.weight)
+        init.zeros_(self.bias)
+
+    def forward(self, graph, feat):
+        with graph.local_scope():
+            if (graph.in_degrees() == 0).any():
+                raise ValueError("Graph has 0-in-degree nodes")
+            aggregate_fn = fn.copy_src('h', 'm')
+
+            # (BarclayII) For RGCN on heterogeneous graphs we need to support GCN on bipartite.
+            feat_src, feat_dst = expand_as_pair(feat, graph)
+
+            # normalize node representations before parsing
+            degs = graph.out_degrees().float().clamp(min=1)
+            norm = 1.0 / degs
+            shp = norm.shape + (1,) * (feat_dst.dim() - 1)
+            norm = ch.reshape(norm, shp)
+
+            if self._in_feats > self._out_feats:
+                # mult W first to reduce the feature size for aggregation.
+                feat_src = ch.matmul(feat_src, self.weight)
+
+                # normalize with out-degree
+                feat_src *= norm
+
+                graph.srcdata['h'] = feat_src
+                graph.update_all(aggregate_fn, fn.sum(msg='m', out='h'))
+                rst = graph.dstdata['h']
+            else:
+                # normalize with out-degree
+                feat_src *= norm
+
+                # aggregate first then mult W
+                graph.srcdata['h'] = feat_src
+                graph.update_all(aggregate_fn, fn.sum(msg='m', out='h'))
+                rst = graph.dstdata['h']
+                rst = ch.matmul(rst, self.weight)
+
+            # Add bias term
+            rst = rst + self.bias
+
+            return rst
+
+
 class GCN(nn.Module):
-    def __init__(self, n_inp, n_hidden, n_layers,
-                 dropout=0.5, n_classes=2, residual=False,
-                 norm='both'):
+    def __init__(self, n_hidden, n_layers, n_inp=1, n_classes=2, residual=True, dropout=0.5):
         super(GCN, self).__init__()
         self.layers = nn.ModuleList()
         self.residual = residual
+        self.drop_p = dropout
 
         # input layer
         self.layers.append(
-            GraphConv(n_inp, n_hidden, norm=norm))
+            RightNormGraphConv(n_inp, n_hidden))
 
         # hidden layers
         for i in range(n_layers-1):
             self.layers.append(
-                GraphConv(n_hidden, n_hidden, norm=norm))
+                RightNormGraphConv(n_hidden, n_hidden))
 
         # output layer
-        self.final = GraphConv(n_hidden, n_classes, norm=norm)
-        self.dropout = nn.Dropout(p=dropout)
+        self.final = RightNormGraphConv(n_hidden, n_classes)
         self.activation = nn.ReLU()
+        if self.drop_p > 0:
+            self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, g, latent=None):
 
@@ -37,16 +96,18 @@ class GCN(nn.Module):
             if latent < 0 or latent > len(self.layers):
                 raise ValueError("Invald interal layer requested")
 
-        x = g.ndata['feat']
+        x = g.ndata['x']
         for i, layer in enumerate(self.layers):
-            xo = self.activation(layer(g, x))
-            xo = self.dropout(xo)
+            xo = layer(g, x)
+
+            if self.drop_p > 0:
+                xo = self.dropout(xo)
 
             # Add prev layer directly, if requested
             if self.residual and i != 0:
-                xo = self.activation(xo + x)
+                xo += x
 
-            x = xo
+            x = self.activation(xo)
 
             # Return representation, if requested
             if i == latent:
@@ -87,7 +148,7 @@ def epoch(model, loader, gpu, optimizer=None, verbose=False):
     if optimizer is None:
         is_train = False
 
-    tot_loss, precision, recall, f1 = 0, 0, 0, 0
+    n_samples, tot_loss, precision, recall, f1 = 0, 0, 0, 0, 0
     iterator = enumerate(loader)
     if verbose:
         iterator = tqdm(iterator, total=len(loader))
@@ -115,17 +176,19 @@ def epoch(model, loader, gpu, optimizer=None, verbose=False):
                 optimizer.step()
 
             # Get metrics
+            samples_now = batch.batch_size
             m = get_metrics(labels, probs)
-            precision += m[0]
-            recall += m[1]
-            f1 += m[2]
+            precision += m[0] * samples_now
+            recall += m[1] * samples_now
+            f1 += m[2] * samples_now
+            n_samples += samples_now
 
-            tot_loss += loss.detach().item()
+            tot_loss += loss.detach().item() * samples_now
             if verbose:
                 iterator.set_description(
                     "Loss: %.5f | Precision: %.3f | Recall: %.3f | F-1: %.3f" %
-                    (tot_loss / (e+1), precision / (e+1), recall / (e+1), f1 / (e+1)))
-    return tot_loss / (e+1)
+                    (tot_loss / n_samples, precision / n_samples, recall / n_samples, f1 / n_samples))
+    return tot_loss / n_samples, f1 / n_samples
 
 
 def train_model(net, ds, args):
@@ -134,22 +197,35 @@ def train_model(net, ds, args):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.25, patience=1)
 
-    for e in range(args.epochs):
+    iterator = range(args.epochs)
+    if not args.verbose:
+        iterator = tqdm(iterator)
+    for e in iterator:
+
+        if args.verbose:
+            print("Epoch %d/%d" % (e + 1, args.epochs))
+            print("[Train]")
         # Train
-        print("[Train]")
         net.train()
-        tr_loss = epoch(net, train_loader, args.gpu,
-                        optimizer, verbose=args.verbose)
+        tr_loss, tr_f1 = epoch(net, train_loader, args.gpu,
+                               optimizer, verbose=args.verbose)
 
         # Test
-        print("[Eval]")
+        if args.verbose:
+            print("[Eval]")
         net.eval()
-        epoch(net, test_loader, args.gpu, None, verbose=args.verbose)
+        te_loss, te_f1 = epoch(net, test_loader, args.gpu,
+                               None, verbose=args.verbose)
 
         # Scheduler step
         scheduler.step(tr_loss)
 
-        print()
+        if args.verbose:
+            print()
+        else:
+            iterator.set_description(
+                "[Train] Loss: %.3f, F-1: %.3f | [Test] Loss: %.3f, F-1: %.3f" %
+                (tr_loss, tr_f1, te_loss, te_f1))
 
 
 def save_model(model, split, prop_and_name, prefix=None):

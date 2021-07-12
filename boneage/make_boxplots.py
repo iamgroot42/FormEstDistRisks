@@ -59,13 +59,13 @@ if __name__ == "__main__":
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
     midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint, color='black',
+    plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
                 linewidth=1.0, linestyle='--')
 
     # Map range to numbers to be plotted
     baselines = [64.9, 64.3, 59.0, 57.0, 56.8, 66.9]
     targets_scaled = range(int((upper - lower)))
-    plt.plot(targets_scaled, baselines, color='C1', marker='x', linestyle='--')
+    # plt.plot(targets_scaled, baselines, color='C1', marker='x', linestyle='--')
 
     # Plot numbers for threshold-based accuracy
     thresholds = [
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         [55.85, 64.45, 58.40, 56.40, 59.05, 64.65, 50.45, 57.25, 54.60, 69.95],
     ]
     means, errors = np.mean(thresholds, 1), np.std(thresholds, 1)
-    plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
+    # plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
 
     if args.legend:
         # Custom legend

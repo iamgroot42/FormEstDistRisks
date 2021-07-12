@@ -231,9 +231,9 @@ class CelebaWrapper:
         }
 
         if cwise_samples is None:
-            cwise_sample = cwise_samples
-        else:
             cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
+        else:
+            cwise_sample = cwise_samples
 
         self.ds_train = CelebACustomBinary(
             classify, filelist_train, attr_dict,
@@ -245,7 +245,7 @@ class CelebaWrapper:
             prop, ratio, cwise_sample[1],
             transform=test_transforms)
 
-    def get_loaders(self, batch_size, shuffle=True):
+    def get_loaders(self, batch_size, shuffle=True, eval_shuffle=False):
         num_workers = 16
         pff = 20
         train_loader = DataLoader(
@@ -257,7 +257,7 @@ class CelebaWrapper:
         # No-grad mode can surely hadle 2 * BS?
         test_loader = DataLoader(
             self.ds_val, batch_size=batch_size * 2,
-            shuffle=False, num_workers=num_workers,
+            shuffle=eval_shuffle, num_workers=num_workers,
             worker_init_fn=worker_init_fn,
             prefetch_factor=pff)
 
