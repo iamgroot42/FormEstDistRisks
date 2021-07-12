@@ -33,6 +33,7 @@ def get_stats(mainmodel, dataloader, mask=None):
     for (x_te, y, _) in (dataloader):
 
         for i in range(7):
+        #for i in [0, 1, 5, 6]:
             if mask is not None:
                 x_eff = x_te[mask]
             else:
@@ -118,7 +119,7 @@ def main(args):
 
         # Then, look at feature importances used by the model
         # And pick the top 100 points
-        num_layers = 7
+        num_layers = 7 #4
         n_points = len(clf.feature_importances_) // num_layers
         point_wise_importances = []
         for i in range(num_layers):
