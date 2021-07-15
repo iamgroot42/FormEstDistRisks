@@ -50,9 +50,9 @@ if __name__ == "__main__":
     # Get data with ratio
     print("Preparing data")
     ds_1 = CelebaWrapper(args.filter, float(
-        args.ratio_1), "adv", cwise_samples=1e6)
+        args.ratio_1), "adv", cwise_samples=(int(1e6), int(1e6)))
     ds_2 = CelebaWrapper(args.filter, float(
-        args.ratio_2), "adv", cwise_samples=1e6)
+        args.ratio_2), "adv", cwise_samples=(int(1e6), int(1e6)))
 
     # Get loaders
     loaders = [
@@ -79,16 +79,10 @@ if __name__ == "__main__":
         accs_1 = get_accs(loader, models_1)
         accs_2 = get_accs(loader, models_2)
 
-        # # Look at [0, 100]
+        # Look at [0, 100]
         accs_1 *= 100
         accs_2 *= 100
 
-        # Calculate Z value
-        m1, v1 = np.mean(accs_1), np.var(accs_1)
-        m2, v2 = np.mean(accs_2), np.var(accs_2)
-
-        print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
-        print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
         print("Number of samples: %d" % total_models)
 
         tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)

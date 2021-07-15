@@ -42,7 +42,7 @@ class BotNetWrapper:
         tr_te_split = int(self.train_test_ratio * len(wanted_ids))
 
         # Load graph according to specific IDs
-        graphs = self.load_graphs(wanted_ids)
+        graphs = self.load_graphs(wanted_ids, prop_val)
 
         # Split into train/test
         graphs_train = graphs[:tr_te_split]
@@ -70,39 +70,39 @@ class BotNetWrapper:
         values = np.array(values)
 
         # Split according to months
-        nov = np.array(["20181115" in x for x in names])
-        dec = np.array(["20181220" in x for x in names])
+        aug = np.array(["20180816" in x for x in names])
+        sep = np.array(["20180921" in x for x in names])
 
-        # val_0 = (values >= 0.006)
-        # val_1 = (values <= 0.0055)
-        val_0 = (values >= 0.0057)
-        val_1 = (values <= 0.0053)
-
-        nov = np.nonzero(np.logical_and(nov, val_0))[0]
-        dec = np.nonzero(np.logical_and(dec, val_1))[0]
+        aug = np.nonzero(aug)[0]
+        sep = np.nonzero(sep)[0]
 
         # Create victim/adversary splits
         # Use a 2:1 split
-        split_0 = int(self.victim_adv_ratio * len(nov))
-        split_1 = int(self.victim_adv_ratio * len(dec))
+        split_0 = int(self.victim_adv_ratio * len(aug))
+        split_1 = int(self.victim_adv_ratio * len(sep))
 
         # Property-based split right here
         if split == "victim":
-            zero = nov[:split_0]
-            one = dec[:split_1]
+            zero = aug[:split_0]
+            one = sep[:split_1]
         else:
-            zero = nov[split_0:]
-            one = dec[split_1:]
+            zero = aug[split_0:]
+            one = sep[split_1:]
 
-        if val == "nov":
+        if val == "aug":
             return names[zero]
         else:
             return names[one]
 
-    def load_graphs(self, wanted_ids):
+    def load_graphs(self, wanted_ids, prop_val):
+        if prop_val == "aug":
+            graph_name = "all_graphs_aug.hdf5"
+        else:
+            graph_name = "all_graphs_sep.hdf5"
+
         # Load graphs
         graphs = dd.io.load(os.path.join(
-            self.path, "all_graphs.hdf5"), wanted_ids)
+            self.path, graph_name), wanted_ids)
 
         return graphs
 

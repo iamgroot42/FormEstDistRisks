@@ -230,9 +230,9 @@ class CelebaWrapper:
             }
         }
 
-        if cwise_samples is None:
-            cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
-        else:
+        cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
+
+        if cwise_samples is not None:
             cwise_sample = cwise_samples
 
         self.ds_train = CelebACustomBinary(

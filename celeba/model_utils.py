@@ -4,62 +4,28 @@ import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 from sklearn.preprocessing import normalize
-from utils import ensure_dir_exists, get_weight_layers
+from utils import ensure_dir_exists, get_weight_layers, FakeReluWrapper, BasicWrapper
 
 
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
 
 
-class basic(ch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input):
-        # return input.clamp(min=0)
-        return input
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-
-class fakerelu(ch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input):
-        # return input.clamp(min=0)
-        return input
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-
-class FakeReluWrapper(nn.Module):
-    def __init__(self, inplace: bool = False):
-        super(FakeReluWrapper, self).__init__()
-        self.inplace = inplace
-
-    def forward(self, input: ch.Tensor):
-        return fakerelu.apply(input)
-
-
-class BasicWrapper(nn.Module):
-    def __init__(self, inplace: bool = False):
-        super(BasicWrapper, self).__init__()
-        self.inplace = inplace
-
-    def forward(self, input: ch.Tensor):
-        return fakerelu.apply(input)
-
-
 class MyAlexNet(nn.Module):
-    def __init__(self, num_classes: int = 1, fake_relu: bool = False) -> None:
+    def __init__(self,
+                 num_classes: int = 1,
+                 fake_relu: bool = False,
+                 latent_focus: int = None) -> None:
+
         # expected input shape: 218,178
         if fake_relu:
             act_fn = BasicWrapper
         else:
             act_fn = nn.ReLU
 
+        self.latent_focus = latent_focus
+
         super(MyAlexNet, self).__init__()
-        self.features = nn.Sequential(
+        layers = [
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
             FakeReluWrapper(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
@@ -71,17 +37,28 @@ class MyAlexNet(nn.Module):
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
             FakeReluWrapper(inplace=True),
             nn.Conv2d(128, 64, kernel_size=3, padding=1),
-            act_fn(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-        )
-        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
-        self.classifier = nn.Sequential(
+            FakeReluWrapper(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2)
+        ]
+
+        clf_layers = [
             nn.Linear(64 * 6 * 6, 64),
-            nn.ReLU(inplace=True),
+            FakeReluWrapper(inplace=True),
             nn.Linear(64, 32),
-            nn.ReLU(inplace=True),
+            FakeReluWrapper(inplace=True),
             nn.Linear(32, num_classes),
-        )
+        ]
+
+        mapping = {0: 1, 1: 4, 2: 7, 3: 9, 4: 11, 5: 1, 6: 3}
+        if self.latent_focus is not None:
+            if self.latent_focus < 5:
+                layers[mapping[self.latent_focus]] = act_fn(inplace=True)
+            else:
+                clf_layers[mapping[self.latent_focus]] = act_fn(inplace=True)
+
+        self.features = nn.Sequential(*layers)
+        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+        self.classifier = nn.Sequential(*clf_layers)
 
     def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
 
@@ -123,18 +100,19 @@ class MyAlexNet(nn.Module):
                     return x
 
 
-def create_model(parallel=False, fake_relu=False):
-    model = MyAlexNet(fake_relu=fake_relu).cuda()
+def create_model(parallel=False, fake_relu=False, latent_focus=None):
+    model = MyAlexNet(fake_relu=fake_relu, latent_focus=latent_focus).cuda()
     if parallel:
         model = nn.DataParallel(model)
     return model
 
 
-def get_model(path, use_prefix=True, parallel=False, fake_relu=False):
+def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_focus=None):
     if use_prefix:
         path = os.path.join(BASE_MODELS_DIR, path)
 
-    model = create_model(parallel=parallel, fake_relu=fake_relu)
+    model = create_model(
+        parallel=parallel, fake_relu=fake_relu, latent_focus=latent_focus)
     model.load_state_dict(ch.load(path), strict=False)
 
     if parallel:

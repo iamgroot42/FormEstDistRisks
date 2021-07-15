@@ -1,4 +1,4 @@
-from torchvision import models
+from model_utils import get_pre_processor
 import torch.nn as nn
 import os
 import torch as ch
@@ -24,12 +24,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load model
-    model = models.densenet121(pretrained=True)
-    for param in model.parameters():
-        param.requires_grad = False
-    # Get rid of existing classification layer
-    # Extract only features
-    model.classifier = nn.Identity()
+    model = get_pre_processor()
     model = model.cuda()
     model = nn.DataParallel(model)
 
