@@ -33,6 +33,7 @@ def get_models(folder_path, n_models=100):
     models = []
     for mpath in tqdm(paths):
         model = load_model(os.path.join(folder_path, mpath))
+        model = model.cuda() #Shift to GPU
         models.append(model)
     return models
 
