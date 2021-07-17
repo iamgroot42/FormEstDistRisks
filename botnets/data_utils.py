@@ -9,100 +9,76 @@ import numpy as np
 import dgl
 
 LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet_temp"
+VICTIM_COEFF_PATH = "./victim_info.txt"
+ADV_COEFF_PATH = "./adv_info.txt"
 # LOCAL_DATA_DIR = "/p/adversarialml/as9rw/datasets/raw_botnet"
-METADATA_FILE_PATH = "coeffs.csv"
 
 
 class BotNetWrapper:
-    def __init__(self, split, prop_val, feat_len=1,
-                 botnet_size=10000, interval=2, n_copies=2):
-
-        self.n_copies = n_copies
-        self.victim_adv_ratio = 0.67
+    def __init__(self, split, prop_val):
         self.train_test_ratio = 0.8
+        num_graphs_train_sample = 55
         self.path = LOCAL_DATA_DIR
 
         # Use local storage (much faster)
         if not os.path.exists(LOCAL_DATA_DIR):
             raise FileNotFoundError("Local data not found")
 
-        if split == "victim":
-            num_train_graphs = 16
-        else:
-            num_train_graphs = 8
-
-        # Get train/test splits
-        wanted_ids = self.get_ids(split, prop_val)
-
-        # Sample according to number of graphs
-        # print("Got %d graphs before sampling" % (len(wanted_ids)))
-        # wanted_ids = wanted_ids[:num_graphs]
+        # Load graph according to specific IDs
+        graphs = self.load_graphs(split, prop_val)
 
         # Train/test split right here
-        tr_te_split = int(self.train_test_ratio * len(wanted_ids))
-
-        # Load graph according to specific IDs
-        graphs = self.load_graphs(wanted_ids, prop_val)
+        tr_te_split = int(self.train_test_ratio * len(graphs))
 
         # Split into train/test
         graphs_train = graphs[:tr_te_split]
         graphs_test = graphs[tr_te_split:]
 
-        self.train_data = BotnetDataset(
-            graphs_train, num_node=botnet_size,
-            num_edge=botnet_size, interval=interval,
-            num_features=feat_len, n_copies=n_copies)
+        # Use specified number of graphs to train
+        # Sample from train
+        random_chosen_ids = np.random.choice(
+            len(graphs_train), num_graphs_train_sample, replace=False)
+        graphs_train = [graphs_train[i] for i in random_chosen_ids]
 
-        self.test_data = BotnetDataset(
-            graphs_test, num_node=botnet_size,
-            num_edge=botnet_size, interval=interval,
-            num_features=feat_len, n_copies=n_copies)
+        self.train_data = BotnetDataset(graphs_train)
+        self.test_data = BotnetDataset(graphs_test)
 
     def get_ids(self, split, val):
         # Load metadata file
-        names, values = [], []
-        with open(METADATA_FILE_PATH, 'r') as f:
+        values = []
+        if split == "adv":
+            filename = ADV_COEFF_PATH
+        else:
+            filename = VICTIM_COEFF_PATH
+
+        with open(filename, 'r') as f:
             for line in f:
-                n, v = line.rstrip("\n").split(',')
-                names.append("/" + n)
+                _, v = line.rstrip("\n").split(',')
                 values.append(float(v))
-        names = np.array(names)
         values = np.array(values)
 
-        # Split according to months
-        aug = np.array(["20180816" in x for x in names])
-        sep = np.array(["20180921" in x for x in names])
+        # val=0 -> coeff <= 0.0066
+        # val=1 -> coeff > 0.0071
 
-        aug = np.nonzero(aug)[0]
-        sep = np.nonzero(sep)[0]
-
-        # Create victim/adversary splits
-        # Use a 2:1 split
-        split_0 = int(self.victim_adv_ratio * len(aug))
-        split_1 = int(self.victim_adv_ratio * len(sep))
-
-        # Property-based split right here
-        if split == "victim":
-            zero = aug[:split_0]
-            one = sep[:split_1]
+        if val == 0:
+            ids = np.where(values <= 0.0066)[0]
         else:
-            zero = aug[split_0:]
-            one = sep[split_1:]
+            ids = np.where(values > 0.0071)[0]
 
-        if val == "aug":
-            return names[zero]
-        else:
-            return names[one]
+        return ids
 
-    def load_graphs(self, wanted_ids, prop_val):
-        if prop_val == "aug":
-            graph_name = "all_graphs_aug.hdf5"
+    def load_graphs(self, split, val):
+        if split == "adv":
+            graph_name = "dgl_adv.hdf5"
         else:
-            graph_name = "all_graphs_sep.hdf5"
+            graph_name = "dgl_victim.hdf5"
 
         # Load graphs
-        graphs = dd.io.load(os.path.join(
-            self.path, graph_name), wanted_ids)
+        graphs, _ = dgl.load_graphs(os.path.join(
+            self.path, graph_name))
+
+        wanted_ids = self.get_ids(split, val)
+        graphs = [graphs[i] for i in wanted_ids]
 
         return graphs
 
@@ -117,62 +93,10 @@ class BotNetWrapper:
 
 
 class BotnetDataset(Dataset):
-    def __init__(self, graphs, num_node, num_edge, interval,
-                 num_features=1, n_copies=2):
+    def __init__(self, graphs):
         super(BotnetDataset, self).__init__()
         self.graph_format = "dgl"
-        self.num_node = num_node
-        self.num_edge = num_edge
-        self.interval = interval
-        self.num_features = num_features
-        self.graphs = []
-        self.n_copies = n_copies
-
-        for g in tqdm(graphs):
-
-            for _ in range(self.n_copies):
-                # Pre-process graph
-                x = self.pre_process_graph(g)
-
-                # Add to graphs
-                self.graphs.append(x)
-
-    def generate_botnet_graph(self, graph):
-        # Generate botnet edges
-        botnet_edges = chord(self.num_node, self.num_edge, self.interval)
-
-        # OVerlay botnets on graph
-        evil_edges, evil = overlay_botnet_on_graph(graph, botnet_edges)
-        graph.add_edges_from(evil_edges.T)
-
-        # Create node labels
-        y = np.zeros(graph.number_of_nodes())
-        y[evil] = 1
-
-        return (graph, y)
-
-    def pre_process_graph(self, graph):
-
-        # Overlay botnet
-        graph, label = self.generate_botnet_graph(graph)
-
-        # Convert to DGL graph, assign features and labels
-        dg_graph = dgl.from_networkx(graph)
-
-        # Convert to undirected
-        dg_graph = dgl.to_bidirected(dg_graph)
-
-        # Add self loops
-        dg_graph = dgl.transform.add_self_loop(dg_graph)
-
-        # Add node features
-        features = ch.ones(dg_graph.num_nodes(), self.num_features,)
-        dg_graph.ndata['x'] = features
-
-        # Add labels
-        dg_graph.ndata['y'] = ch.from_numpy(label)
-
-        return dg_graph
+        self.graphs = graphs
 
     def __len__(self):
         return len(self.graphs)
@@ -210,11 +134,7 @@ def overlay_botnet_on_graph(graph, botnet_edges):
 
 
 if __name__ == "__main__":
-    ds = BotNetWrapper("adv", "nov", botnet_size=1000)
-    print()
-    ds = BotNetWrapper("adv", "dec", botnet_size=1000)
-    print()
-    ds = BotNetWrapper("victim", "nov", botnet_size=1000)
-    print()
-    ds = BotNetWrapper("victim", "dec", botnet_size=1000)
-    print()
+    ds = BotNetWrapper("adv", 0)
+    ds = BotNetWrapper("adv", 0)
+    ds = BotNetWrapper("victim", 1)
+    ds = BotNetWrapper("victim", 1)

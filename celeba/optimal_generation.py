@@ -217,10 +217,12 @@ def main(args):
     Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
     Y_train = ch.from_numpy(np.array(Y_train)).cuda()
 
+    # Load test models
+    n_test_models = 50
     X_test_1 = get_all_models(
-        test_dir_1, args.n_models, latent_focus, fake_relu)
+        test_dir_1, n_test_models, latent_focus, fake_relu)
     X_test_2 = get_all_models(
-        test_dir_2, args.n_models, latent_focus, fake_relu)
+        test_dir_2, n_test_models, latent_focus, fake_relu)
     Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
     Y_test = ch.from_numpy(np.array(Y_test)).cuda()
 
