@@ -7,6 +7,8 @@ import copy
 import dgl.function as fn
 from dgl.utils import expand_as_pair
 from torch.nn import init
+import numpy as np
+from utils import get_weight_layers
 
 
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
@@ -245,3 +247,40 @@ def save_model(model, split, prop_val, name, prefix=None):
         prefix = BASE_MODELS_DIR
     savepath = os.path.join(split, str(prop_val), name)
     ch.save(model.state_dict(), os.path.join(prefix, savepath))
+
+
+def get_model(args):
+    model = GCN(n_inp=args.n_feat, n_hidden=args.hidden_channels,
+                n_layers=args.num_layers, dropout=args.dropout,
+                residual=True)
+    if args.gpu:
+        model = model.cuda()
+    return model
+
+
+def get_model_features(model_dir, args, max_read=None):
+    vecs = []
+    iterator = os.listdir(model_dir)
+    if max_read is not None:
+        np.random.shuffle(iterator)
+        iterator = iterator[:max_read]
+
+    for mpath in tqdm(iterator):
+        # Define model
+        model = get_model(args)
+
+        # Load weights into model
+        if args.gpu:
+            model.load_state_dict(ch.load(os.path.join(model_dir, mpath)))
+        else:
+            model.load_state_dict(ch.load(os.path.join(
+                model_dir, mpath), map_location=ch.device('cpu')))
+        model.eval()
+
+        # Extract model weights
+        dims, fvec = get_weight_layers(
+            model, transpose=False, first_n=args.first_n)
+
+        vecs.append(fvec)
+
+    return dims, vecs

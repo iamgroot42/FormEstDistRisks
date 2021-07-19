@@ -164,9 +164,12 @@ def gen_optimal(models, labels, sample_shape, n_samples,
     return x_rand.clone().detach(), (l1 + l2).item()
 
 
-def get_all_models(dir, n_models, latent_focus, fake_relu):
+def get_all_models(dir, n_models, latent_focus, fake_relu, shuffle=False):
     models = []
-    files = os.listdir(dir)[:n_models]
+    files = os.listdir(dir)
+    if shuffle:
+        np.random.permutation(files)
+    files = files[:n_models]
     for pth in tqdm(files):
         m = get_model(os.path.join(dir, pth), fake_relu=fake_relu,
                       latent_focus=latent_focus)
@@ -192,42 +195,9 @@ def get_patterns(X_1, X_2, data, normal_data, args):
     return (reprs_0_use, reprs_1_use)
 
 
-def main(args):
-    train_dir_1 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
-    train_dir_2 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
-    test_dir_1 = os.path.join(
-        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.first))
-    test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/%s/" %
-                              (args.filter, args.second))
-
-    # Modify model behavior if using generation mode
-    if args.use_natural:
-        latent_focus = None
-        fake_relu = False
-    else:
-        latent_focus = args.latent_focus
-        fake_relu = True
-
-    X_train_1 = get_all_models(
-        train_dir_1, args.n_models, latent_focus, fake_relu)
-    X_train_2 = get_all_models(
-        train_dir_2, args.n_models, latent_focus, fake_relu)
-    Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
-    Y_train = ch.from_numpy(np.array(Y_train)).cuda()
-
-    # Load test models
-    n_test_models = 50
-    X_test_1 = get_all_models(
-        test_dir_1, n_test_models, latent_focus, fake_relu)
-    X_test_2 = get_all_models(
-        test_dir_2, n_test_models, latent_focus, fake_relu)
-    Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
-    Y_test = ch.from_numpy(np.array(Y_test)).cuda()
-
+def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
     # Get some normal data for estimates of activation values
-    ds = CelebaWrapper(args.filter, 0.5, "adv")
+    ds = CelebaWrapper(args.filter, ratio, "adv")
     if args.use_normal:
         _, test_loader = ds.get_loaders(args.n_samples, eval_shuffle=False)
         normal_data = next(iter(test_loader))[0]
@@ -282,15 +252,64 @@ def main(args):
         threshold = get_threshold(reprs_0_use, reprs_1_use)
         train_acc = get_acc(reprs_0_use, reprs_1_use, threshold)
 
-        # Plot differences
-        plt.plot(np.arange(len(X_train_1)), sorted(
-            reprs_0_use), label=r'Trained on $D_0$')
-        plt.plot(np.arange(len(X_train_2)), sorted(
-            reprs_1_use), label=r'Trained on $D_1$')
-        plt.legend()
-        plt.savefig("./on_train_distr.png")
-        plt.clf()
-    print("Train accuracy: %.3f" % train_acc)
+    return x_use, normal_data, threshold, train_acc
+
+
+def main(args):
+    train_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
+    train_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
+    test_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.first))
+    test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/%s/" %
+                              (args.filter, args.second))
+
+    # Modify model behavior if using generation mode
+    if args.use_natural:
+        latent_focus = None
+        fake_relu = False
+    else:
+        latent_focus = args.latent_focus
+        fake_relu = True
+
+    X_train_1 = get_all_models(
+        train_dir_1, args.n_models, latent_focus, fake_relu,
+        shuffle=True)
+    X_train_2 = get_all_models(
+        train_dir_2, args.n_models, latent_focus, fake_relu,
+        shuffle=True)
+    Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
+    Y_train = ch.from_numpy(np.array(Y_train)).cuda()
+
+    # Load test models
+    n_test_models = 100
+    X_test_1 = get_all_models(
+        test_dir_1, n_test_models, latent_focus, fake_relu)
+    X_test_2 = get_all_models(
+        test_dir_2, n_test_models, latent_focus, fake_relu)
+    Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
+    Y_test = ch.from_numpy(np.array(Y_test)).cuda()
+
+    x_use_1, normal_data, threshold, train_acc_1 = specific_case(X_train_1, X_train_2, Y_train, float(args.first), args)
+    x_use_2, normal_data, threshold, train_acc_2 = specific_case(X_train_1, X_train_2, Y_train, float(args.second), args)
+    print("Train accuracies:", train_acc_1, train_acc_2)
+
+    if train_acc_1 > train_acc_2:
+        x_use = x_use_1
+        train_acc = train_acc_1
+    else:
+        x_use = x_use_2
+        train_acc = train_acc_2
+
+        # # Plot differences
+        # plt.plot(np.arange(len(X_train_1)), sorted(
+        #     reprs_0_use), label=r'Trained on $D_0$')
+        # plt.plot(np.arange(len(X_train_2)), sorted(
+        #     reprs_1_use), label=r'Trained on $D_1$')
+        # plt.legend()
+        # plt.savefig("./on_train_distr.png")
+        # plt.clf()
 
     if args.use_dt:
         feat_0 = combined_features(X_test_1, x_use, focus_layers)
@@ -333,7 +352,7 @@ if __name__ == "__main__":
     parser.add_argument('--n_models', type=int, default=20)
     parser.add_argument('--step_size', type=float, default=1e2)
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
-    parser.add_argument('--second', help="Ratio for D_1")
+    parser.add_argument('--second', help="Ratio for D_1", type=str)
     parser.add_argument('--use_normal', action="store_true",
                         help="Use normal data for init instead of noise")
     parser.add_argument('--align', action="store_true",

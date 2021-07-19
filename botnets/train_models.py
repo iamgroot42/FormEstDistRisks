@@ -1,5 +1,5 @@
 from data_utils import BotNetWrapper
-from model_utils import GCN, train_model, save_model
+from model_utils import get_model, train_model, save_model
 import argparse
 
 
@@ -8,11 +8,7 @@ def main(args):
     ds = BotNetWrapper(split=args.split, prop_val=args.prop_val)
 
     # Define model
-    model = GCN(n_inp=args.n_feat, n_hidden=args.hidden_channels,
-                n_layers=args.num_layers, dropout=args.dropout,
-                residual=True)
-    if args.gpu:
-        model.cuda()
+    model = get_model(args)
 
     # Train model
     model, (tr_f1, te_f1) = train_model(model, ds, args)
