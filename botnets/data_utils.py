@@ -1,9 +1,6 @@
 from torch.utils.data import Dataset
 from botdet.data.dataloader import GraphDataLoader
-import deepdish as dd
-from tqdm import tqdm
 import os
-import torch as ch
 import random
 import numpy as np
 import dgl
@@ -11,14 +8,17 @@ import dgl
 LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet_temp"
 VICTIM_COEFF_PATH = "./victim_info.txt"
 ADV_COEFF_PATH = "./adv_info.txt"
-# LOCAL_DATA_DIR = "/p/adversarialml/as9rw/datasets/raw_botnet"
 
 
 class BotNetWrapper:
     def __init__(self, split, prop_val):
-        self.train_test_ratio = 0.8
-        num_graphs_train_sample = 55
+        self.train_test_ratio = 0.9
         self.path = LOCAL_DATA_DIR
+
+        if split == "adv":
+            num_graphs_train_sample = 58
+        else:
+            num_graphs_train_sample = 90
 
         # Use local storage (much faster)
         if not os.path.exists(LOCAL_DATA_DIR):

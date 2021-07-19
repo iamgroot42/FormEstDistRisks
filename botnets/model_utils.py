@@ -3,7 +3,7 @@ import torch.optim as optim
 import torch as ch
 from tqdm import tqdm
 import os
-
+import copy
 import dgl.function as fn
 from dgl.utils import expand_as_pair
 from torch.nn import init
@@ -197,6 +197,7 @@ def train_model(net, ds, args):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode='min', factor=0.25, patience=1)
 
+    best_model, best_f1, best_f1_val = None, 0, 0
     iterator = range(args.epochs)
     if not args.verbose:
         iterator = tqdm(iterator)
@@ -227,9 +228,20 @@ def train_model(net, ds, args):
                 "[Train] Loss: %.3f, F-1: %.3f | [Test] Loss: %.3f, F-1: %.3f" %
                 (tr_loss, tr_f1, te_loss, te_f1))
 
+        # Keep track of best performing model
+        if args.best_model and tr_f1 > best_f1:
+            best_model = copy.deepcopy(net)
+            best_f1 = tr_f1
+            best_f1_val = te_f1
 
-def save_model(model, split, prop_and_name, prefix=None):
+    if args.best_model:
+        return best_model, (best_f1, best_f1_val)
+
+    return net, (tr_f1, te_f1)
+
+
+def save_model(model, split, prop_val, name, prefix=None):
     if prefix is None:
         prefix = BASE_MODELS_DIR
-    savepath = os.path.join(split, prop_and_name)
+    savepath = os.path.join(split, str(prop_val), name)
     ch.save(model.state_dict(), os.path.join(prefix, savepath))
