@@ -41,7 +41,6 @@ if __name__ == "__main__":
                                  lr=args.lr, epoch_num=args.epochs,
                                  weight_decay=1e-3, verbose=args.verbose,
                                  get_best=True)
-
     # Save model
     save_name = args.name + "_" + str(vacc) + "_" + str(vloss) + ".pth"
     save_model(model, args.split, args.filter, str(

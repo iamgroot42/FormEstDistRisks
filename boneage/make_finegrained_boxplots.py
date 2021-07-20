@@ -1,8 +1,6 @@
-import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
-import os
 from utils import flash_utils
 import numpy as np
 import matplotlib as mpl
@@ -70,8 +68,8 @@ if __name__ == "__main__":
             fill_data[i][j+i+1] = m
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
-    
+
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask, fmt="^") #, vmin=0, vmax=100)
-    sns_plot.set(xlabel= r'$\alpha_0$', ylabel= r'$\alpha_1$')
+    sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
     sns_plot.figure.savefig("./meta_heatmap.png")

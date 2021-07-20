@@ -213,7 +213,6 @@ class CelebaWrapper:
         filelist_test = os.path.join(
             BASE_DATA_DIR, "splits", "75_25", split, "test.txt")
 
-        # TODO: Define cwise_samples appropriately
         # Define number of sub-samples
         prop_wise_subsample_sizes = {
             "Smiling": {
@@ -231,7 +230,6 @@ class CelebaWrapper:
         }
 
         cwise_sample = prop_wise_subsample_sizes[classify][split][prop]
-
         if cwise_samples is not None:
             cwise_sample = cwise_samples
 
