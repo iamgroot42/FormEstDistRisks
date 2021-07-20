@@ -43,14 +43,17 @@ def get_stats(mainmodel, dataloader, mask = None):
 
     all_acts = []
     activationCount = 0
+    
     for (x, y, sex) in (dataloader):
 
-        for i in range(7):
+        for i in range(2):
             if mask is not None:
                 x_eff = x[mask]
             else:
                 x_eff = x
-            acts = mainmodel(x_eff.cuda(), latent=i).detach()
+            #print(x_eff.shape)
+            #print(str(i))
+            acts  = mainmodel(x_eff.cuda(), latent=i).detach()
             activationCount = ch.sum(acts > 0, 1).cpu().numpy()
             all_acts.append(activationCount)
 
@@ -96,6 +99,8 @@ def main(args):
     # Ready data
     _, df_val = get_df("adv")
 
+    features = get_features('adv')
+
     # Get data with ratio
     df1 = heuristic(
         df_val, filter, float(args.ratio_2),
@@ -107,8 +112,8 @@ def main(args):
         cwise_sample=10000,
         class_imbalance=1.0, n_tries=300)
 
-    ds_1 = BoneWrapper(df1, df1)
-    ds_2 = BoneWrapper(df2, df2)
+    ds_1 = BoneWrapper(df1, df1, features = features)
+    ds_2 = BoneWrapper(df2, df2, features = features)
 
     # Prepare data wrappers
     #ds_1 = BoneWrapper(args.filter, float(
@@ -132,7 +137,7 @@ def main(args):
             BASE_MODELS_DIR, "adv", args.ratio_2), total_models // 2)
 
         # First train classifier using ALL test data
-        clf = RandomForestClassifier(n_estimators = 10, max_depth=3)
+        clf = RandomForestClassifier(max_depth=3)
 
         # Data that will store x and y values
         model_data = extract_and_prepare(loaders, models_1, models_2)
@@ -166,7 +171,7 @@ def main(args):
 
         # Knowing which data points are best to be used, repeat process all over again
         # Data that will store x and y values
-        clf = RandomForestClassifier(n_estimators = 10, max_depth=3)
+        clf = RandomForestClassifier(max_depth=3)
 
         # Data that will store x and y values
         model_data = extract_and_prepare(
@@ -189,14 +194,14 @@ def main(args):
               relevant_acc[-1])
         
         #Save Model
-        joblib_file = "/u/jyc9fyf/celebaModels/celeb_metaclassifier_" + str(args.total_models) + "_" + str(args.ratio_2) +"_Trial" + str(tr) + ".pkl"
+        joblib_file = "/u/jyc9fyf/boneModels/boneage_metaclassifier_" + str(args.total_models) + "_" + str(args.ratio_2) +"_Trial" + str(tr) + ".pkl"
         joblib.dump(clf, joblib_file)
 
     return relevant_acc
 
 
 if __name__ == "__main__":
-    # Example command: python celeb_acts_metaclassifier.py --filter Male --trials 1 --total_models 10
+    # Example command:
     #CUDA_VISIBLE_DEVICES=2 python boneage_acts_metaclassifier.py --filter gender --trials 1 --total_models 10
     parser = argparse.ArgumentParser()
     parser.add_argument('--filter', choices=['gender'],
@@ -243,6 +248,4 @@ if __name__ == "__main__":
 
     # Save plot
     sns_plot.figure.savefig(
-        "/u/jyc9fyf/celebaModels/activations_meta_estimators_%d.png" % args.total_models)
-
-
+        "/u/jyc9fyf/boneGraphs/activations_boneage_%d.png" % args.total_models)
