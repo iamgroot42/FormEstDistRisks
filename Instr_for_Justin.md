@@ -167,7 +167,7 @@ This experiment is similar to the activations-based meta-classifier experiments 
 
 - 3 trials of the following experiment, varying `second` in `[0.2, 0.3, 0.4, 0.6, 0.7, 0.8]`. Report train/test accuracies and plot the results. This verion will use existing images and pick the one that maximize gap in activation values.
 
-`python optimal_generation.py --n_samples 10 --second 0.8 --latent_focus 0 --n_models 20 --steps 500 --step_size 1e2`
+`python optimal_generation.py --n_samples 10 --second 0.8 --latent_focus 0 --n_models 20 --steps 500 --step_size 1e2 --use_natural`
 
 - 3 trials of the following experiment, varying `second` in `[0.2, 0.3, 0.4, 0.6, 0.7, 0.8]`. Report train/test accuracies and plot the results. This one will generate inputs that maximize difference between activations for models from the two categories.
 

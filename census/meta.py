@@ -10,6 +10,7 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 def epoch_strategy(tg, args):
+    return args.epochs
     if args.filter == "race":
         return args.epochs if tg not in ["0.6", "0.7", "0.8"] else 70
     else:
@@ -33,14 +34,17 @@ if __name__ == "__main__":
                         help='number of repetitions for multimode')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         help='name for subfolder to save/load data from')
+    parser.add_argument('--d_0', default="0.5",
+                        help='ratio to use for D_0')
     args = parser.parse_args()
     utils.flash_utils(args)
 
-    d_0 = "0.5"
+    d_0 = args.d_0
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
-    targets = filter(lambda x: x != d_0, os.listdir(
-        get_models_path(args.filter, "adv")))
+    # targets = filter(lambda x: x != d_0, os.listdir(
+    #     get_models_path(args.filter, "adv")))
+    targets = ["0.2", "0.3", "0.4", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
@@ -50,6 +54,7 @@ if __name__ == "__main__":
 
     data = []
     for tg in targets:
+        tgt_data = []
         # Load up negative-label train, test data
         neg_w, neg_labels, _ = get_model_representations(
                 get_models_path(args.filter, "adv", tg), 0, args.first_n)
@@ -127,8 +132,9 @@ if __name__ == "__main__":
                          val_data=val_data, combined=True,
                          eval_every=10, gpu=True)
 
-            data.append([float(tg), tacc])
-            print("Test accuracy: %.3f" % data[-1][1])
+            tgt_data.append(tacc)
+            print("Test accuracy: %.3f" % tacc)
+        data.append(tgt_data)
 
     # Print data
     for tup in data:

@@ -27,8 +27,7 @@ if __name__ == "__main__":
     # Directories where saved models are stored
     binary = True
     train_dirs = [os.path.join(BASE_MODELS_DIR, "adv", x) for x in ["0", "1"]]
-    # test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", x) for x in ["0", "1"]]
-    test_dirs = train_dirs
+    test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", x) for x in ["0", "1"]]
 
     # Load models, convert to features
     X_train, X_val, X_test = [], [], []

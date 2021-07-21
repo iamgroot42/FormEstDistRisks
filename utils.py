@@ -444,7 +444,6 @@ class PermInvConvModel(nn.Module):
 
         self.dropout = dropout
         self.layers = []
-        self.pixelwise_layers = []
         prev_layer = 0
 
         # If binary, need only one output
@@ -642,7 +641,6 @@ class FullPermInvModel(nn.Module):
 
         self.dropout = dropout
         self.layers = []
-        self.pixelwise_layers = []
         prev_layer = 0
 
         # If binary, need only one output

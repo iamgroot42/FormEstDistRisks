@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     # Threshold baseline: look at model performance on test sets from both G_b
     # and pick the better one
-    print("Threshold-test baselind accuracy: %.3f" %
+    print("Threshold-test baseline accuracy: %.3f" %
           (100 * vic_accs[np.argmax(adv_accs)]))
 
     plt.plot(np.arange(len(accs_1)), np.sort(accs_1))

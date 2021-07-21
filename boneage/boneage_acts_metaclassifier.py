@@ -1,29 +1,18 @@
+from model_utils import load_model, BASE_MODELS_DIR
+from data_utils import BoneWrapper, get_df, get_features
+from utils import flash_utils, heuristic
+
 from sklearn.ensemble import RandomForestClassifier
-from sympy import E
 import numpy as np
 from tqdm import tqdm
 import os
 import torch as ch
 import argparse
-from utils import flash_utils
 import pandas as pd
 import seaborn as sns
+import joblib
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import joblib
-from sklearn.model_selection import train_test_split
-from glob import glob
-import pandas as pd
-import data_utils
-from torchvision import transforms
-from torch.utils.data import Dataset, DataLoader
-from utils import flash_utils, heuristic
-import os
-import numpy as np
-from sklearn.tree import DecisionTreeClassifier
-from model_utils import load_model, get_pre_processor, BASE_MODELS_DIR
-from data_utils import BoneWrapper, get_df, get_features
-
 mpl.rcParams['figure.dpi'] = 200
 
 
@@ -43,7 +32,7 @@ def get_stats(mainmodel, dataloader, mask = None):
 
     all_acts = []
     activationCount = 0
-    
+
     for (x, y, sex) in (dataloader):
 
         for i in range(2):
@@ -51,9 +40,8 @@ def get_stats(mainmodel, dataloader, mask = None):
                 x_eff = x[mask]
             else:
                 x_eff = x
-            #print(x_eff.shape)
-            #print(str(i))
-            acts  = mainmodel(x_eff.cuda(), latent=i).detach()
+
+            acts = mainmodel(x_eff.cuda(), latent=i).detach()
             activationCount = ch.sum(acts > 0, 1).cpu().numpy()
             all_acts.append(activationCount)
 
@@ -93,17 +81,15 @@ def main(args):
     models_victim_2 = get_models(os.path.join(
         BASE_MODELS_DIR, "victim", args.ratio_2))
 
-#From boneage
     def filter(x): return x["gender"] == 1
 
     # Ready data
     _, df_val = get_df("adv")
-
     features = get_features('adv')
 
     # Get data with ratio
     df1 = heuristic(
-        df_val, filter, float(args.ratio_2),
+        df_val, filter, float(args.ratio_1),
         cwise_sample=10000,
         class_imbalance=1.0, n_tries=300)
 
@@ -112,14 +98,8 @@ def main(args):
         cwise_sample=10000,
         class_imbalance=1.0, n_tries=300)
 
-    ds_1 = BoneWrapper(df1, df1, features = features)
-    ds_2 = BoneWrapper(df2, df2, features = features)
-
-    # Prepare data wrappers
-    #ds_1 = BoneWrapper(args.filter, float(
-    #    args.ratio_1), "adv", cwise_samples=1e6)
-    #ds_2 = BoneWrapper(args.filter, float(
-    #    args.ratio_2), "adv", cwise_samples=1e6)
+    ds_1 = BoneWrapper(df1, df1, features=features)
+    ds_2 = BoneWrapper(df2, df2, features=features)
 
     loaders = [
         ds_1.get_loaders(batch_size=400, shuffle=False)[1],
@@ -192,10 +172,12 @@ def main(args):
 
         print("[Using Selected Data] Accuracy on unseen models",
               relevant_acc[-1])
-        
+
         #Save Model
-        joblib_file = "/u/jyc9fyf/boneModels/boneage_metaclassifier_" + str(args.total_models) + "_" + str(args.ratio_2) +"_Trial" + str(tr) + ".pkl"
-        joblib.dump(clf, joblib_file)
+        # joblib_file = "./boneage_metaclassifier_" + \
+        #     str(args.total_models) + "_" + \
+        #     str(args.ratio_2) + "_Trial" + str(tr) + ".pkl"
+        # joblib.dump(clf, joblib_file)
 
     return relevant_acc
 
@@ -213,10 +195,10 @@ if __name__ == "__main__":
                         help="number of trials")
     parser.add_argument('--total_models', default=40, type=int,
                         help="number of trials")
+    parser.add_argument('--ratio_1', default="0.5")
     args = parser.parse_args()
     flash_utils(args)
 
-    args.ratio_1 = "0.5"
     ratios_try = ["0.2", "0.3",
                   "0.4", "0.6", "0.7", "0.8"]
     data = []
@@ -248,4 +230,4 @@ if __name__ == "__main__":
 
     # Save plot
     sns_plot.figure.savefig(
-        "/u/jyc9fyf/boneGraphs/activations_boneage_%d.png" % args.total_models)
+        "./activations_boneage_%d.png" % args.total_models)

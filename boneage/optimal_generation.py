@@ -14,11 +14,11 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 # Get features across multiple layers
-def combined_features(x_use, models, x, layers):
+def combined_features(fe_model, models, x, layers):
     # Get activations for specified layers for both models
     reprs = []
     for layer in layers:
-        repr = get_differences(x_use, models, x, layer, reduce=False)
+        repr = get_differences(fe_model, models, x, layer, reduce=False)
         reprs.append(repr.flatten())
 
     # Create feature vectors using these layers
@@ -27,9 +27,9 @@ def combined_features(x_use, models, x, layers):
 
 
 # Train decision-tree on combined features
-def train_dt(x_use, models_0, models_1, x_opt, layers, depth=2):
-    fvecs_0 = combined_features(x_use, models_0, x_opt.cuda(), layers)
-    fvecs_1 = combined_features(x_use, models_1, x_opt.cuda(), layers)
+def train_dt(fe_model, models_0, models_1, x_opt, layers, depth=2):
+    fvecs_0 = combined_features(fe_model, models_0, x_opt.cuda(), layers)
+    fvecs_1 = combined_features(fe_model, models_1, x_opt.cuda(), layers)
 
     x = list(fvecs_0) + list(fvecs_1)
     y = [0] * len(fvecs_0) + [1] * len(fvecs_1)
@@ -284,8 +284,8 @@ def main(args):
     if args.use_dt:
         focus_layers = [int(x) for x in args.dt_layers.split(",")]
         clf, train_acc = train_dt(
-            fe_model, X_train_1, X_train_2,
-            x_use, focus_layers, depth=2)
+            fe_model, X_train_1, X_train_2, x_use,
+            focus_layers, depth=2)
     else:
         # Plot performance for train models
         reprs_0_use, reprs_1_use = get_patterns(
@@ -306,8 +306,8 @@ def main(args):
     print("Train accuracy: %.3f" % train_acc)
 
     if args.use_dt:
-        feat_0 = combined_features(X_test_1, x_use, focus_layers)
-        feat_1 = combined_features(X_test_2, x_use, focus_layers)
+        feat_0 = combined_features(fe_model, X_test_1, x_use, focus_layers)
+        feat_1 = combined_features(fe_model, X_test_2, x_use, focus_layers)
         x = list(feat_0) + list(feat_1)
         y = [0] * len(feat_0) + [1] * len(feat_1)
         test_acc = clf.score(x, y)
@@ -335,7 +335,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Boneage')
     parser.add_argument('--n_samples', type=int, default=5)
-    parser.add_argument('--latent_focus', type=int, default=4)
+    parser.add_argument('--latent_focus', type=int, default=0)
     parser.add_argument('--steps', type=int, default=500)
     parser.add_argument('--n_models', type=int, default=20)
     parser.add_argument('--step_size', type=float, default=1e2)

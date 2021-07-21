@@ -67,9 +67,10 @@ if __name__ == "__main__":
     y_te_2 = y_te_2.ravel()
 
     # Iterate through data from both distrs
-    z_vals, f_accs = [], []
+    f_accs = []
     loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
     allaccs_1, allaccs_2 = [], []
+    adv_accs = []
     for loader in loaders:
         # Load models and get accuracies
         accs_1 = get_accs(loader, models_1)
@@ -79,21 +80,10 @@ if __name__ == "__main__":
         accs_1 *= 100
         accs_2 *= 100
 
-        # Calculate N value
-        m1, v1 = np.mean(accs_1), np.var(accs_1)
-        m2, v2 = np.mean(accs_2), np.var(accs_2)
-        mean_new = np.abs(m1 - m2)
-        var_new = (v1 + v2) / total_models
-        Z = get_z_value(accs_1, accs_2)
-
-        print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
-        print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
-        print("Z value: %.3f" % Z)
-        z_vals.append(Z)
-
         tracc, threshold = find_threshold_acc(accs_1, accs_2, granularity=0.01)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
+        adv_accs.append(100 * tracc)
 
         # Compute accuracies on this data for victim
         accs_victim_1 = get_accs(loader, models_victim_1)
@@ -116,10 +106,9 @@ if __name__ == "__main__":
         allaccs_1.append(accs_victim_1)
         allaccs_2.append(accs_victim_2)
 
-    print("Z values:", z_vals)
-
     # Basic baseline: look at model performance on test sets from both G_b
     # Predict b for whichever b it is higher
+    adv_accs = np.array(adv_accs)
     allaccs_1 = np.array(allaccs_1)
     allaccs_2 = np.array(allaccs_2)
 
@@ -127,11 +116,12 @@ if __name__ == "__main__":
     preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
 
     basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
-    print("[Victim] Accuracy on chosen Z value: %.2f" %
-          f_accs[np.argmin(z_vals)])
-    print("Baseline for M_0: %.3f, Baseline for M_1: %.3f" %
-          (100 * np.mean(preds_1), 100 * np.mean(preds_2)))
     print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
+
+    # Threshold baseline: look at model performance on test sets from both G_b
+    # and pick the better one
+    print("Threshold-test baseline accuracy: %.3f" %
+          (f_accs[np.argmax(adv_accs)]))
 
     plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
     plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
