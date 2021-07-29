@@ -154,7 +154,6 @@ We will train 3000 models each (which we will use for train set for the metaclas
 
 * `attribute` is `sex/age`, `ratio` is `0.2 or 0.8`, `save_dir` is where models will be saved. So overall, there wil be 2 (age/sex) * 2 (ratio 0.2/ratio 0.8) * 2 (first command/second command) = 8 scripts to run.
 
-
 ## For 4/7
 
 I have updated the model to accept arguments that should enable retrieving intermediate model activations. For instance, model logits are usually retrieved via the command `outputs = model(images)[:, 0]`, which would return a `(n,)` shaped vector (where `n=images.shape[0]`).
@@ -165,7 +164,7 @@ To retreve activations, you will use `acts = model(images, latent=0)`, whch will
 
 This experiment is similar to the activations-based meta-classifier experiments we tried recently. Instead of using activations for existing samples, we will try generating samples that help maximize the difference between activation values for models from the two categories. We will also try sampling from existing data, and then compare the two methods.
 
-- 3 trials of the following experiment, varying `second` in `[0.2, 0.3, 0.4, 0.6, 0.7, 0.8]`. Report train/test accuracies and plot the results. This verion will use existing images and pick the one that maximize gap in activation values.
+- 3 trials of the following experiment, varying `second` in `[0.2, 0.3, 0.4, 0.6, 0.7, 0.8]`. Report train/test accuracies and plot the results. This version will use existing images and pick the one that maximize gap in activation values.
 
 `python optimal_generation.py --n_samples 10 --second 0.8 --latent_focus 0 --n_models 20 --steps 500 --step_size 1e2 --use_natural`
 

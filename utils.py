@@ -398,8 +398,9 @@ def get_weight_layers(m, normalize=False, transpose=True,
         i += 1
 
         # If requested, start looking from start_n layer
-        if i // 2 < start_n:
-            break
+        if (i - 1) // 2 < start_n:
+            dims, dim_kernels, weights, biases = [], [], [], []
+            continue
 
         # If requested, look at only first_n layers
         if i // 2 > first_n - 1:
