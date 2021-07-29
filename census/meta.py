@@ -10,7 +10,7 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 def epoch_strategy(tg, args):
-    return args.epochs
+    # return args.epochs
     if args.filter == "race":
         return args.epochs if tg not in ["0.6", "0.7", "0.8"] else 70
     else:
@@ -28,6 +28,8 @@ if __name__ == "__main__":
     # Race: 500* epochs, 1e-3
     parser.add_argument('--epochs', type=int, default=1000,
                         help="Number of epochs to train meta-classifier")
+    parser.add_argument('--start_n', type=int, default=0,
+                        help="Only consider starting from this layer")
     parser.add_argument('--first_n', type=int, default=np.inf,
                         help="Use only first N layers' parameters")
     parser.add_argument('--ntimes', type=int, default=10,
@@ -42,9 +44,8 @@ if __name__ == "__main__":
     d_0 = args.d_0
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
-    # targets = filter(lambda x: x != d_0, os.listdir(
-    #     get_models_path(args.filter, "adv")))
-    targets = ["0.2", "0.3", "0.4", "0.6", "0.7", "0.8", "0.9", "1.0"]
+    targets = filter(lambda x: x != d_0, os.listdir(
+        get_models_path(args.filter, "adv")))
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(

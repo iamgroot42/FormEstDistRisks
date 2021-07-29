@@ -24,7 +24,7 @@ def layer_output(data, MLP, layer=0, get_all=False):
 
 
 # Load models from directory, return feature representations
-def get_model_representations(folder_path, label, first_n=np.inf):
+def get_model_representations(folder_path, label, first_n=np.inf, start_n=0):
     models_in_folder = os.listdir(folder_path)
     # np.random.shuffle(models_in_folder)
     w, labels = [], []
@@ -39,9 +39,10 @@ def get_model_representations(folder_path, label, first_n=np.inf):
                      for (w, b) in zip(weights, biases)]
 
         # Use parameters only from first N layers
+        # and starting from start_n
         if first_n != np.inf:
-            processed = processed[:first_n]
-            dims = dims[:first_n]
+            processed = processed[start_n:first_n]
+            dims = dims[start_n:first_n]
 
         w.append(processed)
         labels.append(label)

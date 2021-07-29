@@ -18,6 +18,8 @@ if __name__ == "__main__":
                         help='Add legend to plots')
     parser.add_argument('--novtitle', action="store_true",
                         help='Remove Y-axis label')
+    parser.add_argument('--multimode', action="store_true",
+                        help='Plots for meta-classifier methods')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         default="Male",
                         help='name for subfolder to save/load data from')
@@ -27,15 +29,21 @@ if __name__ == "__main__":
     first_cat = " 0.5"
 
     # Set font size
-    # plt.rcParams.update({'font.size': 18})
+    if args.multimode:
+        plt.rcParams.update({'font.size': 13})
+    else:
+        plt.rcParams.update({'font.size': 18})
 
     if args.darkplot:
         # Set dark background
         plt.style.use('dark_background')
 
+    # Changed male ratios to female ratios by flipping data
+    # Be mindful of this change when modifying/inserting data
+
     data = []
     columns = [
-        r'Male proportion of training data ($\alpha$)',
+        r'Female proportion of training data ($\alpha$)',
         "Accuracy (%)",
         "Feature-extraction method"
     ]
@@ -43,53 +51,57 @@ if __name__ == "__main__":
     targets = ["0.0", "0.1", "0.2", "0.3",
                "0.4", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
-    fc_perf = [
-        [69.13, 71.12, 71.23, 70.43, 50],  # 0.0
-        [61.47, 52.83, 64.32, 60.97, 63.82],  # 0.1
-        [56.16, 55.83 ,58.51 ,44.17, 55.88],  # 0.2
-        [52.87, 50.02, 49.98, 49.98, 50.02],  # 0.3
-        [48.90, 48.90, 51.10, 48.9, 48.90],  # 0.4
-        [47.63, 52.89, 50.54, 52.16, 48.2],  # 0.6
-        [54.67, 49.98, 53.27, 49.98, 50.47],  # 0.7
-        [75.54, 82.18, 82.18, 82.18, 72.41],  # 0.8
-        [61.62, 56.08, 57.22, 50.02, 50.02],  # 0.9
-        [64.97, 62.77, 49.98, 62.72, 60.12],  # 1.0
-    ]
-    for i in range(len(fc_perf)):
-        for j in range(len(fc_perf[i])):
-            data.append([float(targets[i]), fc_perf[i][j], "Only-FC"])
+    if args.multimode:
+        fc_perf = [
+            [69.13, 71.12, 71.23, 70.43, 50],  # 0.0
+            [61.47, 52.83, 64.32, 60.97, 63.82],  # 0.1
+            [56.16, 55.83 ,58.51 ,44.17, 55.88],  # 0.2
+            [52.87, 50.02, 49.98, 49.98, 50.02],  # 0.3
+            [48.90, 48.90, 51.10, 48.9, 48.90],  # 0.4
+            [47.63, 52.89, 50.54, 52.16, 48.2],  # 0.6
+            [54.67, 49.98, 53.27, 49.98, 50.47],  # 0.7
+            [75.54, 82.18, 82.18, 82.18, 72.41],  # 0.8
+            [61.62, 56.08, 57.22, 50.02, 50.02],  # 0.9
+            [64.97, 62.77, 49.98, 62.72, 60.12],  # 1.0
+        ]
+        fc_perf = fc_perf[::-1]
+        for i in range(len(fc_perf)):
+            for j in range(len(fc_perf[i])):
+                data.append([float(targets[i]), fc_perf[i][j], "Only-FC"])
 
-    conv_perf = [
-        [82.92, 73.18, 91.66, 73.98, 86.86],  # 0.0
-        [80.11, 77.06, 83.21, 81.67, 77.01],  # 0.1
-        [68.82, 65.03, 67.09, 70.05, 64.64],  # 0.2
-        [61.42, 59.12, 58.02, 59.22, 58.32],  # 0.3
-        [52.94, 51.10, 52.07, 54.47, 52.17],  # 0.4
-        [54.19, 54.19, 47.83, 52.79, 53.62],  # 0.6
-        [56.37, 57.22, 56.57, 61.62, 63.22],  # 0.7
-        [80.54, 75.86, 82.18, 82.18, 81.03],  # 0.8
-        [81.91, 83.86, 81.46, 79.86, 74.71],  # 0.9
-        [90.35, 94.1, 91.95, 91.6, 88.06],  # 1.0
-    ]
-    for i in range(len(conv_perf)):
-        for j in range(len(conv_perf[i])):
-            data.append([float(targets[i]), conv_perf[i][j], "Only-Conv"])
+        conv_perf = [
+            [82.92, 73.18, 91.66, 73.98, 86.86],  # 0.0
+            [80.11, 77.06, 83.21, 81.67, 77.01],  # 0.1
+            [68.82, 65.03, 67.09, 70.05, 64.64],  # 0.2
+            [61.42, 59.12, 58.02, 59.22, 58.32],  # 0.3
+            [52.94, 51.10, 52.07, 54.47, 52.17],  # 0.4
+            [54.19, 54.19, 47.83, 52.79, 53.62],  # 0.6
+            [56.37, 57.22, 56.57, 61.62, 63.22],  # 0.7
+            [80.54, 75.86, 82.18, 82.18, 81.03],  # 0.8
+            [81.91, 83.86, 81.46, 79.86, 74.71],  # 0.9
+            [90.35, 94.1, 91.95, 91.6, 88.06],  # 1.0
+        ]
+        conv_perf = conv_perf[::-1]
+        for i in range(len(conv_perf)):
+            for j in range(len(conv_perf[i])):
+                data.append([float(targets[i]), conv_perf[i][j], "Only-Conv"])
 
-    all_perf = [
-        [90.0, 92.96, 78.47, 69.0, 80.37],  # 0.0
-        [82.81, 81.91, 77.66, 81.91, 79.31],  # 0.1
-        [70.72, 61.07, 64.47, 62.41, 72.50],  # 0.2
-        [60.52, 63.37, 50.02, 57.22, 56.87],  # 0.3
-        [51.10, 49.11, 48.90, 52.32, 52.27],  # 0.4
-        [52.16, 49.61, 47.84, 51.22, 53.20],  # 0.6
-        [55.42, 57.67, 63.07, 56.47, 57.12],  # 0.7
-        [63.38, 77.75, 69.62, 80.38, 59.61],  # 0.8
-        [66.6, 67.27, 81.81, 83.16, 83.46],  # 0.9
-        [95.2, 84.66, 91.40, 73.46, 92.2],  # 1.0
-    ]
-    for i in range(len(all_perf)):
-        for j in range(len(all_perf[i])):
-            data.append([float(targets[i]), all_perf[i][j], "FC||Conv"])
+        # all_perf = [
+        #     [90.0, 92.96, 78.47, 69.0, 80.37],  # 0.0
+        #     [82.81, 81.91, 77.66, 81.91, 79.31],  # 0.1
+        #     [70.72, 61.07, 64.47, 62.41, 72.50],  # 0.2
+        #     [60.52, 63.37, 50.02, 57.22, 56.87],  # 0.3
+        #     [51.10, 49.11, 48.90, 52.32, 52.27],  # 0.4
+        #     [52.16, 49.61, 47.84, 51.22, 53.20],  # 0.6
+        #     [55.42, 57.67, 63.07, 56.47, 57.12],  # 0.7
+        #     [63.38, 77.75, 69.62, 80.38, 59.61],  # 0.8
+        #     [66.6, 67.27, 81.81, 83.16, 83.46],  # 0.9
+        #     [95.2, 84.66, 91.40, 73.46, 92.2],  # 1.0
+        # ]
+        # all_perf = all_perf[::-1]
+        # for i in range(len(all_perf)):
+        #     for j in range(len(all_perf[i])):
+        #         data.append([float(targets[i]), all_perf[i][j], "FC||Conv"])
 
     combined_perf = [
         [92.81, 91.56, 88.87, 84.37, 80.72],  # 0.0
@@ -103,29 +115,36 @@ if __name__ == "__main__":
         [84.16, 81.46, 80.01, 78.41, 82.36],  # 0.9
         [80.1, 92.45, 93.65, 85.26, 89.26],  # 1.0
     ]
+    combined_perf = combined_perf[::-1]
     for i in range(len(combined_perf)):
         for j in range(len(combined_perf[i])):
             data.append([float(targets[i]), combined_perf[i][j], "Full-Model"])
 
-    combined_smaller_perf = [
-        [70.73, 83.52, 90.36, 90.06, 85.41],  # 0.0
-        [84.71, 81.21, 75.01, 82.61, 77.46],  # 0.1
-        [69.05, 63.02, 71.95, 70.44, 68.93],  # 0.2
-        [59.17, 58.47, 64.57, 62.42, 62.62],  # 0.3
-        [51.86, 62.63, 52.42, 51.97, 48.9],  # 0.4
-        [51.22, 52.17, 51.33, 47.84, 53.67],  # 0.6
-        [55.22, 63.32, 62.32, 55.97, 56.37],  # 0.7
-        [67.98, 81.44, 82.68, 81.86, 82.27],  # 0.8
-        [73.51, 84.56, 71.46, 80.11, 85.66],  # 0.9
-        [82.81, 93.05, 89.91, 80.16, 85.71],  # 1.0
-    ]
-    for i in range(len(combined_smaller_perf)):
-        for j in range(len(combined_smaller_perf[i])):
-            data.append([float(targets[i]), combined_smaller_perf[i][j], "Full-Model (fewer)"])
+    # combined_smaller_perf = [
+    #     [70.73, 83.52, 90.36, 90.06, 85.41],  # 0.0
+    #     [84.71, 81.21, 75.01, 82.61, 77.46],  # 0.1
+    #     [69.05, 63.02, 71.95, 70.44, 68.93],  # 0.2
+    #     [59.17, 58.47, 64.57, 62.42, 62.62],  # 0.3
+    #     [51.86, 62.63, 52.42, 51.97, 48.9],  # 0.4
+    #     [51.22, 52.17, 51.33, 47.84, 53.67],  # 0.6
+    #     [55.22, 63.32, 62.32, 55.97, 56.37],  # 0.7
+    #     [67.98, 81.44, 82.68, 81.86, 82.27],  # 0.8
+    #     [73.51, 84.56, 71.46, 80.11, 85.66],  # 0.9
+    #     [82.81, 93.05, 89.91, 80.16, 85.71],  # 1.0
+    # ]
+    # for i in range(len(combined_smaller_perf)):
+    #     for j in range(len(combined_smaller_perf[i])):
+    #         data.append([float(targets[i]), combined_smaller_perf[i][j], "Full-Model (fewer)"])
 
     df = pd.DataFrame(data, columns=columns)
-    sns_plot = sns.boxplot(
-        x=columns[0], y=columns[1], data=df, hue=columns[2], showfliers=False,)
+    if args.multimode:
+        sns_plot = sns.boxplot(
+            x=columns[0], y=columns[1], data=df,
+            hue=columns[2], showfliers=False)
+    else:
+        sns_plot = sns.boxplot(
+            x=columns[0], y=columns[1], data=df,
+            color='C0', showfliers=False)
 
     # Accuracy range, with space to show good performance
     sns_plot.set(ylim=(45, 101))
@@ -138,27 +157,30 @@ if __name__ == "__main__":
                 linewidth=1.0, linestyle='--')
 
     # Baseline method results
-    baselines = [51.15, 50.53, 50.34, 50.01, , , , , , ]
+    baselines = [51.15, 50.53, 50.34, 50.01, 50.44, 50.78, 57.26, 56.9, 46.62, 50.1]
     thresholds = [
         [54.2, 56.9, 58.05],
         [50.48, 55.57, 53.66],
         [51.63, 51.77, 52.57],
         [52.09, 53.34, 52.44],
-        [?],
-        [?],
-        [?],
-        [],
-        [],
-        []
+        [51.14, 52.05, 50.97],
+        [55.68, 55.41, 51.96],
+        [60.68, 60.43, 60.18],
+        [62.3, 60.9, 63.05],
+        [66.26, 68.39, 67.63],
+        [72.45, 72.4, 69.05]
     ]
+    baselines = baselines[::-1]
+    thresholds = thresholds[::-1]
 
-    # Plot baselines
-    targets_scaled = range(int((upper - lower)))
-    plt.plot(targets_scaled, baselines, color='C1', marker='x', linestyle='--')
+    if not args.multimode:
+        # Plot baselines
+        targets_scaled = range(int((upper - lower)))
+        plt.plot(targets_scaled, baselines, color='C1', marker='x', linestyle='--')
 
-    # Plot numbers for threshold-based accuracy
-    means, errors = np.mean(thresholds, 1), np.std(thresholds, 1)
-    plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
+        # Plot numbers for threshold-based accuracy
+        means, errors = np.mean(thresholds, 1), np.std(thresholds, 1)
+        plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
 
     # Custom legend
     if args.legend:

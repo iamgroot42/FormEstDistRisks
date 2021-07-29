@@ -15,13 +15,15 @@ columns = [
 
 darkmode = False
 add_legend = True
+novtitle = False
 
 if darkmode:
     # Set dark background style
     plt.style.use('dark_background')
 
 # Set font size
-plt.rcParams.update({'font.size': 13})
+# plt.rcParams.update({'font.size': 13})
+plt.rcParams.update({'font.size': 18})
 
 # Degree 9
 data.append([9, 99.7])
@@ -70,6 +72,9 @@ wanted = [9, 10, 11, 12, 13, 14, 15, 16, 17]
 sns_plot = sns.boxplot(
     x=columns[0], y=columns[1], data=df, color='C0', showfliers=False,)
 sns_plot.set(ylim=(45, 101))
+
+if novtitle:
+    plt.ylabel("", labelpad=0)
 
 # Add dividing line in centre
 lower, upper = plt.gca().get_xlim()

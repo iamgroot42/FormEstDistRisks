@@ -172,3 +172,16 @@ This experiment is similar to the activations-based meta-classifier experiments 
 - 3 trials of the following experiment, varying `second` in `[0.2, 0.3, 0.4, 0.6, 0.7, 0.8]`. Report train/test accuracies and plot the results. This one will generate inputs that maximize difference between activations for models from the two categories.
 
 `python optimal_generation.py --n_samples 10 --second 0.8 --latent_focus 0 --n_models 20 --steps 500 --step_size 1e2`
+
+## For 30/7
+
+With this experiment, we want to figure out of minimal performance gains when using all layers emerge from redundancy in information stored in layers, or later layers actually not being very useful. For now, we will generate numbers on the BoneAge and Census (sex) datasets.
+
+- For Census, run and store numbers, and generate box-plots (for visualization- preferably in the same graph. You can use seaborn) for the following experiments:
+  - `python meta.py --start_n 1 --first_n 2 --filter sex`
+  - `python meta.py --start_n 2 --first_n 3 --filter sex`
+  - `python meta.py --start_n 3 --first_n 4 --filter sex`
+
+- For BoneAge, same procedure as above (except that you will have to vary the ratios `X` in [0.2, 0.3, 0.4, 0.6, 0.7, 0.8] yourself and store numbers):
+  - `python meta.py --start_n 1 --first_n 2 --second X`
+  - `python meta.py --start_n 2 --first_n 3 --second X`

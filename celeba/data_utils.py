@@ -226,6 +226,14 @@ class CelebaWrapper:
                     "Attractive": (30000, 4000),
                     "Young": (15000, 2000)
                 }
+            },
+            "Male": {
+                "adv": {
+                    "Young": (3000, 350),
+                },
+                "victim": {
+                    "Young": (8000, 1400),
+                }
             }
         }
 

@@ -11,6 +11,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--darkplot', action="store_true",
                         help='Use dark background for plotting results')
+    parser.add_argument('--mode', choices=["meta", "threshold"],
+                        default="meta",
+                        help='name for subfolder to save/load data from')
     args = parser.parse_args()
     flash_utils(args)
 
@@ -61,15 +64,76 @@ if __name__ == "__main__":
             [58.55, 54.9, 57.55, 56.65, 52.45, 54.45, 51.2, 50.75, 53.35, 50.95]
         ]
     ]
+    raw_data_threshold = [
+        [
+            [50.85, 52.35, 50.4, 52.5, 52.3],
+            [51, 57.6, 55.35, 50.4, 51.2],
+            [58.10, 68.35, 57.50, 63.55, 60.10, 63.05, 62.10, 57.75, 63.60, 65.20],
+            [72.75, 66.95, 80.55, 64.4, 62.95],
+            [81.55, 70.5, 82.2, 78.25, 75.25],
+            [88.8, 86.8, 80.75, 82.1, 89.1]
+        ],
+        [
+            [54.75, 52.8, 50.4, 54.75, 51.1],
+            [58.05, 59.40, 51.30, 59.25, 54.30, 56.55, 54.80, 58.95, 55.50, 57.85],
+            [62.95, 66.2, 64.65, 63.3, 60.05],
+            [67.75, 72.15, 71, 69.15, 69.05],
+            [83.8, 69.45, 66.05, 80.05, 77.15]
+        ],
+        [
+            [55.55, 51.95, 53.15, 51.60, 52.85, 51.50, 50.35, 52.50, 51.25, 50.60],
+            [56.35, 63, 55.25, 57.75, 58],
+            [67.1, 63.55, 64.25, 64.85, 66.65],
+            [67.75, 72, 78, 70.35, 67.55]
+        ],
+        [
+            [50.10, 52.10, 50.45, 51.45, 50.80, 53.75, 50.45, 53.00, 50.35, 53.95],
+            [52.75, 56.20, 51.60, 51.50, 52.75, 58.70, 53.70, 55.60, 53.25, 54.10],
+            [55.85, 64.45, 58.40, 56.40, 59.05, 64.65, 50.45, 57.25, 54.60, 69.95]
+        ],
+        [
+            [52.45, 53.7, 52.4, 50.45, 50.3],
+            [58.75, 58.25, 62.7, 51.4, 60.35]
+        ],
+        [
+            [54.25, 51.15, 56.6, 52.25, 55.5]
+        ]
+    ]
+
+    raw_data_loss = [
+        [53.5, 60.05, 64.9, 80.8, 86.35, 84.6],
+        [50.4, 64.3, 71.55, 69.8, 87.35],
+        [59.0, 61.5, 65.65, 73.65],
+        [57.0, 56.8, 66.9],
+        [50.45, 65.1],
+        [54.8]
+    ]
+
+    if args.mode == "meta":
+        data_use = raw_data
+    else:
+        data_use = raw_data_threshold
+        print("Fill in other data")
+        for i in range(len(targets)):
+            for j in range(len(targets)-(i+1)):
+                fill_data[j+i+1][i] = raw_data_loss[i][j]
+                mask[j+i+1][i] = False
+                annot_data[j+i+1][i] = r'%d' % (raw_data_loss[i][j])
 
     for i in range(len(targets)):
         for j in range(len(targets)-(i+1)):
-            m, s = np.mean(raw_data[i][j]), np.std(raw_data[i][j])
+            m, s = np.mean(data_use[i][j]), np.std(data_use[i][j])
             fill_data[i][j+i+1] = m
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
+    for i in range(len(targets)):
+        fill_data[i][i] = 0
+        mask[i][i] = False
+        annot_data[i][i] = "N.A."
+
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
-                           annot=annot_data, mask=mask, fmt="^") #, vmin=0, vmax=100)
+                           annot=annot_data, mask=mask, fmt="^",
+                           vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./meta_heatmap.png")
+    sns_plot.figure.savefig("./meta_heatmap_%s.png" % (args.mode))

@@ -13,6 +13,8 @@ if __name__ == "__main__":
     parser.add_argument('--train_sample', type=int, default=800)
     parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=80)
+    parser.add_argument('--start_n', type=int, default=0,
+                        help="Only consider starting from this layer")
     parser.add_argument('--first_n', type=int, default=np.inf,
                         help="Only consider first N layers")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
@@ -26,11 +28,15 @@ if __name__ == "__main__":
     test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
 
     # Load models, convert to features
-    dims, vecs_train_1 = get_model_features(train_dir_1, first_n=args.first_n)
-    _, vecs_train_2 = get_model_features(train_dir_2, first_n=args.first_n)
+    dims, vecs_train_1 = get_model_features(
+        train_dir_1, first_n=args.first_n, start_n=args.start_n)
+    _, vecs_train_2 = get_model_features(
+        train_dir_2, first_n=args.first_n, start_n=args.start_n)
 
-    _, vecs_test_1 = get_model_features(test_dir_1, first_n=args.first_n)
-    _, vecs_test_2 = get_model_features(test_dir_2, first_n=args.first_n)
+    _, vecs_test_1 = get_model_features(
+        test_dir_1, first_n=args.first_n, start_n=args.start_n)
+    _, vecs_test_2 = get_model_features(
+        test_dir_2, first_n=args.first_n, start_n=args.start_n)
 
     vecs_train_1 = np.array(vecs_train_1)
     vecs_train_2 = np.array(vecs_train_2)

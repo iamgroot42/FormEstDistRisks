@@ -19,6 +19,9 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--augment', action="store_true",
                         help='use data augmentations when training models?')
+    parser.add_argument('--task', default="Smiling",
+                        choices=SUPPORTED_PROPERTIES,
+                        help='task to focus on')
     parser.add_argument('--parallel', action="store_true",
                         help='use multiple GPUs to train?')
     parser.add_argument('--verbose', action="store_true",
@@ -28,10 +31,22 @@ if __name__ == "__main__":
 
     # CelebA dataset
     ds = CelebaWrapper(args.filter, args.ratio,
-                       args.split, augment=args.augment)
+                       args.split, augment=args.augment,
+                       classify=args.task)
+    # print(len(ds.ds_train), len(ds.ds_val))
+    # print()
 
     # Get loaders
     train_loader, test_loader = ds.get_loaders(args.bs)
+
+    # tr, te = 0, 0
+    # import torch as ch
+    # for _, x, _ in train_loader:
+    #     tr += ch.sum(x).item()
+    # for _, x, _ in test_loader:
+    #     te += ch.sum(x).item()
+    # print(min(tr, len(ds.ds_train) - tr), min(te, len(ds.ds_val) - te))
+    # exit(0)
 
     # Create model
     model = create_model(parallel=args.parallel)
@@ -41,6 +56,7 @@ if __name__ == "__main__":
                                  lr=args.lr, epoch_num=args.epochs,
                                  weight_decay=1e-3, verbose=args.verbose,
                                  get_best=True)
+
     # Save model
     save_name = args.name + "_" + str(vacc) + "_" + str(vloss) + ".pth"
     save_model(model, args.split, args.filter, str(

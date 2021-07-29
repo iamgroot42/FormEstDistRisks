@@ -10,16 +10,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Botnets-dataset (GCN)')
     parser.add_argument('--num_layers', type=int, default=6)
     parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--train_sample', type=int, default=800)
+    parser.add_argument('--train_sample', type=int, default=350)
     parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--iters', type=int, default=200)
     parser.add_argument('--hidden_channels', type=int, default=32)
     parser.add_argument('--n_feat', type=int, default=1)
     parser.add_argument('--dropout', type=float, default=0.0)
-    parser.add_argument('--regression', action="store_true")
     parser.add_argument('--gpu', action="store_true")
     parser.add_argument('--parallel', action="store_true")
-    parser.add_argument('--first_n', type=int, default=4,
+    parser.add_argument('--first_n', type=int, default=np.inf,
                         help="Only consider first N layers")
     args = parser.parse_args()
     print(args)
@@ -49,9 +48,7 @@ if __name__ == "__main__":
 
         # Prepare labels too
         i_ = i
-        if args.regression:
-            i_ = float(degrees[i_])
-        elif binary:
+        if binary:
             i_ = float(i_)
 
         Y_train.append([i_] * len(vecs_train))
@@ -75,7 +72,7 @@ if __name__ == "__main__":
         X_val = np.array(X_val, dtype='object')
         X_val = prepare_batched_data(X_val)
 
-    if binary or args.regression:
+    if binary:
         Y_train = Y_train.float()
         Y_test = Y_test.float()
         if args.val_sample > 0:
@@ -88,10 +85,7 @@ if __name__ == "__main__":
             Y_val = Y_val.cuda()
 
     # Train meta-classifier model
-    if binary or args.regression:
-        metamodel = PermInvModel(dims)
-    else:
-        metamodel = PermInvModel(dims, n_classes=len(degrees))
+    metamodel = PermInvModel(dims)
 
     # Split across GPUs if flag specified
     if args.gpu:
@@ -106,7 +100,7 @@ if __name__ == "__main__":
 
     metamodel, test_loss = train_meta_model(
         metamodel, (X_train, Y_train), (X_test, Y_test),
-        epochs=args.iters, binary=binary, regression=args.regression,
+        epochs=args.iters, binary=binary, regression=False,
         lr=0.01, batch_size=args.batch_size, eval_every=10,
         combined=True, val_data=val_data, gpu=args.gpu)
 

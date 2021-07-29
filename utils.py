@@ -375,7 +375,8 @@ def get_cropped_faces(cropmodel, x):
 
 # Function to extract model parameters
 def get_weight_layers(m, normalize=False, transpose=True,
-                      first_n=np.inf, conv=False, include_all=False):
+                      first_n=np.inf, start_n=0,
+                      conv=False, include_all=False):
     dims, dim_kernels, weights, biases = [], [], [], []
     i = 0
 
@@ -393,9 +394,14 @@ def get_weight_layers(m, normalize=False, transpose=True,
         if "bias" in name:
             biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
 
-        # If requested, look at only first_n layers
         # Assume each layer has weight & bias
         i += 1
+
+        # If requested, start looking from start_n layer
+        if i // 2 < start_n:
+            break
+
+        # If requested, look at only first_n layers
         if i // 2 > first_n - 1:
             break
 

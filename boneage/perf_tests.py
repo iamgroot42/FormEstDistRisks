@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=256*32)
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--plot', action="store_true")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -83,8 +84,8 @@ if __name__ == "__main__":
     models_2 = get_models(get_model_folder_path(
         "adv", args.ratio_2), total_models // 2)
 
-    z_vals = []
     allaccs_1, allaccs_2 = [], []
+    vic_accs, adv_accs = [], []
     for loader in loaders:
         accs_1 = get_accs(loader, models_1)
         accs_2 = get_accs(loader, models_2)
@@ -93,21 +94,10 @@ if __name__ == "__main__":
         accs_1 *= 100
         accs_2 *= 100
 
-        # # Calculate Z value
-        m1, v1 = np.mean(accs_1), np.var(accs_1)
-        m2, v2 = np.mean(accs_2), np.var(accs_2)
-        mean_new = np.abs(m1 - m2)
-        var_new = (v1 + v2) / total_models
-        Z = mean_new / np.sqrt(var_new)
-
-        print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
-        print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
-        print("Number of samples: %d" % total_models)
-        z_vals.append(Z)
-
         tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
+        adv_accs.append(tracc)
 
         # Compute accuracies on this data for victim
         accs_victim_1 = get_accs(loader, models_victim_1)
@@ -124,12 +114,14 @@ if __name__ == "__main__":
         specific_acc = utils.get_threshold_acc(combined, classes, threshold)
         print("[Victim] Accuracy at specified threshold: %.2f" %
               (100 * specific_acc))
+        vic_accs.append(specific_acc)
 
         # Collect all accuracies for basic baseline
         allaccs_1.append(accs_victim_1)
         allaccs_2.append(accs_victim_2)
 
-    print("Z values:", z_vals)
+    adv_accs = np.array(adv_accs)
+    vic_accs = np.array(vic_accs)
 
     # Basic baseline: look at model performance on test sets from both G_b
     # Predict b for whichever b it is higher
@@ -139,8 +131,16 @@ if __name__ == "__main__":
     preds_1 = (allaccs_1[:, 0] > allaccs_1[:, 1])
     preds_2 = (allaccs_2[:, 0] < allaccs_2[:, 1])
     basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
+
+    print("[Results] %s v/s %s" % (args.ratio_1, args.ratio_2))
     print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
 
-    plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
-    plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
-    plt.savefig("./quick_see.png")
+    # Threshold baseline: look at model performance on test sets from both G_b
+    # and pick the better one
+    print("Threshold-test baseline accuracy: %.3f" %
+          (100 * vic_accs[np.argmax(adv_accs)]))
+
+    if args.plot:
+        plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
+        plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
+        plt.savefig("./quick_see.png")
