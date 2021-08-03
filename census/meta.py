@@ -44,8 +44,10 @@ if __name__ == "__main__":
     d_0 = args.d_0
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
-    targets = filter(lambda x: x != d_0, os.listdir(
-        get_models_path(args.filter, "adv")))
+    # Only look at multiples of 0.10
+    targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
+                     float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
+    targets = sorted(list(targets))
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
@@ -138,5 +140,5 @@ if __name__ == "__main__":
         data.append(tgt_data)
 
     # Print data
-    for tup in data:
-        print(tup)
+    for i, tup in enumerate(data):
+        print(targets[i], tup)
