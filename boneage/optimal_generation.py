@@ -181,7 +181,7 @@ def get_patterns(fe_model, X_1, X_2, data, normal_data, args):
 
 
 # Load and prepare test data
-def get_ds():
+def get_ds(ratio):
     def filter(x): return x["gender"] == 1
 
     # Ready data
@@ -189,7 +189,7 @@ def get_ds():
 
     # Get data with ratio
     df = heuristic(
-        df_val, filter, 0.5,
+        df_val, filter, ratio,
         cwise_sample=10000,
         class_imbalance=1.0, n_tries=300)
 
@@ -197,44 +197,12 @@ def get_ds():
     return ds
 
 
-def main(args):
-    train_dir_1 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/" % (args.first))
-    train_dir_2 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/" % (args.second))
-    test_dir_1 = os.path.join(
-        BASE_MODELS_DIR, "adv/%s/" % (args.first))
-    test_dir_2 = os.path.join(
-        BASE_MODELS_DIR, "adv/%s/" % (args.second))
-
-    # Modify model behavior if using generation mode
-    if args.use_natural:
-        latent_focus = None
-        fake_relu = False
-    else:
-        latent_focus = args.latent_focus
-        fake_relu = True
-
-    X_train_1 = get_all_models(
-        train_dir_1, args.n_models, latent_focus, fake_relu=fake_relu)
-    X_train_2 = get_all_models(
-        train_dir_2, args.n_models, latent_focus, fake_relu=fake_relu)
-    Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
-    Y_train = ch.from_numpy(np.array(Y_train)).cuda()
-
-    test_models_use = 100
-    X_test_1 = get_all_models(
-        test_dir_1, test_models_use, latent_focus, fake_relu=fake_relu)
-    X_test_2 = get_all_models(
-        test_dir_2, test_models_use, latent_focus, fake_relu=fake_relu)
-    Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
-    Y_test = ch.from_numpy(np.array(Y_test)).cuda()
-
+def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
     # Get feature extractor
     fe_model = get_pre_processor().cuda()
 
     # Get some normal data for estimates of activation values
-    ds = get_ds()
+    ds = get_ds(ratio)
 
     if args.use_normal:
         _, test_loader = ds.get_loaders(args.n_samples, shuffle=False)
@@ -280,6 +248,7 @@ def main(args):
         x_use = x_opt
 
     x_use = x_use.cuda()
+    clf = None
     # Get threshold on train data
     if args.use_dt:
         focus_layers = [int(x) for x in args.dt_layers.split(",")]
@@ -295,17 +264,60 @@ def main(args):
         threshold = get_threshold(reprs_0_use, reprs_1_use)
         train_acc = get_acc(reprs_0_use, reprs_1_use, threshold)
 
-        # Plot differences
-        plt.plot(np.arange(len(X_train_1)), sorted(
-            reprs_0_use), label=r'Trained on $D_0$')
-        plt.plot(np.arange(len(X_train_2)), sorted(
-            reprs_1_use), label=r'Trained on $D_1$')
-        plt.legend()
-        plt.savefig("./on_train_distr.png")
-        plt.clf()
-    print("Train accuracy: %.3f" % train_acc)
+    return x_use, normal_data, threshold, train_acc, clf
+
+
+def main(args):
+    train_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/" % (args.first))
+    train_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/" % (args.second))
+    test_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/" % (args.first))
+    test_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/" % (args.second))
+
+    # Modify model behavior if using generation mode
+    if args.use_natural:
+        latent_focus = None
+        fake_relu = False
+    else:
+        latent_focus = args.latent_focus
+        fake_relu = True
+
+    X_train_1 = get_all_models(
+        train_dir_1, args.n_models, latent_focus, fake_relu=fake_relu)
+    X_train_2 = get_all_models(
+        train_dir_2, args.n_models, latent_focus, fake_relu=fake_relu)
+    Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
+    Y_train = ch.from_numpy(np.array(Y_train)).cuda()
+
+    test_models_use = 100
+    X_test_1 = get_all_models(
+        test_dir_1, test_models_use, latent_focus, fake_relu=fake_relu)
+    X_test_2 = get_all_models(
+        test_dir_2, test_models_use, latent_focus, fake_relu=fake_relu)
+    Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
+    Y_test = ch.from_numpy(np.array(Y_test)).cuda()
+
+    # Get feature extractor
+    fe_model = get_pre_processor().cuda()
+
+    x_use_1, normal_data, threshold, train_acc_1, clf_1 = specific_case(
+        X_train_1, X_train_2, Y_train, float(args.first), args)
+    x_use_2, normal_data, threshold, train_acc_2, clf_2 = specific_case(
+          X_train_1, X_train_2, Y_train, float(args.second), args)
+    print("Train accuracies:", train_acc_1, train_acc_2)
+
+    if train_acc_1 > train_acc_2:
+        x_use = x_use_1
+        clf = clf_1
+    else:
+        x_use = x_use_2
+        clf = clf_2
 
     if args.use_dt:
+        focus_layers = [int(x) for x in args.dt_layers.split(",")]
         feat_0 = combined_features(fe_model, X_test_1, x_use, focus_layers)
         feat_1 = combined_features(fe_model, X_test_2, x_use, focus_layers)
         x = list(feat_0) + list(feat_1)
@@ -319,15 +331,6 @@ def main(args):
 
         # Get threshold on test data
         test_acc = get_acc(reprs_0_use, reprs_1_use, threshold)
-
-        # Plot differences
-        plt.plot(np.arange(len(X_test_1)), sorted(
-            reprs_0_use), label=r'Trained on $D_0$')
-        plt.plot(np.arange(len(X_test_2)), sorted(
-            reprs_1_use), label=r'Trained on $D_1$')
-        plt.legend()
-        plt.savefig("./on_test_distr.png")
-        plt.clf()
 
     print("Test accuracy: %.3f" % test_acc)
 

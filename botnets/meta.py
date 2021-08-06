@@ -10,7 +10,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Botnets-dataset (GCN)')
     parser.add_argument('--num_layers', type=int, default=6)
     parser.add_argument('--batch_size', type=int, default=256)
-    parser.add_argument('--train_sample', type=int, default=350)
+    parser.add_argument('--train_sample', type=int, default=800)
     parser.add_argument('--val_sample', type=int, default=0)
     parser.add_argument('--iters', type=int, default=200)
     parser.add_argument('--hidden_channels', type=int, default=32)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     metamodel, test_loss = train_meta_model(
         metamodel, (X_train, Y_train), (X_test, Y_test),
         epochs=args.iters, binary=binary, regression=False,
-        lr=0.01, batch_size=args.batch_size, eval_every=10,
+        lr=0.001, batch_size=args.batch_size, eval_every=10,
         combined=True, val_data=val_data, gpu=args.gpu)
 
     print("[Test] Loss: %.4f" % test_loss)

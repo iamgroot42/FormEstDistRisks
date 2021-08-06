@@ -1,3 +1,4 @@
+from html.entities import name2codepoint
 import torch as ch
 import numpy as np
 from collections import OrderedDict
@@ -376,9 +377,13 @@ def get_cropped_faces(cropmodel, x):
 # Function to extract model parameters
 def get_weight_layers(m, normalize=False, transpose=True,
                       first_n=np.inf, start_n=0,
+                      custom_layers=None,
                       conv=False, include_all=False):
     dims, dim_kernels, weights, biases = [], [], [], []
-    i = 0
+    i, j = 0, 0
+
+    # Sort and store desired layers, if specified
+    custom_layers = sorted(custom_layers) if custom_layers is not None else None
 
     for name, param in m.named_parameters():
         if "weight" in name:
@@ -397,14 +402,28 @@ def get_weight_layers(m, normalize=False, transpose=True,
         # Assume each layer has weight & bias
         i += 1
 
-        # If requested, start looking from start_n layer
-        if (i - 1) // 2 < start_n:
-            dims, dim_kernels, weights, biases = [], [], [], []
-            continue
+        if custom_layers is None:
+            # If requested, start looking from start_n layer
+            if (i - 1) // 2 < start_n:
+                dims, dim_kernels, weights, biases = [], [], [], []
+                continue
 
-        # If requested, look at only first_n layers
-        if i // 2 > first_n - 1:
-            break
+            # If requested, look at only first_n layers
+            if i // 2 > first_n - 1:
+                break
+        else:
+            # If this layer was not asked for, omit corresponding weights & biases
+            if i // 2 != custom_layers[j // 2]:
+                dims = dims[:-1]
+                dim_kernels = dim_kernels[:-1]
+                weights = weights[:-1]
+                biases = biases[:-1]
+            else:
+                # Specified layer was found, increase count
+                j += 1
+
+    if custom_layers is not None and len(custom_layers) != j // 2:
+        raise ValueError("Custom layers requested do not match actual model")
 
     if include_all:
         if conv:
@@ -1266,12 +1285,23 @@ def get_z_value(metric_1, metric_2):
     return Z
 
 
-def get_threshold_acc(X, Y, threshold):
+def get_threshold_acc(X, Y, threshold, rule=None):
     # Rule-1: everything above threshold is 1 class
     acc_1 = np.mean((X >= threshold) == Y)
     # Rule-2: everything below threshold is 1 class
     acc_2 = np.mean((X <= threshold) == Y)
-    return max(acc_1, acc_2)
+
+    # If rule is specified, use that
+    if rule == 1:
+        return acc_1
+    elif rule == 2:
+        return acc_2
+
+    # Otherwise, find and use the one that gives the best acc
+
+    if acc_1 >= acc_2:
+        return acc_1, 1
+    return acc_2, 2
 
 
 def find_threshold_acc(accs_1, accs_2, granularity=0.1):
@@ -1281,14 +1311,15 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     best_acc = 0.0
     best_threshold = 0
     while lower < upper:
-        best_of_two = get_threshold_acc(combined, classes, lower)
+        best_of_two, rule = get_threshold_acc(combined, classes, lower)
         if best_of_two > best_acc:
             best_threshold = lower
             best_acc = best_of_two
+            best_rule = rule
 
         lower += granularity
 
-    return best_acc, best_threshold
+    return best_acc, best_threshold, best_rule
 
 
 # Fix for repeated random augmentation issue

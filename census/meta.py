@@ -35,6 +35,7 @@ if __name__ == "__main__":
     parser.add_argument('--ntimes', type=int, default=10,
                         help='number of repetitions for multimode')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
+                        required=True,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', default="0.5",
                         help='ratio to use for D_0')

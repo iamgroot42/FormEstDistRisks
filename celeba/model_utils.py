@@ -181,8 +181,9 @@ def get_features_for_model(dataloader, MODELPATH, method_type):
 
 # Function to extract model weights for all models in given directory
 def get_model_features(model_dir, max_read=None,
-                       first_n_conv=np.inf,
-                       first_n_fc=np.inf,
+                       start_n_conv=0, first_n_conv=np.inf,
+                       start_n_fc=0, first_n_fc=np.inf,
+                       conv_custom=None, fc_custom=None,
                        focus="all"):
     vecs = []
     iterator = os.listdir(model_dir)
@@ -196,17 +197,26 @@ def get_model_features(model_dir, max_read=None,
         if focus in ["all", "combined"]:
             dims_conv, fvec_conv = get_weight_layers(
                 model.features, first_n=first_n_conv, conv=True,
+                start_n=start_n_conv,
+                custom_layers=conv_custom,
                 include_all=focus == "combined")
             dims_fc, fvec_fc = get_weight_layers(
-                model.classifier, first_n=first_n_fc)
+                model.classifier, first_n=first_n_fc,
+                custom_layers=fc_custom,
+                start_n=start_n_fc)
 
             vecs.append(fvec_conv + fvec_fc)
         elif focus == "conv":
             dims, fvec = get_weight_layers(
-                model.features, first_n=first_n_conv, conv=True)
+                model.features, first_n=first_n_conv,
+                custom_layers=conv_custom,
+                start_n=start_n_conv, conv=True)
             vecs.append(fvec)
         else:
-            dims, fvec = get_weight_layers(model.classifier, first_n=first_n_fc)
+            dims, fvec = get_weight_layers(
+                model.classifier, first_n=first_n_fc,
+                custom_layers=fc_custom,
+                start_n=start_n_fc)
             vecs.append(fvec)
 
     if focus in ["all", "combined"]:

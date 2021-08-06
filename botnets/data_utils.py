@@ -6,19 +6,23 @@ import numpy as np
 import dgl
 
 LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet_temp"
-VICTIM_COEFF_PATH = "./victim_info.txt"
-ADV_COEFF_PATH = "./adv_info.txt"
+# VICTIM_COEFF_PATH = "./victim_info.txt"
+# ADV_COEFF_PATH = "./adv_info.txt"
+VICTIM_COEFF_PATH = "./victim_info_new.txt"
+ADV_COEFF_PATH = "./adv_info_new.txt"
 
 
 class BotNetWrapper:
-    def __init__(self, split, prop_val):
+    def __init__(self, split, prop_val, sample=True):
         self.train_test_ratio = 0.9
         self.path = LOCAL_DATA_DIR
 
-        if split == "adv":
-            num_graphs_train_sample = 58
-        else:
-            num_graphs_train_sample = 90
+        # if split == "adv":
+        #     num_graphs_train_sample = 58
+        # else:
+        #     num_graphs_train_sample = 90
+
+        num_graphs_train_sample = 75
 
         # Use local storage (much faster)
         if not os.path.exists(LOCAL_DATA_DIR):
@@ -36,9 +40,10 @@ class BotNetWrapper:
 
         # Use specified number of graphs to train
         # Sample from train
-        random_chosen_ids = np.random.choice(
-            len(graphs_train), num_graphs_train_sample, replace=False)
-        graphs_train = [graphs_train[i] for i in random_chosen_ids]
+        if sample:
+            random_chosen_ids = np.random.choice(
+                len(graphs_train), num_graphs_train_sample, replace=False)
+            graphs_train = [graphs_train[i] for i in random_chosen_ids]
 
         self.train_data = BotnetDataset(graphs_train)
         self.test_data = BotnetDataset(graphs_test)
@@ -57,21 +62,26 @@ class BotNetWrapper:
                 values.append(float(v))
         values = np.array(values)
 
+        # Old:
         # val=0 -> coeff <= 0.0066
         # val=1 -> coeff > 0.0071
 
         if val == 0:
-            ids = np.where(values <= 0.0066)[0]
+            ids = np.where(values < 0.0061)[0]
         else:
-            ids = np.where(values > 0.0071)[0]
+            ids = np.where(values > 0.0074)[0]
 
         return ids
 
     def load_graphs(self, split, val):
+        # if split == "adv":
+        #     graph_name = "dgl_adv.hdf5"
+        # else:
+        #     graph_name = "dgl_victim.hdf5"
         if split == "adv":
-            graph_name = "dgl_adv.hdf5"
+            graph_name = "dgl_adv_new.hdf5"
         else:
-            graph_name = "dgl_victim.hdf5"
+            graph_name = "dgl_victim_new.hdf5"
 
         # Load graphs
         graphs, _ = dgl.load_graphs(os.path.join(

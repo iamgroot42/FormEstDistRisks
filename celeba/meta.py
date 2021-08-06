@@ -16,12 +16,20 @@ if __name__ == "__main__":
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--start_n_conv', type=int, default=0,
+                        help="Only consider starting from this layer of conv part")
     parser.add_argument('--first_n_conv', type=int, default=np.inf,
                         help="Only consider first N layers of conv part")
+    parser.add_argument('--conv_custom', default=None,
+                        help="Comma-separated list of layers wanted (overrides first/last N) for Conv")
+    parser.add_argument('--start_n_fc', type=int, default=0,
+                        help="Only consider starting from this layer of fc part")
     parser.add_argument('--first_n_fc', type=int, default=np.inf,
                         help="Only consider first N layers of fc part")
+    parser.add_argument('--fc_custom', default=None,
+                        help="Comma-separated list of layers wanted (overrides first/last N) for FC")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
-    parser.add_argument('--second', help="Ratio for D_1")
+    parser.add_argument('--second', required=True, help="Ratio for D_1")
     parser.add_argument('--focus', choices=["fc", "conv", "all", "combined"],
                         required=True, help="Which layer paramters to use")
     args = parser.parse_args()
@@ -36,19 +44,36 @@ if __name__ == "__main__":
     test_dir_2 = os.path.join(
         BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.second))
 
+    if args.conv_custom is not None:
+        args.conv_custom = [int(x) for x in args.conv_custom.split(",")]
+    if args.fc_custom is not None:
+        args.fc_custom = [int(x) for x in args.fc_custom.split(",")]
+
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
         train_dir_1, first_n_conv=args.first_n_conv,
+        start_n_conv=args.start_n_conv,
+        start_n_fc=args.start_n_fc,
+        conv_custom=args.conv_custom, fc_custom=args.fc_custom,
         first_n_fc=args.first_n_fc, focus=args.focus)
     _, vecs_train_2 = get_model_features(
         train_dir_2, first_n_conv=args.first_n_conv,
+        start_n_conv=args.start_n_conv,
+        start_n_fc=args.start_n_fc,
+        conv_custom=args.conv_custom, fc_custom=args.fc_custom,
         first_n_fc=args.first_n_fc, focus=args.focus)
 
     _, vecs_test_1 = get_model_features(
         test_dir_1, first_n_conv=args.first_n_conv,
+        start_n_conv=args.start_n_conv,
+        start_n_fc=args.start_n_fc,
+        conv_custom=args.conv_custom, fc_custom=args.fc_custom,
         first_n_fc=args.first_n_fc, focus=args.focus)
     _, vecs_test_2 = get_model_features(
         test_dir_2, first_n_conv=args.first_n_conv,
+        start_n_conv=args.start_n_conv,
+        start_n_fc=args.start_n_fc,
+        conv_custom=args.conv_custom, fc_custom=args.fc_custom,
         first_n_fc=args.first_n_fc, focus=args.focus)
 
     vecs_train_1 = np.array(vecs_train_1, dtype='object')

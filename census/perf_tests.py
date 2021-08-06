@@ -33,6 +33,7 @@ def get_accs(data, models):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
+                        required=True,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
@@ -85,7 +86,8 @@ if __name__ == "__main__":
             accs_1 *= 100
             accs_2 *= 100
 
-            tracc, threshold = find_threshold_acc(accs_1, accs_2, granularity=0.01)
+            tracc, threshold, rule = find_threshold_acc(
+                accs_1, accs_2, granularity=0.01)
             print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
                   (100 * tracc, threshold))
             adv_accs.append(100 * tracc)
@@ -102,7 +104,8 @@ if __name__ == "__main__":
             combined = np.concatenate((accs_victim_1, accs_victim_2))
             classes = np.concatenate(
                 (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-            specific_acc = get_threshold_acc(combined, classes, threshold)
+            specific_acc = get_threshold_acc(
+                combined, classes, threshold, rule)
             print("[Victim] Accuracy at specified threshold: %.2f" %
                   (100 * specific_acc))
             f_accs.append(100 * specific_acc)

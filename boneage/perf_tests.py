@@ -94,7 +94,7 @@ if __name__ == "__main__":
         accs_1 *= 100
         accs_2 *= 100
 
-        tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)
+        tracc, threshold, rule = utils.find_threshold_acc(accs_1, accs_2)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
         adv_accs.append(tracc)
@@ -111,7 +111,8 @@ if __name__ == "__main__":
         combined = np.concatenate((accs_victim_1, accs_victim_2))
         classes = np.concatenate(
             (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-        specific_acc = utils.get_threshold_acc(combined, classes, threshold)
+        specific_acc = utils.get_threshold_acc(
+            combined, classes, threshold, rule)
         print("[Victim] Accuracy at specified threshold: %.2f" %
               (100 * specific_acc))
         vic_accs.append(specific_acc)

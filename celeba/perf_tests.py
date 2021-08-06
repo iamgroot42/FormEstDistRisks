@@ -41,6 +41,9 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         required=True, choices=SUPPORTED_PROPERTIES)
+    parser.add_argument('--task', default="Smiling",
+                        choices=SUPPORTED_PROPERTIES,
+                        help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
     parser.add_argument('--total_models', type=int, default=100)
@@ -50,9 +53,11 @@ if __name__ == "__main__":
     # Get data with ratio
     print("Preparing data")
     ds_1 = CelebaWrapper(args.filter, float(
-        args.ratio_1), "adv", cwise_samples=(int(1e6), int(1e6)))
+        args.ratio_1), "adv", cwise_samples=(int(1e6), int(1e6)),
+        classify=args.task)
     ds_2 = CelebaWrapper(args.filter, float(
-        args.ratio_2), "adv", cwise_samples=(int(1e6), int(1e6)))
+        args.ratio_2), "adv", cwise_samples=(int(1e6), int(1e6)),
+        classify=args.task)
 
     # Get loaders
     loaders = [
@@ -86,7 +91,7 @@ if __name__ == "__main__":
 
         print("Number of samples: %d" % total_models)
 
-        tracc, threshold = utils.find_threshold_acc(accs_1, accs_2)
+        tracc, threshold, rule = utils.find_threshold_acc(accs_1, accs_2)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
         adv_accs.append(tracc)
@@ -103,7 +108,8 @@ if __name__ == "__main__":
         combined = np.concatenate((accs_victim_1, accs_victim_2))
         classes = np.concatenate(
             (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-        specific_acc = utils.get_threshold_acc(combined, classes, threshold)
+        specific_acc = utils.get_threshold_acc(
+            combined, classes, threshold, rule)
         print("[Victim] Accuracy at specified threshold: %.2f" %
               (100 * specific_acc))
         vic_accs.append(specific_acc)
