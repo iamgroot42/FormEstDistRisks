@@ -17,7 +17,10 @@ if __name__ == "__main__":
     flash_utils(args)
 
     # Set font size
-    plt.rcParams.update({'font.size': 6})
+    plt.rcParams.update({'font.size': 8})
+    plt.rc('xtick', labelsize=9)
+    plt.rc('ytick', labelsize=9)
+    plt.rc('axes', labelsize=10)
 
     if args.darkplot:
         # Set dark background
@@ -112,7 +115,6 @@ if __name__ == "__main__":
         data_use = raw_data
     else:
         data_use = raw_data_threshold
-        print("Fill in other data")
         for i in range(len(targets)):
             for j in range(len(targets)-(i+1)):
                 fill_data[j+i+1][i] = raw_data_loss[i][j]
@@ -135,4 +137,4 @@ if __name__ == "__main__":
                            annot=annot_data, mask=mask, fmt="^",
                            vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./meta_heatmap_%s.png" % (args.mode))
+    sns_plot.figure.savefig("./boneage_heatmap_%s.png" % (args.mode))

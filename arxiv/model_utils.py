@@ -153,7 +153,8 @@ def get_model_features(model_dir, ds, args, max_read=None):
 
         # Extract model weights
         dims, fvec = get_weight_layers(
-            model, transpose=False, first_n=args.first_n)
+            model, transpose=False, first_n=args.first_n,
+            start_n=args.start_n)
 
         vecs.append(fvec)
 

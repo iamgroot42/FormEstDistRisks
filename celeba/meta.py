@@ -8,7 +8,7 @@ from model_utils import get_model_features, BASE_MODELS_DIR
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Boneage')
+    parser = argparse.ArgumentParser(description='Celeb-A')
     parser.add_argument('--n_tries', type=int, default=5)
     parser.add_argument('--batch_size', type=int, default=150)
     parser.add_argument('--train_sample', type=int, default=800)

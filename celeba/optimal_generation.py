@@ -239,6 +239,7 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
             x_use = x_opt
 
     x_use = x_use.cuda()
+    clf = None
     # Get threshold on train data
     if args.use_dt:
         focus_layers = [int(x) for x in args.dt_layers.split(",")]
@@ -252,7 +253,7 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
         threshold = get_threshold(reprs_0_use, reprs_1_use)
         train_acc = get_acc(reprs_0_use, reprs_1_use, threshold)
 
-    return x_use, normal_data, threshold, train_acc
+    return x_use, normal_data, threshold, train_acc, clf
 
 
 def main(args):
@@ -291,27 +292,21 @@ def main(args):
     Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
     Y_test = ch.from_numpy(np.array(Y_test)).cuda()
 
-    x_use_1, normal_data, threshold, train_acc_1 = specific_case(X_train_1, X_train_2, Y_train, float(args.first), args)
-    x_use_2, normal_data, threshold, train_acc_2 = specific_case(X_train_1, X_train_2, Y_train, float(args.second), args)
+    x_use_1, normal_data, threshold, train_acc_1, clf_1 = specific_case(
+        X_train_1, X_train_2, Y_train, float(args.first), args)
+    x_use_2, normal_data, threshold, train_acc_2, clf_2 = specific_case(
+        X_train_1, X_train_2, Y_train, float(args.second), args)
     print("Train accuracies:", train_acc_1, train_acc_2)
 
     if train_acc_1 > train_acc_2:
         x_use = x_use_1
-        train_acc = train_acc_1
+        clf = clf_1
     else:
         x_use = x_use_2
-        train_acc = train_acc_2
-
-        # # Plot differences
-        # plt.plot(np.arange(len(X_train_1)), sorted(
-        #     reprs_0_use), label=r'Trained on $D_0$')
-        # plt.plot(np.arange(len(X_train_2)), sorted(
-        #     reprs_1_use), label=r'Trained on $D_1$')
-        # plt.legend()
-        # plt.savefig("./on_train_distr.png")
-        # plt.clf()
+        clf = clf_2
 
     if args.use_dt:
+        focus_layers = [int(x) for x in args.dt_layers.split(",")]
         feat_0 = combined_features(X_test_1, x_use, focus_layers)
         feat_1 = combined_features(X_test_2, x_use, focus_layers)
         x = list(feat_0) + list(feat_1)
@@ -343,7 +338,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Boneage')
+    parser = argparse.ArgumentParser(description='Celeb-A')
     parser.add_argument('--n_samples', type=int, default=5)
     parser.add_argument('--latent_focus', type=int, default=4)
     parser.add_argument('--filter', help='alter ratio for this attribute',

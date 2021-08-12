@@ -11,7 +11,8 @@ import numpy as np
 from utils import get_weight_layers
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
+# BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet_new/"
 
 
 class RightNormGraphConv(nn.Module):
@@ -227,7 +228,7 @@ def train_model(net, ds, args):
             print()
         else:
             iterator.set_description(
-                "[Train] Loss: %.3f, F-1: %.3f | [Test] Loss: %.3f, F-1: %.3f" %
+                "[Train] Loss: %.3f, F-1: %.3f | [Test] Loss: %.3f, F-1: %.3f" %2
                 (tr_loss, tr_f1, te_loss, te_f1))
 
         # Keep track of best performing model
@@ -258,7 +259,8 @@ def get_model(args):
     return model
 
 
-def get_model_features(model_dir, args, max_read=None):
+def get_model_features(model_dir, args, max_read=None,
+                       residual_modification=False):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -279,7 +281,32 @@ def get_model_features(model_dir, args, max_read=None):
 
         # Extract model weights
         dims, fvec = get_weight_layers(
-            model, transpose=False, first_n=args.first_n)
+            model, transpose=False, first_n=args.first_n,
+            start_n=args.start_n)
+
+        if residual_modification:
+            extras = []
+            for i, fv in enumerate(fvec):
+                if i == 0:
+                    extras.append(None)
+                    continue
+                pseudo_w = 4 * ch.from_numpy(np.linalg.pinv(fv[:, :-1].numpy()))
+                pseuso_fv = ch.ones_like(fv)
+                pseuso_fv[:, :-1] = pseudo_w
+                extras.append(pseuso_fv)
+
+            # Try to handle residual connection
+            # Skip first layer
+            FVEC, DIMS = [], []
+            for i, (fv, fv_) in enumerate(zip(fvec, extras)):
+                if i > 0:
+                    FVEC.append(fv_)
+                FVEC.append(fv)
+
+            for fv in FVEC:
+                DIMS.append(fv.shape[1] - 1)
+
+            dims, fvec = DIMS, FVEC
 
         vecs.append(fvec)
 

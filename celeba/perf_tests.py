@@ -129,7 +129,7 @@ if __name__ == "__main__":
     preds_1 = (allaccs_1[:, 0] > allaccs_1[:, 1])
     preds_2 = (allaccs_2[:, 0] < allaccs_2[:, 1])
     basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
-    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
+    print("Loss-test accuracy: %.3f" % (100 * basic_baseline_acc))
 
     # Threshold baseline: look at model performance on test sets from both G_b
     # and pick the better one

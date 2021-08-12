@@ -23,8 +23,8 @@ if __name__ == "__main__":
         plt.style.use('dark_background')
 
     # Set font size
-    # plt.rcParams.update({'font.size': 18})
-    plt.rcParams.update({'font.size': 14})
+    plt.rcParams.update({'font.size': 18})
+    # plt.rcParams.update({'font.size': 14})
 
     data = []
     columns = [
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         }
     }
 
-    focus_n = 1600
+    focus_n = 10
     for n, v1 in raw_data.items():
         v2 = v1[focus_n]
         for i in range(len(v2)):

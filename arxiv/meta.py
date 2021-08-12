@@ -20,6 +20,8 @@ if __name__ == "__main__":
     parser.add_argument('--regression', action="store_true")
     parser.add_argument('--gpu', action="store_true")
     parser.add_argument('--parallel', action="store_true")
+    parser.add_argument('--start_n', type=int, default=0,
+                        help="Only consider starting from this layer")
     parser.add_argument('--first_n', type=int, default=4,
                         help="Only consider first N layers")
     args = parser.parse_args()
@@ -118,7 +120,7 @@ if __name__ == "__main__":
         lr=0.01, batch_size=args.batch_size, eval_every=10,
         combined=True, val_data=val_data, gpu=args.gpu)
 
-    print("[Test] Loss: %.4f" % test_loss)
+    print("[Test] Accuracy: %.4f" % test_loss)
 
     # Save meta-model
-    ch.save(metamodel.state_dict(), "./metamodel_new_%.3f.pth" % test_loss)
+    # ch.save(metamodel.state_dict(), "./metamodel_new_%.3f.pth" % test_loss)

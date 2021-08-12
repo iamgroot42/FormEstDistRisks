@@ -1,4 +1,4 @@
-# Property Inference Attacks on Deep Neural Networks
+# Formalizing and Estimating Distribution Inference Risks
 
 Exploratory experiments and meta-classifier property-inference attacks on various datasets across several domains.
 Folder structure:

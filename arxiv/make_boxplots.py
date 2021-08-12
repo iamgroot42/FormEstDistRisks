@@ -56,9 +56,9 @@ for v in values:
     data.append([15, v])
 
 # Degree 16
-data.append([16, 99.9, ])
-data.append([16, 99.9, ])
-data.append([16, 95.4, ])
+values = [99.9, 99.9, 95.4]
+for v in values:
+    data.append([16, v])
 
 # Degree 17
 values = [100, 100, 99.9, 99.3, 99.5, 98.3, 100, 98.5, 100]

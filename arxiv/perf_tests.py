@@ -1,4 +1,4 @@
-import data_utils
+from data_utils import ArxivNodeDataset, SUPPORTED_PROPERTIES
 import torch as ch
 import argparse
 from model_utils import get_model, BASE_MODELS_DIR
@@ -50,15 +50,15 @@ def main():
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument(
-        '--property', choices=data_utils.SUPPORTED_PROPERTIES, default="mean")
+        '--property', choices=SUPPORTED_PROPERTIES, default="mean")
     parser.add_argument('--deg', type=int)
     parser.add_argument('--gpu', action="store_true")
     args = parser.parse_args()
     print(args)
 
     # Get datasets ready
-    ds_1 = data_utils.ArxivNodeDataset("adv")
-    ds_2 = data_utils.ArxivNodeDataset("adv")
+    ds_1 = ArxivNodeDataset("adv")
+    ds_2 = ArxivNodeDataset("adv")
 
     # Modify dataset properties
     if args.property == "mean":

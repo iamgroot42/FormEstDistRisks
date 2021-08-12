@@ -22,6 +22,9 @@ if __name__ == "__main__":
 
     # Set font size
     plt.rcParams.update({'font.size': 6})
+    plt.rc('xtick', labelsize=9)
+    plt.rc('ytick', labelsize=9)
+    plt.rc('axes', labelsize=10)
 
     if args.darkplot:
         # Set dark background
