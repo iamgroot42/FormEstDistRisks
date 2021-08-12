@@ -134,11 +134,11 @@ if __name__ == "__main__":
     basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
 
     print("[Results] %s v/s %s" % (args.ratio_1, args.ratio_2))
-    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
+    print("Loss-Test accuracy: %.3f" % (100 * basic_baseline_acc))
 
     # Threshold baseline: look at model performance on test sets from both G_b
     # and pick the better one
-    print("Threshold-test baseline accuracy: %.3f" %
+    print("Threshold-Test accuracy: %.3f" %
           (100 * vic_accs[np.argmax(adv_accs)]))
 
     if args.plot:

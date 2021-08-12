@@ -51,7 +51,8 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument(
         '--property', choices=SUPPORTED_PROPERTIES, default="mean")
-    parser.add_argument('--deg', type=int)
+    parser.add_argument('--deg_1', type=int, default=13)
+    parser.add_argument('--deg_2', type=int)
     parser.add_argument('--gpu', action="store_true")
     args = parser.parse_args()
     print(args)
@@ -62,13 +63,13 @@ def main():
 
     # Modify dataset properties
     if args.property == "mean":
-        deg_1, deg_2 = 13, args.deg
+        deg_1, deg_2 = args.deg_1, args.deg_2
 
         # Modify mean degree. prune random nodes
         ds_1.change_mean_degree(deg_1, 0.01)
         ds_2.change_mean_degree(deg_2, 0.01)
     else:
-        deg_1, deg_2 = "og", args.deg
+        deg_1, deg_2 = "og", args.deg_2
 
         # Get rid of nodes above a specified node-degree
         ds_2.keep_below_degree_threshold(deg_2)
@@ -79,7 +80,7 @@ def main():
     dir_1 = os.path.join(BASE_MODELS_DIR, "adv", "deg" + str(deg_1))
     dir_2 = os.path.join(BASE_MODELS_DIR, "adv", "deg" + str(deg_2))
 
-    z_vals, f_accs = [], []
+    adv_accs, vic_accs = [], []
     degrees = [deg_1, deg_2]
     loders = [ds_1, ds_2]
     allaccs_1, allaccs_2 = [], []
@@ -114,21 +115,11 @@ def main():
         accs_1 *= 100
         accs_2 *= 100
 
-        # Calculate Z value
-        m1, v1 = np.mean(accs_1), np.var(accs_1)
-        m2, v2 = np.mean(accs_2), np.var(accs_2)
-        mean_new = np.abs(m1 - m2)
-        var_new = (v1 + v2) / total_models
-        Z = mean_new / np.sqrt(var_new)
-
-        print("Mean-1: %.3f, Mean-2: %.3f" % (m1, m2))
-        print("Var-1: %.3f, Var-2: %.3f" % (v1, v2))
-        print("Number of samples: %d" % total_models)
-        z_vals.append(Z)
-
-        tracc, threshold, rule = find_threshold_acc(accs_1, accs_2, granularity=0.01)
+        tracc, threshold, rule = find_threshold_acc(
+            accs_1, accs_2, granularity=0.01)
         print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
               (100 * tracc, threshold))
+        adv_accs.append(tracc)
 
         # Compute accuracies on this data for victim
         preds_victim_1, y_gt = get_model_preds(models_victim_1, loader)
@@ -149,14 +140,14 @@ def main():
         specific_acc = get_threshold_acc(combined, classes, threshold, rule)
         print("[Victim] Accuracy at specified threshold: %.2f" %
               (100 * specific_acc))
-        f_accs.append(100 * specific_acc)
+        vic_accs.append(100 * specific_acc)
 
         # Collect all accuracies for basic baseline
         allaccs_1.append(accs_victim_1)
         allaccs_2.append(accs_victim_2)
 
-    print("Z values:", ["%.2f" % x for x in z_vals])
-    print("Maximum Z value:", max(z_vals))
+    adv_accs = np.array(adv_accs)
+    vic_accs = np.array(vic_accs)
 
     # Basic baseline: look at model performance on test sets from both G_b
     # Predict b for whichever b it is higher
@@ -165,16 +156,11 @@ def main():
 
     preds_1 = (allaccs_1[0, :] > allaccs_1[1, :])
     preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
-
     basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
-    print("[Victim] Accuracy on chosen Z value: %.2f" %
-          f_accs[np.argmin(z_vals)])
-    print("Baseline for M_0: %.3f, Baseline for M_1: %.3f" %
-          (100 * np.mean(preds_1), 100 * np.mean(preds_2)))
-    print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
 
-    plt.legend()
-    plt.savefig("./acc_distr_%s_%s.png" % (str(deg_1), str(deg_2)))
+    print("[Results] %s v/s %s" % (str(deg_1), str(deg_2)))
+    print("Loss-Test accuracy: %.3f" % (100 * basic_baseline_acc))
+    print("Threshold-Test accuracy: %.2f" % vic_accs[np.argmax(adv_accs)])
 
 
 if __name__ == "__main__":

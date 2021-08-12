@@ -1305,7 +1305,8 @@ def get_threshold_acc(X, Y, threshold, rule=None):
 
 
 def find_threshold_acc(accs_1, accs_2, granularity=0.1):
-    lower, upper = np.min(accs_1), np.max(accs_2)
+    lower = min(np.min(accs_1), np.min(accs_2))
+    upper = max(np.max(accs_1), np.max(accs_2))
     combined = np.concatenate((accs_1, accs_2))
     classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
     best_acc = 0.0
