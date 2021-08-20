@@ -8,5 +8,3 @@ Folder structure:
 - `census` : Experiments on the [Adult Income](https://www.kaggle.com/uciml/adult-census-income) dataset
 - `celeba` : Experiments on the [Celeb-A](https://www.kaggle.com/jessicali9530/celeba-dataset) dataset
 - `botnets`: Experiments on [HarvardNLP's Botnet Detection](https://github.com/harvardnlp/botnet-detection) datasets
-
-Everything else: archived code
