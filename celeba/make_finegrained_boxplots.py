@@ -418,5 +418,17 @@ if __name__ == "__main__":
                                mask=mask, fmt="^",
                                vmin=50, vmax=100)
 
+        mask = np.zeros_like(mask)
+        for i in range(len(targets)):
+            for j in range(len(targets)-(i+1)):
+                m = eff_vals[i][j]
+                if m > 100:
+                    fill_data[i][j+i+1] = 100
+                    annot_data[i][i] = r'$\dagger$'
+                else:
+                    fill_data[i][j+i+1] = m
+                    annot_data[i][i] = "%.1f" % m
+                mask[i][j+i+1] = False
+
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
     sns_plot.figure.savefig("./meta_heatmap_%s_%s.png" % (args.filter, args.mode))

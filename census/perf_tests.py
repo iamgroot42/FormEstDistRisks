@@ -87,7 +87,8 @@ if __name__ == "__main__":
             accs_2 *= 100
 
             tracc, threshold, rule = find_threshold_acc(
-                accs_1, accs_2, granularity=0.01)
+                # accs_1, accs_2, granularity=0.01)
+                accs_1, accs_2, granularity=0.005)
             print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
                   (100 * tracc, threshold))
             adv_accs.append(100 * tracc)
@@ -137,6 +138,3 @@ if __name__ == "__main__":
     print("Overall loss-test: %.2f" % np.mean(basics))
     print("Overall threshold-test:",
           ",".join(["%.2f" % x for x in thresholds]))
-    # plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
-    # plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
-    # plt.savefig("./quick_see.png")

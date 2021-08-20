@@ -285,18 +285,19 @@ def main(args):
         latent_focus = args.latent_focus
         fake_relu = True
 
+    n_models = args.n_models
     X_train_1 = get_all_models(
-        train_dir_1, args.n_models, latent_focus, fake_relu=fake_relu)
+        train_dir_1, n_models // 2, latent_focus, fake_relu=fake_relu)
     X_train_2 = get_all_models(
-        train_dir_2, args.n_models, latent_focus, fake_relu=fake_relu)
+        train_dir_2, n_models // 2, latent_focus, fake_relu=fake_relu)
     Y_train = [0.] * len(X_train_1) + [1.] * len(X_train_2)
     Y_train = ch.from_numpy(np.array(Y_train)).cuda()
 
     test_models_use = 100
     X_test_1 = get_all_models(
-        test_dir_1, test_models_use, latent_focus, fake_relu=fake_relu)
+        test_dir_1, test_models_use // 2, latent_focus, fake_relu=fake_relu)
     X_test_2 = get_all_models(
-        test_dir_2, test_models_use, latent_focus, fake_relu=fake_relu)
+        test_dir_2, test_models_use // 2, latent_focus, fake_relu=fake_relu)
     Y_test = [0.] * len(X_test_1) + [1.] * len(X_test_2)
     Y_test = ch.from_numpy(np.array(Y_test)).cuda()
 

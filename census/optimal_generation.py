@@ -118,13 +118,14 @@ def main(args):
     test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/%s/" %
                               (args.filter, args.second))
 
-    X_train_1 = get_all_models(train_dir_1, args.n_models, shuffle=True)
-    X_train_2 = get_all_models(train_dir_2, args.n_models, shuffle=True)
+    n_train_models = args.n_models // 2
+    X_train_1 = get_all_models(train_dir_1, n_train_models, shuffle=True)
+    X_train_2 = get_all_models(train_dir_2, n_train_models, shuffle=True)
 
     # Load test models
     n_test_models = 100
-    X_test_1 = get_all_models(test_dir_1, n_test_models)
-    X_test_2 = get_all_models(test_dir_2, n_test_models)
+    X_test_1 = get_all_models(test_dir_1, n_test_models // 2)
+    X_test_2 = get_all_models(test_dir_2, n_test_models // 2)
 
     x_use_1, normal_data, threshold, train_acc_1 = specific_case(
         X_train_1, X_train_2, float(args.first), args)
@@ -150,7 +151,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Census')
     parser.add_argument('--n_samples', type=int, default=5)
-    parser.add_argument('--latent_focus', type=int, default=1)
+    parser.add_argument('--latent_focus', type=int, default=0)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="sex", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--n_models', type=int, default=20)

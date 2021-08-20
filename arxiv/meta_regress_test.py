@@ -87,7 +87,10 @@ def main():
     print(args)
 
     # Set font size
-    plt.rcParams.update({'font.size': 12})
+    plt.rcParams.update({'font.size': 14})
+    plt.rc('xtick', labelsize=14)
+    plt.rc('ytick', labelsize=14)
+    plt.rc('axes', labelsize=14)
 
     if args.darkplot:
         # Set dark background

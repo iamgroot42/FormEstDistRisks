@@ -26,7 +26,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     flash_utils(args)
 
-    first_cat = " 0.5"
+    first_cat = "0.5"
 
     # Set font size
     if args.multimode:

@@ -121,6 +121,11 @@ if __name__ == "__main__":
                 mask[j+i+1][i] = False
                 annot_data[j+i+1][i] = r'%d' % (raw_data_loss[i][j])
 
+        for i in range(len(targets)):
+            fill_data[i][i] = 0
+            mask[i][i] = False
+            annot_data[i][i] = "N.A."
+
     for i in range(len(targets)):
         for j in range(len(targets)-(i+1)):
             m, s = np.mean(data_use[i][j]), np.std(data_use[i][j])
@@ -128,10 +133,21 @@ if __name__ == "__main__":
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
+    #track max values
+    from utils import get_n_effective, bound
+    max_values = np.zeros_like(fill_data)
+    eff_vals = np.zeros_like(fill_data)
     for i in range(len(targets)):
-        fill_data[i][i] = 0
-        mask[i][i] = False
-        annot_data[i][i] = "N.A."
+        for j in range(len(targets)-(i+1)):
+            max_values[i][j+i+1] = max(raw_data_loss[i]
+                                       [j], max(raw_data_threshold[i][j]))
+            max_values[i][j+i+1] = max(max_values[i]
+                                       [j], max(raw_data[i][j]))
+            n_eff = get_n_effective(
+                max_values[i][j+i+1] / 100, float(targets[i]), float(targets[j]))
+            eff_vals[i][j] = np.abs(n_eff)
+            print(i, j, bound(float(targets[i]), float(targets[j]), n_eff))
+    print(eff_vals)
 
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask, fmt="^",

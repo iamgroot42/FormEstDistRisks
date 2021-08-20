@@ -253,7 +253,7 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
         threshold = get_threshold(reprs_0_use, reprs_1_use)
         train_acc = get_acc(reprs_0_use, reprs_1_use, threshold)
 
-    return x_use, normal_data, threshold, train_acc, clf
+    return x_use.cpu(), normal_data.cpu(), threshold, train_acc, clf
 
 
 def main(args):
@@ -304,6 +304,8 @@ def main(args):
     else:
         x_use = x_use_2
         clf = clf_2
+
+    x_use = x_use.cuda()
 
     if args.use_dt:
         focus_layers = [int(x) for x in args.dt_layers.split(",")]

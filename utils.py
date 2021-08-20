@@ -1375,3 +1375,41 @@ class BasicWrapper(nn.Module):
 
     def forward(self, input: ch.Tensor):
         return fakerelu.apply(input)
+
+
+def get_n_effective(acc, r0, r1):
+    if max(r0, r1) == 0:
+        return np.inf
+
+    if r0 == r1:
+        return 0
+
+    if acc == 1 or np.abs(r0 - r1) == 1:
+        return np.inf
+
+    num = np.log(1 - ((2 * acc - 1) ** 2))
+    ratio_0 = min(r0, r1) / max(r0, r1)
+    ratio_1 = (1 - max(r0, r1)) / (1 - min(r0, r1))
+    den = np.log(max(ratio_0, ratio_1))
+    return num / den
+
+
+def bound(x, y, n):
+    if max(x, y) == 0:
+        return 0.5
+
+    def bound_1():
+        # Handle 0/0 form gracefully
+        # if x == 0 and y == 0:
+        #     return 0
+        ratio = min(x, y) / max(x, y)
+        return np.sqrt(1 - (ratio ** n))
+
+    def bound_2():
+        ratio = (1 - max(x, y)) / (1 - min(x, y))
+        return np.sqrt(1 - (ratio ** n))
+
+    l1 = bound_1()
+    l2 = bound_2()
+    pick = min(l1, l2) / 2
+    return 0.5 + pick

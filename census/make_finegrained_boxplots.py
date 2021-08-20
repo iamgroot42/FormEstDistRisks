@@ -191,6 +191,18 @@ if __name__ == "__main__":
                 [57.3, 60.35, 50.1, 54.2, 55.75]
             ]
         ]
+        raw_data_loss = [
+            [57.16, 56.82, 57.18, 57.14, 56.37, 57.1, 56.39, 57.13, 56.99, 56.8],
+            [50, 50, 50, 50, 50, 50, 50, 49.95, 50],
+            [50, 50, 50, 50, 50, 50, 49.95, 50],
+            [50, 50, 50, 50, 50, 49.95, 50],
+            [50, 50, 50, 50, 49.95, 50],
+            [49.97, 50, 50, 49.95, 50],
+            [50.06, 50, 49.95, 50],
+            [49.98, 49.95, 50],
+            [49.95, 50],
+            [50.05]
+        ]
     elif args.filter == "race":
         raw_data_meta = [
             [
@@ -385,6 +397,29 @@ if __name__ == "__main__":
             fill_data[i][i] = 0
             mask[i][i] = False
             annot_data[i][i] = "N.A."
+ 
+    # from utils import get_n_effective, bound
+    # max_values = np.zeros_like(fill_data)
+    # eff_vals = np.zeros_like(fill_data)
+    # for i in range(len(targets)):
+    #     for j in range(len(targets)-(i+1)):
+    #         wanted = raw_data_meta[i][j]
+    #         i_ = float(targets[i])
+    #         j_ = float(targets[j+i+1])
+    #         if i_ == 0.1 and j_ == 0.3:
+    #             n_vals = np.array([get_n_effective(zz / 100., i_, j_) for zz in wanted])
+    #         else:
+    #             continue
+    #         # print(n_vals)
+    #         n_vals[np.abs(n_vals) == np.inf] = 1000
+    #         max_values[i][j+i+1] = np.mean(n_vals)
+    #         n_eff = get_n_effective(
+    #             max_values[i][j+i+1] / 100, float(targets[i]), float(targets[j]))
+    #         eff_vals[i][j+i+1] = n_eff
+    #         # print(i, j, bound(float(targets[i]), float(targets[j]), n_eff))
+    # for v in eff_vals:
+    #     print(" , ".join(["%.2f" % vv for vv in v]))
+    # exit(0)
 
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask,

@@ -14,7 +14,7 @@ columns = [
 ]
 
 darkmode = False
-add_legend = True
+add_legend = False
 novtitle = False
 
 if darkmode:

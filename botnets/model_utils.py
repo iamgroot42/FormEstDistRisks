@@ -72,7 +72,8 @@ class RightNormGraphConv(nn.Module):
 
 
 class GCN(nn.Module):
-    def __init__(self, n_hidden, n_layers, n_inp=1, n_classes=2, residual=True, dropout=0.5):
+    def __init__(self, n_hidden, n_layers,
+                 n_inp=1, n_classes=2, residual=True, dropout=0.5):
         super(GCN, self).__init__()
         self.layers = nn.ModuleList()
         self.residual = residual

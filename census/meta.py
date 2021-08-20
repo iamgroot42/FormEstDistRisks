@@ -10,11 +10,11 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 def epoch_strategy(tg, args):
-    # return args.epochs
-    if args.filter == "race":
-        return args.epochs if tg not in ["0.6", "0.7", "0.8"] else 70
-    else:
-        return args.epochs
+    return args.epochs
+    # if args.filter == "race":
+    #     return args.epochs if tg not in ["0.6", "0.7", "0.8"] else 70
+    # else:
+    #     return args.epochs
 
 
 if __name__ == "__main__":
@@ -48,6 +48,7 @@ if __name__ == "__main__":
     # Only look at multiples of 0.10
     targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
                      float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
+    # targets = ["0.3", "0.4", "0.6", "0.7", "0.8", "0.9"]
     targets = sorted(list(targets))
 
     # Load up positive-label test, test data
