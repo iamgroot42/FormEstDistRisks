@@ -83,8 +83,6 @@ class CIFAR10(DataPaths):
     def __init__(self, data_path=None):
         self.dataset_type = CIFAR
         datapath = "/p/adversarialml/as9rw/datasets/cifar10" if data_path is None else data_path
-        # print(datapath, "wtf?!")
-        # exit(0)
         super(CIFAR10, self).__init__('cifar10',
                                       datapath,
                                       "/p/adversarialml/as9rw/cifar10_stats/")
