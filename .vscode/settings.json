@@ -1,6 +1,0 @@
-{
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.enabled": true,
-    "python.pythonPath": "/u/as9rw/anaconda3/envs/phd/bin/python"
-}
