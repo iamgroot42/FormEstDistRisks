@@ -1,5 +1,8 @@
 # Formalizing and Estimating Distribution Inference Risks
 
+This is the code for reproducing the experiments reported in this paper:
+[_Formalizing and Estimating Distribution Inference Risks_](https://arxiv.org/abs/2109.06024).
+
 Exploratory experiments and meta-classifier property-inference attacks on various datasets across several domains.
 Folder structure:
 
