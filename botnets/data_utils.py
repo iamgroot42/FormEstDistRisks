@@ -5,9 +5,7 @@ import random
 import numpy as np
 import dgl
 
-LOCAL_DATA_DIR = "/localtmp/as9rw/datasets/botnet_temp"
-# VICTIM_COEFF_PATH = "./victim_info.txt"
-# ADV_COEFF_PATH = "./adv_info.txt"
+BASE_DATA_DIR = "<PATH_TO_DATASET>"
 VICTIM_COEFF_PATH = "./victim_info_new.txt"
 ADV_COEFF_PATH = "./adv_info_new.txt"
 

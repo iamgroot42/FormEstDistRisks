@@ -29,6 +29,12 @@ Run this command to train 0.5 v/s X form meta-classifiers on the adversary's mod
 
 `python meta.py --filter sex`
 
+Run this command to train regression meta-classifiers
+
+`python meta_regression.py --second X --filter Male`
+
+Use `--eval_only` mode with a trained regression meta-classifier to perform binary classification.
+
 
 ### Plotting results
 

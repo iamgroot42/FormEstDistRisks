@@ -19,24 +19,37 @@ if __name__ == "__main__":
                         help="Only consider first N layers")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
+    parser.add_argument(
+        '--prune_ratio', type=float, default=None,
+        help="Prune models before training meta-models")
+    parser.add_argument('--save', action="store_true",
+                        help='save model or not')
     args = parser.parse_args()
     flash_utils(args)
 
-    train_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.first)
-    train_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.second)
-    test_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.first)
-    test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
+    train_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.first)
+    train_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
+    test_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.first)
+    test_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.second)
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
-        train_dir_1, first_n=args.first_n, start_n=args.start_n)
+        train_dir_1, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
     _, vecs_train_2 = get_model_features(
-        train_dir_2, first_n=args.first_n, start_n=args.start_n)
+        train_dir_2, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
 
     _, vecs_test_1 = get_model_features(
-        test_dir_1, first_n=args.first_n, start_n=args.start_n)
+        test_dir_1, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
     _, vecs_test_2 = get_model_features(
-        test_dir_2, first_n=args.first_n, start_n=args.start_n)
+        test_dir_2, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
 
     vecs_train_1 = np.array(vecs_train_1)
     vecs_train_2 = np.array(vecs_train_2)
@@ -79,7 +92,7 @@ if __name__ == "__main__":
         metamodel = metamodel.cuda()
 
         # Train PIM model
-        _, test_acc = train_meta_model(
+        metamodel, test_acc = train_meta_model(
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),
@@ -88,6 +101,14 @@ if __name__ == "__main__":
             val_data=val_data,
             eval_every=10, gpu=True)
         accs.append(test_acc)
+
+        if args.save:
+            save_path = os.path.join(f"log/meta/meta_model-{args.first}", args.second)
+            if not os.path.isdir(save_path):
+                os.makedirs(save_path)
+            # Save meta classifier (torch model)
+            ch.save(metamodel.state_dict(), os.path.join(save_path, "run%s_%.2f.pth" % (i+1, test_acc)))
+
         print("Run %d: %.2f" % (i+1, test_acc))
 
     print(accs)

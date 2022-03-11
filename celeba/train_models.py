@@ -33,20 +33,9 @@ if __name__ == "__main__":
     ds = CelebaWrapper(args.filter, args.ratio,
                        args.split, augment=args.augment,
                        classify=args.task)
-    # print(len(ds.ds_train), len(ds.ds_val))
-    # print()
 
     # Get loaders
     train_loader, test_loader = ds.get_loaders(args.bs)
-
-    # tr, te = 0, 0
-    # import torch as ch
-    # for _, x, _ in train_loader:
-    #     tr += ch.sum(x).item()
-    # for _, x, _ in test_loader:
-    #     te += ch.sum(x).item()
-    # print(min(tr, len(ds.ds_train) - tr), min(te, len(ds.ds_val) - te))
-    # exit(0)
 
     # Create model
     model = create_model(parallel=args.parallel)

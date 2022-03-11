@@ -10,7 +10,7 @@ import data_utils
 from utils import get_weight_layers
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_arxiv_new/"
+BASE_MODELS_DIR = "<PATH_TO_MODELS>"
 
 
 class GCN(nn.Module):

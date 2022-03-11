@@ -4,11 +4,15 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import requests
 import pandas as pd
 import os
+from tqdm import tqdm
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
+BASE_DATA_DIR = "<PATH_TO_DATASET>"
+
 SUPPORTED_PROPERTIES = ["sex", "race", "none"]
 PROPERTY_FOCUS = {"sex": "Female", "race": "White"}
+SUPPORTED_RATIOS = ["0.0", "0.1", "0.2", "0.3",
+                    "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
 
 # US Income dataset
@@ -73,14 +77,15 @@ class CensusIncome:
         return df
 
     # Return data with desired property ratios
+    def get_x_y(self, P):
+        # Scale X values
+        Y = P['income'].to_numpy()
+        X = P.drop(columns='income', axis=1)
+        cols = X.columns
+        X = X.to_numpy()
+        return (X.astype(float), np.expand_dims(Y, 1), cols)
+
     def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
-        def get_x_y(P):
-            # Scale X values
-            Y = P['income'].to_numpy()
-            X = P.drop(columns='income', axis=1)
-            cols = X.columns
-            X = X.to_numpy()
-            return (X.astype(float), np.expand_dims(Y, 1), cols)
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -91,8 +96,8 @@ class CensusIncome:
                                  split, prop_ratio, is_test=1,
                                  custom_limit=custom_limit)
 
-            (x_tr, y_tr, cols), (x_te, y_te, cols) = get_x_y(
-                TRAIN_DF), get_x_y(TEST_DF)
+            (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
+                TRAIN_DF), self.get_x_y(TEST_DF)
 
             return (x_tr, y_tr), (x_te, y_te), cols
 
@@ -155,23 +160,21 @@ class CensusIncome:
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
 
-# Fet appropriate filter with sub-sampling according to ratio and property
 def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
         def lambda_fn(x): return x['sex:Female'] == 1
     elif filter_prop == "race":
-        def lambda_fn(x): return x['race:White'] == 0
-    # Rerun with 0.5:0.5
+        def lambda_fn(x): return x['race:White'] == 1
     prop_wise_subsample_sizes = {
         "adv": {
             "sex": (1100, 500),
-            "race": (600, 300),
+            "race": (2000, 1000),
         },
         "victim": {
             "sex": (1100, 500),
-            "race": (600, 300),
+            "race": (2000, 1000),
         },
     }
 
@@ -184,6 +187,33 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
                            n_tries=100, class_col='income',
                            verbose=False)
 
+
+def cal_q(df, condition):
+    qualify = np.nonzero((condition(df)).to_numpy())[0]
+    notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
+    return len(qualify), len(notqualify)
+
+
+def get_df(df, condition, x):
+    qualify = np.nonzero((condition(df)).to_numpy())[0]
+    np.random.shuffle(qualify)
+    return df.iloc[qualify[:x]]
+
+
+def cal_n(df, con, ratio):
+    q, n = cal_q(df, con)
+    current_ratio = q / (q+n)
+    # If current ratio less than desired ratio, subsample from non-ratio
+    if current_ratio <= ratio:
+        if ratio < 1:
+            nqi = (1-ratio) * q/ratio
+            return q, nqi
+        return q, 0
+    else:
+        if ratio > 0:
+            qi = ratio * n/(1 - ratio)
+            return qi, n
+        return 0, n
 
 # Wrapper for easier access to dataset
 class CensusWrapper:

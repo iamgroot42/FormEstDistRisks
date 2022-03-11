@@ -11,8 +11,7 @@ import numpy as np
 from utils import get_weight_layers
 
 
-# BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet/"
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_botnet_new/"
+BASE_MODELS_DIR = "<PATH_TO_MODELS>"
 
 
 class RightNormGraphConv(nn.Module):

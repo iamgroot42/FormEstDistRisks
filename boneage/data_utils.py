@@ -8,7 +8,8 @@ import os
 import utils
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/rsnabone/data"
+BASE_DATA_DIR = "<PATH_TO_DATASET>"
+SUPPORTED_RATIOS = ["0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"]
 
 
 class BoneDataset(Dataset):
@@ -39,20 +40,34 @@ class BoneDataset(Dataset):
 
 
 class BoneWrapper:
-    def __init__(self, df_train, df_val, features=None):
+    def __init__(self, df_train, df_val, features=None, augment=False):
         self.df_train = df_train
         self.df_val = df_val
         self.input_size = 224
-        data_transform = transforms.Compose([
+        test_transform_list = [
             transforms.Resize((self.input_size, self.input_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
-            ])
+        ]
+        train_transform_list = test_transform_list[:]
+
+        post_transform_list = [transforms.ToTensor(),
+                               transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                    std=[0.229, 0.224, 0.225])]
+        # Add image augmentations if requested
+        if augment:
+            train_transform_list += [
+                transforms.RandomHorizontalFlip(0.5),
+                transforms.RandomAffine(
+                    shear=0.01, translate=(0.15, 0.15), degrees=5)
+            ]
+
+        train_transform = transforms.Compose(
+            train_transform_list + post_transform_list)
+        test_transform = transforms.Compose(
+            test_transform_list + post_transform_list)
 
         if features is None:
-            self.ds_train = BoneDataset(self.df_train, data_transform)
-            self.ds_val = BoneDataset(self.df_val, data_transform)
+            self.ds_train = BoneDataset(self.df_train, train_transform)
+            self.ds_val = BoneDataset(self.df_val, test_transform)
         else:
             self.ds_train = BoneDataset(
                 self.df_train, features["train"], processed=True)
