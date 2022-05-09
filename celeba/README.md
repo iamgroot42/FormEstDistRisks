@@ -1,5 +1,9 @@
 # CelebA dataset experiments
 
+## Dataset
+
+You can downlod and use the exact victim-adversary splits from [this link](https://www.dropbox.com/s/46e7ybhvwge1y94/celeba_splits.zip?dl=1)
+
 ## Pre-requisites
 
 - Make sure you have the [CelebA dataset](https://mmlab.ie.cuhk.edu.hk/projects/CelebA.html) downloaded on your system. Edit `BASE_DATA_DIR` in `data_utils.py` to point to that path.
