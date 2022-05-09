@@ -1,5 +1,9 @@
 # RSNA Boneage dataset experiments
 
+## Dataset
+
+You can use the files [here](https://www.dropbox.com/s/k4eiz1imrm8m2r8/boneage_splits.zip?dl=1) - these contain split information for victim/adversary, as well as processed features that we used in our experiments.
+
 ## Pre-requisites
 
 - Make sure you have the [RSNA BoneAge dataset](https://www.kaggle.com/kmader/rsna-bone-age) downloaded on your system. Edit `BASE_DATA_DIR` in `data_utils.py` to point to that path.
