@@ -1,5 +1,9 @@
 # Census dataset experiments
 
+## Dataset
+
+The code will automatically download all the files, and make victim/adversary data splits deterministically using the random-seed fixed in the code.
+
 ## Pre-requisites
 
 - Make sure you have the adult dataset downloaded on your system. Edit `BASE_DATA_DIR` in `data_utils.py` to point to that path.
