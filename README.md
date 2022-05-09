@@ -1,9 +1,11 @@
 # Formalizing and Estimating Distribution Inference Risks
 
 This is the code for reproducing the experiments reported in this paper:
-[_Formalizing and Estimating Distribution Inference Risks_](https://arxiv.org/abs/2109.06024).
+
+Anshuman Suri and David Evans. [_Formalizing and Estimating Distribution Inference Risks_](https://arxiv.org/abs/2109.06024) (in [Privacy Enhancing Technologies Symposium (PETS) 2022](https://petsymposium.org/2022/), July 2022.
 
 Exploratory experiments and meta-classifier property-inference attacks on various datasets across several domains.
+
 Folder structure:
 
 - `boneage` : Experiments on the [RSNA Bone-Age](https://www.kaggle.com/kmader/rsna-bone-age) task, reduced to binary prediction
