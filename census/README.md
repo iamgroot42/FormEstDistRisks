@@ -33,7 +33,7 @@ Run this command to train 0.5 v/s X form meta-classifiers (Sec 5.2.1) on the adv
 
 `python meta.py --filter sex`
 
-Run this command to train regression meta-classifiers (Section 6.4)
+Run this command to train regression meta-classifiers (Sec 6.4)
 
 `python meta_regression.py --second X --filter Male`
 
