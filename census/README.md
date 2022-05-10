@@ -22,18 +22,18 @@ Alternatively, you can run `train_fast.sh adv sex 0.5` to generate 1000 models (
 
 ### Loss/Threshold tests
 
-Run this command to generate both loss-test and threshold-test numbers for two specified ratios for the specified attribute
+Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios for the specified attribute
 
 `python perf_tests.py --filter race --ratio_1 0.5 --ratio_2 0.2`
 
 
 ### Meta-classifier
 
-Run this command to train 0.5 v/s X form meta-classifiers on the adversary's models and test them on the victim's models. Use 1000 epochs for sex, 500 for race.
+Run this command to train 0.5 v/s X form meta-classifiers (Sec 5.2.1) on the adversary's models and test them on the victim's models. Use 1000 epochs for sex, 500 for race.
 
 `python meta.py --filter sex`
 
-Run this command to train regression meta-classifiers
+Run this command to train regression meta-classifiers (Section 6.4)
 
 `python meta_regression.py --second X --filter Male`
 
