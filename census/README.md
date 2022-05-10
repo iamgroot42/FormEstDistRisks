@@ -19,13 +19,11 @@ Run this command to train 100 models on the adversary's split of data, setting t
 
 Alternatively, you can run `train_fast.sh adv sex 0.5` to generate 1000 models (via 2 parallel processes).
 
-
 ### Loss/Threshold tests
 
 Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios for the specified attribute
 
 `python perf_tests.py --filter race --ratio_1 0.5 --ratio_2 0.2`
-
 
 ### Meta-classifier
 
@@ -38,7 +36,6 @@ Run this command to train regression meta-classifiers (Sec 6.4)
 `python meta_regression.py --second X --filter Male`
 
 Use `--eval_only` mode with a trained regression meta-classifier to perform binary classification.
-
 
 ### Plotting results
 

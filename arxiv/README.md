@@ -18,24 +18,21 @@ Run this command to train a model on the adversary's split of data, setting the 
 
 To train 1000 together, run `bulk_deg.sh adv 13`
 
-
 ### Loss/Threshold tests
 
-Run this command to generate both loss-test and threshold-test numbers for the specified degree for 13 v/s X (12, in the case below)
+Run this command to generate both oss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for the specified degree for 13 v/s X (12, in the case below)
 
 `python perf_tests.py --gpu --deg 12`
 
-
 ### Meta-classifier
 
-Run this command to train 12 v/s 13 form meta-classifiers on the adversary's models and test them on the victim's models.
+Run this command to train 12 v/s 13 form meta-classifiers (Sec 5.2.1) on the adversary's models and test them on the victim's models.
 
 `python meta.py --degrees 12,13 --gpu --parallel`
 
-To train the regression variant of the meta-classifier, run the following:
+To train the regression variant of the meta-classifier (Sec 6.4), run the following:
 
 `python meta_regress.py --regression`
-
 
 ### Meta-classifier test
 

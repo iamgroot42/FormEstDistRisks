@@ -23,21 +23,19 @@ Run this command to train a model on the adversary's split of data, setting the 
 
 `python train_models.py --ratio 0.5 --split adv --filter Male --num 100`
 
-
 ### Loss/Threshold tests
 
-Run this command to generate both loss-test and threshold-test numbers for two specified ratios
+Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios
 
 `python perf_tests.py --ratio_1 0.5 --ratio_2 0.2 --filter Male`
 
-
 ### Meta-classifier
 
-Run this command to train 0.5 v/s X form meta-classifiers on the adversary's models and test them on the victim's models.
+Run this command to train 0.5 v/s X form meta-classifiers (Sec 5.2.1) on the adversary's models and test them on the victim's models.
 
 `python meta.py --second X --filter Male`
 
-Run this command to train regression meta-classifiers
+Run this command to train regression meta-classifiers (Sec 6.4)
 
 `python meta_regression.py --second X --filter Male`
 
