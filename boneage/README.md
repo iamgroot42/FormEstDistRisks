@@ -29,6 +29,8 @@ Run this command to train 100 models on the adversary's split of data, setting t
 
 `python train_models.py --ratio 0.5 --split adv --num 100`
 
+We observed a test accuracy of around 83% on the adversary's split of data, and 81% on the victim's split of data.
+
 ### Loss/Threshold tests
 
 Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios
@@ -52,3 +54,5 @@ Use `--eval_only` mode with a trained regression meta-classifier to perform bina
 Use the following file to plot graphs with experimental results. You can specify arguments to control legend plot, color of plot, and y-axis title (see file for more)
 
 `python make_boxplots.py`
+
+Results observed across all these attacks should roughly match (within margin of error) the ones observed in Figures 2(b), 5(b), & 6(b).

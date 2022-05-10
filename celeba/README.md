@@ -23,6 +23,9 @@ Run this command to train a model on the adversary's split of data, setting the 
 
 `python train_models.py --ratio 0.5 --split adv --filter Male --num 100`
 
+For `female`, we observed a test accuracy of around 90% on the adversary's split of data, and 91% on the victim's split of data.
+For `old`, we observed a test accuracy of around 94% on the adversary's split of data, and 95% on the victim's split of data.
+
 ### Loss/Threshold tests
 
 Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios
@@ -40,3 +43,5 @@ Run this command to train regression meta-classifiers (Sec 6.4)
 `python meta_regression.py --second X --filter Male`
 
 Use `--eval_only` mode with a trained regression meta-classifier to perform binary classification.
+
+Results observed across all these attacks should roughly match (within margin of error) the ones observed in Figures 2(c), 3(b), 4, & 7.

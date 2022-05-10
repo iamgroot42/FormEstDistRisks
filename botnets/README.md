@@ -22,6 +22,8 @@ Run this command to train a model on the adversary's split of data, setting the 
 
 `python train_models.py --prop_val 1 --split adv --savename Z --gpu`
 
+We observed a test accuracy of around 92% on the adversary's split of data, and 89% on the victim's split of data.
+
 ### Loss/Threshold tests
 
 Run this command to generate both lLoss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers.
@@ -33,3 +35,5 @@ Run this command to generate both lLoss-Test (Sec 5.1.1) and Threshold-Test (Sec
 Run this command to train a meta-classifiers (Sec 5.2.1) on the adversary's models and test them on the victim's models.
 
 `python meta.py --gpu --parallel`
+
+Results observed across all these attacks should roughly match (within margin of error) the ones reported in Section 6.5

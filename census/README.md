@@ -19,6 +19,9 @@ Run this command to train 100 models on the adversary's split of data, setting t
 
 Alternatively, you can run `train_fast.sh adv sex 0.5` to generate 1000 models (via 2 parallel processes).
 
+For `sex`, we observed a test accuracy of around 86% on the adversary's split of data, and 85% on the victim's split of data.
+For `race`, we observed a test accuracy of around 85% on the adversary's split of data, and 84% on the victim's split of data.
+
 ### Loss/Threshold tests
 
 Run this command to generate both Loss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for two specified ratios for the specified attribute
@@ -42,3 +45,5 @@ Use `--eval_only` mode with a trained regression meta-classifier to perform bina
 Use the following file to plot graphs with experimental results. You can specify arguments to control legend plot, color of plot, and y-axis title (see file for more)
 
 `python make_boxplots.py --filter race`
+
+Results observed across all these attacks should roughly match (within margin of error) the ones observed in Figures 2(a), 3(a), 5(a), & 6(a).

@@ -18,6 +18,8 @@ Run this command to train a model on the adversary's split of data, setting the 
 
 To train 1000 together, run `bulk_deg.sh adv 13`
 
+We observed a test accuracy of around 74% on the adversary's split of data, and 73% on the victim's split of data.
+
 ### Loss/Threshold tests
 
 Run this command to generate both oss-Test (Sec 5.1.1) and Threshold-Test (Sec 5.1.2) numbers for the specified degree for 13 v/s X (12, in the case below)
@@ -45,3 +47,5 @@ To test the trained meta-classifier on all distributions, run:
 Use the following file to plot graphs with experimental results. You can specify arguments to control legend plot, color of plot, and y-axis title (see file for more)
 
 `python make_boxplots.py --filter race`
+
+Results observed across all these attacks should roughly match (within margin of error) the ones observed in Figures 8 & 9.
