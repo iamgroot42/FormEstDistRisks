@@ -1,13 +1,11 @@
-name: phd
+name: distr_inf
 channels:
   - http://conda.anaconda.org/gurobi
   - defaults
 dependencies:
-  - python=3.6
-  - torchvision
-  - pylint
-  - flake8
-  - torchaudio
+  - python=3.6 # Version 3.9 also works
+  - torchvision # Version 0.11.3
+  - flake8 # Version 4.0.1
+  - torchaudio # Version 0.10.2
   - cudatoolkit=11.1
-  - pytorch
-prefix: /u/as9rw/anaconda3/envs/phd
+  - pytorch # Version 1.10.2
