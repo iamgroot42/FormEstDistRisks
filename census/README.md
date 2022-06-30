@@ -15,9 +15,7 @@ The code will automatically download all the files, and make victim/adversary da
 
 Run this command to train 100 models on the adversary's split of data, setting the ratio of females to 0.5. Change arguments to train models while varying other attributes and ratios
 
-`python train_ratio_models.py --filter sex --ratio 0.5 --split adv --num 100`
-
-Alternatively, you can run `train_fast.sh adv sex 0.5` to generate 1000 models (via 2 parallel processes).
+`python train_models.py --filter sex --ratio 0.5 --split adv --num 100`
 
 For `sex`, we observed a test accuracy of around 86% on the adversary's split of data, and 85% on the victim's split of data.
 For `race`, we observed a test accuracy of around 85% on the adversary's split of data, and 84% on the victim's split of data.
