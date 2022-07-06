@@ -2,7 +2,7 @@
 
 ## Dataset
 
-You can downlod and use the exact victim-adversary splits from [this link](https://github.com/iamgroot42/FormEstDistRisks/raw/main/celeba/data/celeba_splits.zip)
+You can use the exact victim-adversary splits from [here](https://github.com/iamgroot42/FormEstDistRisks/blob/main/celeba/data/celeba_splits.zip)
 
 ## Pre-requisites
 
