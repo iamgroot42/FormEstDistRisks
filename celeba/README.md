@@ -11,7 +11,7 @@ You can downlod and use the exact victim-adversary splits from [this link](https
 
 ### Generate data splits
 
-Run this command to generate victim/adversary data splits
+Run this command to generate victim/adversary data splits (or use the ones provided by us to recreate experiments exactly)
 
 `python data_utils.py`
 
