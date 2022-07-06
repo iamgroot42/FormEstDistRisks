@@ -12,7 +12,7 @@ python setup.py install
 
 ## Dataset
 
-Split files for victim/adversary are already provided in the repository (and automatically). You can download the processed and parsed version of the dataset [here](https://drive.google.com/file/d/1hdj9UNLTKsRsxHCXW8eDW6_xJyLyEZev/view?usp=sharing)
+Split files for victim/adversary are already provided in the repository (and automatically). You can download the processed and parsed version of the dataset [here](https://archive.org/details/FormEstDistRisks_botnet)
 
 ## Running experiments
 
