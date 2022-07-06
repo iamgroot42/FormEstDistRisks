@@ -2,7 +2,7 @@
 
 ## Dataset
 
-You can use the files [here](https://github.com/iamgroot42/FormEstDistRisks/tree/main/boneage/data) - these contain split information for victim/adversary, as well as processed features that we used in our experiments.
+You can use the files [here](https://github.com/iamgroot42/FormEstDistRisks/blob/main/boneage/data/boneage_splits.zip) - these contain split information for victim/adversary, as well as processed features that we used in our experiments.
 
 ## Pre-requisites
 
