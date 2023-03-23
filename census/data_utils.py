@@ -16,7 +16,7 @@ SUPPORTED_RATIOS = ["0.0", "0.1", "0.2", "0.3",
 
 
 # US Income dataset
-class CensusIncome:
+class CensusTwo:
     def __init__(self, path=BASE_DATA_DIR):
         self.urls = [
             "http://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
@@ -218,7 +218,7 @@ def cal_n(df, con, ratio):
 # Wrapper for easier access to dataset
 class CensusWrapper:
     def __init__(self, filter_prop="none", ratio=0.5, split="all"):
-        self.ds = CensusIncome()
+        self.ds = CensusTwo()
         self.split = split
         self.ratio = ratio
         self.filter_prop = filter_prop
