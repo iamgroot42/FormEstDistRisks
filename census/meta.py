@@ -50,7 +50,8 @@ if __name__ == "__main__":
     # targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
     if args.trg is None:
-        targets = sorted(['0.2,0.5', '0.5,0.2', '0.1,0.5'])
+        #targets = sorted(['0.2,0.5', '0.5,0.2', '0.1,0.5'])
+        targets = sorted(['0.0', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0'])
     else:
         lst = eval(args.trg)
         targets = []
