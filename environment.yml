@@ -9,3 +9,4 @@ dependencies:
   - torchaudio # Version 0.10.2
   - cudatoolkit=11.1
   - pytorch # Version 1.10.2
+  - robustness # Any version should be okay

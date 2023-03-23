@@ -9,12 +9,9 @@ from os import environ
 from collections import OrderedDict
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import transforms
+from colorama import Fore, Style
 
 from robustness.model_utils import make_and_restore_model
-from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
-from robustness.tools import folder
-from robustness.tools.misc import log_statement
 
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 from copy import deepcopy
@@ -35,6 +32,15 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def log_string(x, ttype="log"):
+    color_mapping = {"train": Fore.YELLOW, "val": Fore.GREEN}
+    return color_mapping.get(ttype, Fore.MAGENTA) + x + Style.RESET_ALL
+
+
+def log_statement(x, ttype="log"):
+    print(log_string(x, ttype))
 
 
 def log(x):
@@ -79,74 +85,6 @@ class DataPaths:
         deltas_path = os.path.join(
             self.stats_path, arch, m_type, "deltas" + ext)
         return get_sensitivities(deltas_path, numpy=numpy)
-
-
-class BinaryCIFAR(DataPaths):
-    def __init__(self, path):
-        self.dataset_type = GenericBinary
-        super(BinaryCIFAR, self).__init__('binary_cifar10', path, None)
-
-
-class CIFAR10(DataPaths):
-    def __init__(self, data_path=None):
-        self.dataset_type = CIFAR
-        datapath = "/p/adversarialml/as9rw/datasets/cifar10" if data_path is None else data_path
-        super(CIFAR10, self).__init__('cifar10',
-                                      datapath,
-                                      "/p/adversarialml/as9rw/cifar10_stats/")
-        self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_cifar10/"
-        self.model_prefix['densenet169'] = "/p/adversarialml/as9rw/models_cifar10_densenet/"
-        self.model_prefix['vgg19'] = "/p/adversarialml/as9rw/models_cifar10_vgg/"
-        self.models['nat'] = "cifar_nat.pt"
-        self.models['linf'] = "cifar_linf_8.pt"
-        self.models['l2'] = "cifar_l2_0_5.pt"
-
-
-class RobustCIFAR10(DataPaths):
-    def __init__(self, datapath, stats_prefix):
-        self.dataset_type = RobustCIFAR
-        super(RobustCIFAR10, self).__init__('robustcifar10',
-                                            datapath, stats_prefix)
-
-
-class SVHN10(DataPaths):
-    def __init__(self):
-        self.dataset_type = SVHN
-        super(SVHN10, self).__init__('svhn',
-                                     "/p/adversarialml/as9rw/datasets/svhn",
-                                     "/p/adversarialml/as9rw/svhn_stats/")
-        self.model_prefix['vgg16'] = "/p/adversarialml/as9rw/models_svhn_vgg/"
-        self.models['nat'] = "svhn_nat.pt"
-        self.models['linf'] = "svhn_linf_4.pt"
-        self.models['l2'] = "svhn_l2_0_5.pt"
-
-
-class ImageNet1000(DataPaths):
-    def __init__(self, data_path=None):
-        self.dataset_type = ImageNet
-        datapath = "/p/adversarialml/as9rw/datasets/imagenet/" if data_path is None else data_path
-        super(ImageNet1000, self).__init__('imagenet1000',
-                                           datapath,
-                                           "/p/adversarialml/as9rw/imagenet_stats/")
-        self.model_prefix['resnet50'] = "/p/adversarialml/as9rw/models_imagenet/"
-        self.models['nat'] = "imagenet_nat.pt"
-        self.models['l2'] = "imagenet_l2_3_0.pt"
-        self.models['linf'] = "imagenet_linf_4.pt"
-
-
-def read_given_dataset(data_path):
-    train_transform = transforms.Compose([])
-
-    train_data = ch.cat(ch.load(os.path.join(data_path, f"CIFAR_ims")))
-    train_labels = ch.cat(ch.load(os.path.join(data_path, f"CIFAR_lab")))
-    train_set = folder.TensorDataset(
-        train_data, train_labels, transform=train_transform)
-
-    X, Y = [], []
-    for i in range(len(train_set)):
-        X.append(train_set[i][0])
-        Y.append(train_set[i][1].numpy())
-    return (X, Y)
 
 
 def scaled_values(val, mean, std, eps=1e-10):
