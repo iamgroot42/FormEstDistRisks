@@ -8,6 +8,8 @@ The code will automatically download all the files, and make victim/adversary da
 
 - Make sure you have the adult dataset downloaded on your system. Edit `BASE_DATA_DIR` in `data_utils.py` to point to that path.
 - Make a directory with the structure: `X/<split>/<filter>/<ratio>`, and edit `BASE_MODELS_DIR` to `X` in `model_utils.py`.
+- Fork the robustness package from this link: https://github.com/iamgroot42/robustness
+- Clone the fork, and install it using "pip install ." (the period is necessary).
 
 ## Running experiments
 
